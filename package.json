@@ -1,0 +1,10 @@
+{
+  "name": "wordle-engine",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Wordle game engine, strategy framework, and analysis tools",
+  "main": "src/index.mjs",
+  "scripts": {
+    "test": "node test/smoke.mjs"
+  }
+}
