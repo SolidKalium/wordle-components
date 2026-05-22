@@ -35,21 +35,17 @@ This project should include:
   - This is the same as minimizing the average square of group size
 - Minimax group size
 - Something using entropy better? Essentially optimizing over multiple moves instead of just one
-- Maybe some kind of vowel-exploration strategy? Kinda implicit in other strategies, so how this differs might need to be clarified
-- Actively avoid vowel exploration? (possibly a "substrategy" of another strategy?)
-- Actively avoid letters that were already guessed? (possibly a "substrategy" of another strategy?)
-- Actively add randomness so that the guesses needed for any particular word is minimized. Not exactly sure what this metric is. But the purpose is to make a strategy that can't be forced into taking the maximum turns, even when the opponent knows the strategy, like playing rock, paper, and scissors randomly with equal frequency.
-  - Minimize the maximum *expected* guesses to find a word?
-  - Minimize the average *expected* guesses to find the 20% of words with the highest number of guesses needed.
-    - This seems harder to calculate, and the 20% is arbitrary.
-    - This kind of seems worse. It permits some words to still be expected to take many turns. Both approaches "ignore" the faster to guess words, but really, the turns needed to guess those are just unconstrained to leave room for improving the harder to guess words, so that's fine and not different between them.
-    - I guess I'm just leaving the idea as a note, but just planning to move it to out-of-scope once the other strategy is implemented.
+- Filtered strategies
+  - Avoid vowel exploration: only use vowels that have already been tried, if possible
+  - Prefer exploration: only use unexplored letters, if possible
+  - Vowel exploration: try new vowels where possible. This prefers checking for the existence of other distinct vowels instead of locating yellow vowels.
+- Actively add randomness to the strategy so that the guesses needed for any particular word is minimized. The purpose is to make a strategy that can't be forced into taking the maximum turns, even when the opponent knows the strategy, like playing rock, paper, and scissors randomly with equal frequency. Keywords: Nash Equilibrium, repeated games, mixed strategy.
+  - Minimize the maximum *expected* guesses to find a word. No matter what word the adversary picks, the expected number of guesses needed should be minimized.
 
 Notes
 - We may want to visualize the implicit decision tree? (for deterministic strategies)
 - Maybe strategies should be able to return multiple words, either as a simple ordered list or with weights? This would support the skills that suggest words.
-  - Weights and ranked order may be a flag, or include both. [{ word, score, groups, maxGroup, avgGroup, weight }]
-- Substrategies may be constraints of some kind? Do they operate before or after the main strategy? Do they purely filter or just adjust weights?
+  - Weights and ranked order may be a flag that chooses the format, or function output could include both. [{ word, score, groups, maxGroup, avgGroup, weight }]
 
 ## Other Topics
 - I'm curious about what might bias a human against quickly finding a word.

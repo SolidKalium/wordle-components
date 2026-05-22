@@ -55,3 +55,16 @@ class AntiVowelExplorationFilter extends Filter {
     );
   }
 }
+
+/**
+ * Within exploration candidates, prefer introducing new vowels so that
+ * exploration guesses focus on consonant location and ruling out additional vowels.
+ */
+class VowelExplorationFilter extends Filter {
+  filter(candidates, game) {
+    const explored = this._exploredLetters(game);
+    return candidates.filter(word =>
+      [...word].every(ch => !VOWELS.has(ch) || !explored.has(ch)),
+    );
+  }
+}
