@@ -148,10 +148,12 @@ assert(result.valid, 'external mode accepts pattern');
 
 section('Simulation (FirstWordStrategy on test words)');
 
+const simAnswers = Array.from({ length: 20 }, (_, i) => TEST_WORDS[Math.floor(i * TEST_WORDS.length / 20)]);
+
 const simResults = runSimulation(
   () => new FirstWordStrategy(),
   TEST_WORDS,
-  { answers: TEST_WORDS.slice(0, 20) }, // quick run on 20 words
+  { answers: simAnswers },
 );
 const summary = summarize(simResults);
 console.log(formatSummary(summary, 'FirstWordStrategy (20 words)'));
