@@ -17,7 +17,7 @@ export class Filter {
    * @param {string[]} remainingWords
    */
   isActive(game, remainingWords) {
-    if (game.guesses.length >= this.maxTurn) return false;
+    if (game.guesses.length > this.maxTurn) return false;
     if (remainingWords.length < this.minRemaining) return false;
     if (26 - this._exploredLetters(game).size < this.minUnknownLetters) return false;
     return true;
