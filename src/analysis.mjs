@@ -24,7 +24,7 @@ export function runSimulation(strategyFactory, wordList, opts = {}) {
     let remaining = wordList; // no filtering needed before first guess
 
     while (!game.isOver) {
-      const guess = strategy.chooseGuess(game, remaining);
+      const guess = strategy.chooseGuess(game, remaining, remaining);
       game.makeMove(guess);
       remaining = remaining.filter(w => game.constraints.matches(w));
     }

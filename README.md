@@ -3,25 +3,36 @@
 Practicing working with Claude
 
 This project should include:
-- Solver code
+- Solver and utility code
 - UI options
   - Command line
   - React in claude
 - Skill
-  - Some kind of "coach"?
+  - Some kind of coach
     - Suggest some possible, decent moves
+    - Trap detection: "You have 6 remaining words and they differ only in the first letter: _IGHT. You can't distinguish them one at a time. Do you have a guess that tests multiple first letters at once?"
     - What else would a coach do?
   - Give some gamestate statistics
     - How many words remain
     - Expected move count to win
-  - Give move statistics
+  - Give move statistics (what-if analysis and post-move analysis)
     - How many groups are there, what would the distribution of their sizes look like?
-    - Could look at what the official analysis does. For instance rating the "luck" of a move vs the optimalness. Maybe estimate popular human moves, based on biases or other properties?
+    - Could look at what the official analysis does.
+      - For instance rating the "luck" of a move vs the optimalness.
+      - Maybe estimate popular human moves, based on biases or other properties?
   - Only if directly asked, give the move that a specified algorithm would select
   - Initialize a game with a random word and let the player play it?
+  - Ability to import a game that's in the middle of play. E.g. words played and their outputs grey/green/yellow or simply a summary of what's known.
+  - Awareness of hard mode or other constraints.
+  - Structural note: interacting with an active game artifact should be different from a self-contained question and answer.
+  - Tool to identify likely first guess words of friends. Eg given the letterless info for the first line and the actual word of the day, find compatible words, especially given data for multiple days.
+  - Perhaps enable transforming pictures of games into a set format? E.g. json, markdown, or a flexible html layout.
 
 ## Strategies
 - Smallest average group size
+  - This is the same as maximizing the number of groups
+- Minimize the number of words in the same group as a word
+  - This is the same as minimizing the average square of group size
 - Minimax group size
 - Something using entropy better? Essentially optimizing over multiple moves instead of just one
 - Maybe some kind of vowel-exploration strategy? Kinda implicit in other strategies, so how this differs might need to be clarified
@@ -34,12 +45,18 @@ This project should include:
     - This kind of seems worse. It permits some words to still be expected to take many turns. Both approaches "ignore" the faster to guess words, but really, the turns needed to guess those are just unconstrained to leave room for improving the harder to guess words, so that's fine and not different between them.
     - I guess I'm just leaving the idea as a note, but just planning to move it to out-of-scope once the other strategy is implemented.
 
-We may want to visualize the implicit decision tree? (for deterministic strategies)
-Maybe strategies should be able to return multiple words, either as a simple ordered list or with weights? This would support the skills that suggest words.
+Notes
+- We may want to visualize the implicit decision tree? (for deterministic strategies)
+- Maybe strategies should be able to return multiple words, either as a simple ordered list or with weights? This would support the skills that suggest words.
+  - Weights and ranked order may be a flag, or include both. [{ word, score, groups, maxGroup, avgGroup, weight }]
+- Substrategies may be constraints of some kind? Do they operate before or after the main strategy? Do they purely filter or just adjust weights?
 
 ## Other Topics
 - I'm curious about what might bias a human against quickly finding a word.
-  - Weight words by usage or common knowledge. E.g. most people know the word `penis` but it might be underrepresented in some text corpora. Players might also believe a "dirty" or "sensitive" word is unlikely to be the answer.
+  - Weight words by usage or common knowledge
+    - E.g. most people may know a word that is relatively rare in some text corpora. A word might be used more often verbally than in formal or informal writing. Or name something that doesn't need to be discussed often but is still commonly known.
+    - Players might also believe a "dirty" or "sensitive" word is unlikely to be the answer. Note that `penis` is excluded from the default answer list, but `lynch` and `kinky` are included.
+    - Note: it appears that many plurals and "derived" words like `times` and `timed` are excluded. Even `tired` is excluded.
   - Words with letters that aren't common in a particular position. Rareness may be defined relative to other letters known to be in the answer (fixed location or unknown location).
   - Words with letters, especially vowels, pronounced differently in that position than other words with the letter in that position. Rareness may be defined relative to other letters known to be in the answer (fixed location or unknown location).
   - Words that avoid certain common pairs of letters. E.g. -er, -ed, -th-, -ch-, etc
@@ -58,3 +75,6 @@ Things considered but skipped for now
 
 - Word lengths other than 5
 - Allow selecting words from the larger valid word list
+- Filters ("strategy subvariants") currently are designed to be hard, prepass filters with self-disable rules. That makes the logic clear and legible, with the input surface solely using integers.
+  - Slightly more complex logical rules are possible but generally out of scope.
+  - An alternative further out of scope would be to create and combine quality weights. But the process for doing that isn't obvious. How do we penalize letters that we've already used: multiply by 1 for each unused letter, .1 for each grey letter, .2 for each yellow or green letter in a position we haven't tried yet, and 0.05 otherwise? That might be too extreme. What's the right level of penalty for our goal? And how do we convert the preferences of any given strategy into a weight? What do the ihteractions between those weights do? How do we combine the filter and strategy weights? Multiply them? Take the minumum of the two, plus some portion of the larger one, but capped at twice the minumum and renormalized since that allowed the weights to go over 1? To avoid renormalizing, we could do `lo + min(lo, hi/x)*(1-lo)` or just `lo + (1-lo)*lo*hi`, but do we expect either of those to genuinely produce "good" or "meaningful" results for "good" choices of filter and strategy? The choice for combining likely depends on how much signal is intended to come from both halves, and possibly how many orders of magnitude the weights span.

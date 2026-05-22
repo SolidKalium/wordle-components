@@ -46,3 +46,24 @@ export class FirstWordStrategy extends Strategy {
     return remainingWords[0];
   }
 }
+
+/**
+ * Decorate another strategy to make it consider a constrained set of words.
+ */
+class FilteredStrategy extends Strategy {
+  constructor(baseStrategy, filters = []) {
+    super();
+    this.base = baseStrategy;
+    this.filters = filters;
+  }
+
+  chooseGuess(game, candidates, remainingWords) {
+    let narrowed = candidates;
+    for (const f of this.filters) {
+      if (!f.isActive(game, remainingWords)) continue;
+      const filtered = f.filter(narrowed, game);
+      if (filtered.length > 0) narrowed = filtered;
+    }
+    return this.base.chooseGuess(game, narrowed, remainingWords);
+  }
+}
