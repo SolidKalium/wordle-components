@@ -1,3 +1,5 @@
+import { partitionByGuess } from './core.mjs';
+
 /**
  * Base class for Wordle-solving strategies.
  *
@@ -31,9 +33,9 @@ export class Strategy {
  * Not a good strategy, but a useful baseline and smoke test.
  */
 export class RandomStrategy extends Strategy {
-  chooseGuess(_game, remainingWords) {
-    const idx = Math.floor(Math.random() * remainingWords.length);
-    return remainingWords[idx];
+  chooseGuess(_game, candidates) {
+    const idx = Math.floor(Math.random() * candidates.length);
+    return candidates[idx];
   }
 }
 
@@ -42,8 +44,8 @@ export class RandomStrategy extends Strategy {
  * if the list is sorted). Deterministic, so useful for reproducible tests.
  */
 export class FirstWordStrategy extends Strategy {
-  chooseGuess(_game, remainingWords) {
-    return remainingWords[0];
+  chooseGuess(_game, candidates) {
+    return candidates[0];
   }
 }
 
@@ -65,5 +67,56 @@ class FilteredStrategy extends Strategy {
       if (filtered.length > 0) narrowed = filtered;
     }
     return this.base.chooseGuess(game, narrowed, remainingWords);
+  }
+}
+
+/** Maximizes the number of partitions, minimizing average group size. */
+class MaxGroupsStrategy extends Strategy {
+  chooseGuess(_game, candidates, remainingWords) {
+    if (candidates.length <= 2) return candidates[0];
+    let best = candidates[0];
+    let bestScore = -Infinity;
+    for (const word of candidates) {
+      const score = partitionByGuess(word, remainingWords).size;
+      if (score > bestScore) { bestScore = score; best = word; }
+    }
+    return best;
+  }
+}
+
+/**
+ * Minimizes Σ(groupSize²), equivalent to minimizing the expected number of
+ * remaining candidates after the guess (assuming a uniform answer distribution). Intuively, this can be explained as minimizing the average number of words each word sees in its group. This is optimizing for the average case.
+ */
+class MinExpectedRemainingStrategy extends Strategy {
+  chooseGuess(_game, candidates, remainingWords) {
+    if (candidates.length <= 2) return candidates[0];
+    let best = candidates[0];
+    let bestScore = Infinity;
+    for (const word of candidates) {
+      let score = 0;
+      for (const group of partitionByGuess(word, remainingWords).values()) {
+        score += group.length * group.length;
+      }
+      if (score < bestScore) { bestScore = score; best = word; }
+    }
+    return best;
+  }
+}
+
+/** Minimizes the largest group, optimising for the worst case. */
+class MinimaxStrategy extends Strategy {
+  chooseGuess(_game, candidates, remainingWords) {
+    if (candidates.length <= 2) return candidates[0];
+    let best = candidates[0];
+    let bestScore = Infinity;
+    for (const word of candidates) {
+      let score = 0;
+      for (const group of partitionByGuess(word, remainingWords).values()) {
+        if (group.length > score) score = group.length;
+      }
+      if (score < bestScore) { bestScore = score; best = word; }
+    }
+    return best;
   }
 }
