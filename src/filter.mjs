@@ -1,3 +1,5 @@
+import { WORD_LENGTH } from './core.mjs';
+
 export class Filter {
   get name() {
     return this.constructor.name;
@@ -96,6 +98,12 @@ export class MustContainFilter extends Filter {
     this.required = new Map();
     for (const ch of letters) {
       this.required.set(ch, (this.required.get(ch) ?? 0) + 1);
+    }
+    const total = [...this.required.values()].reduce((s, n) => s + n, 0);
+    if (total > WORD_LENGTH) {
+      throw new RangeError(
+        `MustContainFilter requires ${total} letters but words are only ${WORD_LENGTH} long`,
+      );
     }
   }
 
