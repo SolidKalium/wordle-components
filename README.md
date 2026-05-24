@@ -35,10 +35,11 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
     - Making keyboard input control the colors under the computer's guess would be good.
       - G/Y/_ would work but be cumbersome.
       - Default of gray for each letter. Up (green), Down (yellow), Right (go forward), Left (backup), Delete (gray), Space or Enter (commit grading). Might or might not support an empty space past the end of the word. Could support WASD or numpad as an alternate. Could support an alternate "return to gray" key (minus? do up and down cycle the colors in a circle instead of being specific colors? We could hint the up/down colors with like just a pixel or two in a lighter version of the color, if that's possible.) Need an undo command, probably just command/ctrl z? Also need to handle an interrupt gracefully.
+        - Note: arrow keys might be harder than they seem. Start with WASD and add arrow keys as an upgrade. They use an escape sequence and it can vary accross keyboards. Could need ink, terminal-kit, or `process.stdin.setRawMode(true)`.
       - If the computer knows that a letter was already (or must be) green in that spot, it can prefill that. Before making a guess, it can ensure that the new feedback is compatible with what is known: the total letters asserted as yellow or green isn't inherently greater than the word list, and no yellow letters turned gray (after accounting for quantity). No previously gray letter should become green or yellow. Issues can be listed to the right or on one or more info lines below the guess being operated on. ("Letters that shouldn't be gray: XYZ. Letters that should be gray: ABC. To back up a turn, press cmd+z.")
     - Need to handle fixing the grading on an earlier turn.
       - «The simplest approach is snapshotting: [Game should] store a ConstraintState.clone() before each move, and undo by restoring the snapshot and truncating the guess history.»
-    - Can allow the computer to know the word in advance and just let the player pace through.
+    - Can allow the computer to know the word in advance and just let the player pace through with Space/Enter. E.g. "Enter your word for auto-play (blank will let you grade the guesses manually):" (that parenthetical could just be in a lighter text color after the colon while nothing has been typed in)
   - Needs to handle any workers, such as for rapid-play
     - Rule: «anything that runs a full simulation or precomputes a decision tree goes in a worker; single-move scoring and partition previews stay on the main thread.»
     - Worker interface will be helpful to design in advance.
@@ -101,16 +102,25 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - Code: suggest words
+- Worker boundaries
+- Undo turns
+- Word list bundling
+- TerminalIO abstraction: native terminal and xterm.js rendering sharing the same game logic
 - CLI UI
+  - TODO sequence the implementation and create non-aspirational documentation as we go
   - User plays against computer-chosen word
   - Computer plays against human word using human-chosen strategy, with human grading
-  - *Maybe* analyses? Probably delay until after HTML UI
-- Test suite: CLI
-- Analysis HTML UI: decompose problem into useable UI chunks. Both analysis components and selector components
-  - Needs word lists to load correctly.
+- Test suite: CLI ?
+- Analysis HTML UI
+  - CLI component
   - Decision tree
-- Rapid play mode in CLI or HTML?
+  - Other analysis components
+  - Selector component(s) to wrap analyses
+- Test suite: HTML ?
+- Rapid-play mode in CLI or HTML?
+- CLI: analysis? Delay until after HTML UI
 - Claude Skill
+- Test suite: Claude?
 - Strategies: entropy, mixed strategy nash equilibrium
 
 ## Other Topics
