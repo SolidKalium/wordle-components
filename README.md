@@ -12,19 +12,36 @@ Practicing working with Claude
 - TODO make suggestions
   - Need to consider the structure. How many words? From which strategies? How are they chosen from those strategies?
     - Example: just reporting top words from one strategy, such as random. Maybe this is lame and we only support random-selection round robin from top-k?
-    - Example: Choose x words, roundrobin from y strategies, picking from the top 2x choices from each strategy, disallowing duplicates.
+    - Example: Choose x words, roundrobin from y strategies, picking randomly from the top 2x choices from each strategy, disallowing duplicates.
+  - This may need to support differentiating deterministic and non-deterministic strategies and a way to pre-compute them so that they're fast. Although: deterministic strategies will have to handle different states if they suddenly have unexpected word choices and thus an unexpected state.
+  - If this is all in one worker, it can cache partitions for each word being considered, given a current game state, making strategies slightly faster.
 
 See [strategies](#strategies) and [filters](#filters) for info about those options.
 
 ### UIs
 - **Command line**
+  - UI or command to pick a mode. Both may be good to support.
+    - Probably start out only having the computer run the min expected group size strategy. Then an optional "game config" panel or command line arguments can be supported.
+      - Config format for things like filtered strategies would need to be determined. This is related to how any HTML component configs could be saved, stored, or specified by a Skill.
+        - Config "files" are out of scope for now.
+    - Maybe start with one game per command run, but then allow it to go repeatedly, possibly with a flag to control that behavior. Repeated runs allow any settings to persist.
+  - Help info on `--help`, `help`, and `-h`
+  - Maybe `about`, `--version`, or `-v` support? Unknown commands invoke help anyways, so `about` might just be one such invalid word, as could `help`.
   - User plays against computer-chosen word
     - Optional hints, such as random possible words, some best or near-best words from multiple strategies and random words mixed together
     - Quick-play mode?
   - Computer plays against human word using human-chosen strategy, with human grading
     - Optionally show stats on each move
     - Making keyboard input control the colors under the computer's guess would be good.
-    - Probably need to handle fixing the grading on an earlier turn.
+      - G/Y/_ would work but be cumbersome.
+      - Default of gray for each letter. Up (green), Down (yellow), Right (go forward), Left (backup), Delete (gray), Space or Enter (commit grading). Might or might not support an empty space past the end of the word. Could support WASD or numpad as an alternate. Could support an alternate "return to gray" key (minus? do up and down cycle the colors in a circle instead of being specific colors? We could hint the up/down colors with like just a pixel or two in a lighter version of the color, if that's possible.) Need an undo command, probably just command/ctrl z? Also need to handle an interrupt gracefully.
+      - If the computer knows that a letter was already (or must be) green in that spot, it can prefill that. Before making a guess, it can ensure that the new feedback is compatible with what is known: the total letters asserted as yellow or green isn't inherently greater than the word list, and no yellow letters turned gray (after accounting for quantity). No previously gray letter should become green or yellow. Issues can be listed to the right or on one or more info lines below the guess being operated on. ("Letters that shouldn't be gray: XYZ. Letters that should be gray: ABC. To back up a turn, press cmd+z.")
+    - Need to handle fixing the grading on an earlier turn.
+      - «The simplest approach is snapshotting: [Game should] store a ConstraintState.clone() before each move, and undo by restoring the snapshot and truncating the guess history.»
+    - Can allow the computer to know the word in advance and just let the player pace through.
+  - Needs to handle any workers, such as for rapid-play
+    - Rule: «anything that runs a full simulation or precomputes a decision tree goes in a worker; single-move scoring and partition previews stay on the main thread.»
+    - Worker interface will be helpful to design in advance.
   - *Maybe* analyses? Probably delay until after HTML UI
   - Can this be written so it can be played in a browser as well? Essentially using js with a front end that works in both the console and a virtual console in the browser.
   - TODO design further
@@ -35,6 +52,7 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
   - Component for the CLI version, for demo purposes
   - Rapid-play component: choose a word from a prepared menu on each turn, using a combination of random words and best or near-best words from multiple strategies. Maybe allow filtering to options that include one player-chosen letter.
   - Possibly split an "official" static analysis report from a dynamic one. Though they might be tabs of the same page, or something similar.
+  - Need to load word list either dynamically or via inlining/compiling.
 - **React in Claude**
   - TBD, but likely things based on the CLI and Analysis UIs, plus support for anything the skill needs.
 
@@ -58,6 +76,7 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
 - Structural note: interacting with an active game artifact should be different from a self-contained question and answer.
 - Tool to identify likely first guess words of friends. Eg given the letterless info for the first line and the actual word of the day, find compatible words, especially given data for multiple days.
 - Perhaps enable transforming pictures of games into a set format? E.g. json, markdown, or a flexible html layout. Or enabling custom strategies to be exported in some way that lets them be verifiably consistent across sessions.
+- Check if a word is in the wordle list. Or possibly just find words that have a property via a filter.
 
 ## Strategies
 - Smallest average group size
@@ -81,14 +100,12 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 - Keyboard: accepted words must *only use* letters in the specified letter *set*
 
 ## TODO
-- Test suite: strats and filters
 - Code: suggest words
 - CLI UI
   - User plays against computer-chosen word
   - Computer plays against human word using human-chosen strategy, with human grading
   - *Maybe* analyses? Probably delay until after HTML UI
-- Test suite
-  - enumerate ways the code can be used and ensure that they work
+- Test suite: CLI
 - Analysis HTML UI: decompose problem into useable UI chunks. Both analysis components and selector components
   - Needs word lists to load correctly.
   - Decision tree
