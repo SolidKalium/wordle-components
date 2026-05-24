@@ -20,6 +20,7 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
 
 ### UIs
 - **Command line**
+  - TerminalIO abstraction: native terminal and xterm.js rendering sharing the same game
   - UI or command to pick a mode. Both may be good to support.
     - Probably start out only having the computer run the min expected group size strategy. Then an optional "game config" panel or command line arguments can be supported.
       - Config format for things like filtered strategies would need to be determined. This is related to how any HTML component configs could be saved, stored, or specified by a Skill.
@@ -29,7 +30,9 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
   - Maybe `about`, `--version`, or `-v` support? Unknown commands invoke help anyways, so `about` might just be one such invalid word, as could `help`.
   - User plays against computer-chosen word
     - Optional hints, such as random possible words, some best or near-best words from multiple strategies and random words mixed together
-    - Quick-play mode?
+    - Quick-play mode? User chooses from a short list of plausible guesses.
+      - Explanation submode? After a choice, shows how the words actually rank
+      - Flashcard submode? The player is rewarded for choosing the actual best move, and it's always available. Filler words might not be the best word overall, but instead be words that are the best on the next turn or two according to the deterministic algorithm.
   - Computer plays against human word using human-chosen strategy, with human grading
     - Optionally show stats on each move
     - Making keyboard input control the colors under the computer's guess would be good.
@@ -44,7 +47,6 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
     - Rule: «anything that runs a full simulation or precomputes a decision tree goes in a worker; single-move scoring and partition previews stay on the main thread.»
     - Worker interface will be helpful to design in advance.
   - *Maybe* analyses? Probably delay until after HTML UI
-  - Can this be written so it can be played in a browser as well? Essentially using js with a front end that works in both the console and a virtual console in the browser.
   - TODO design further
 - **Analysis HTML page**
   - Decompose problem into useable UI chunks. Both analysis components and selector components.
