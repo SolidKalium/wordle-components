@@ -5,6 +5,11 @@
   "description": "Wordle game engine, strategy framework, and analysis tools",
   "main": "src/index.mjs",
   "scripts": {
-    "test": "node test/smoke.mjs"
+    "smoke": "node test/smoke.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.7"
   }
 }

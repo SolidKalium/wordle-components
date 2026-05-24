@@ -69,7 +69,7 @@ export class FirstWordStrategy extends Strategy {
 /**
  * Decorates another strategy to make it consider a filtered subset of candidates.
  */
-class FilteredStrategy extends Strategy {
+export class FilteredStrategy extends Strategy {
   constructor(baseStrategy, filters = []) {
     super();
     this.base = baseStrategy;
@@ -88,7 +88,7 @@ class FilteredStrategy extends Strategy {
 }
 
 /** Maximizes the number of partitions, minimizing average group size. */
-class MaxGroupsStrategy extends Strategy {
+export class MaxGroupsStrategy extends Strategy {
   rankGuesses(_game, candidates, remainingWords, k = candidates.length) {
     const scored = candidates.map(word => ({
       word,
@@ -103,7 +103,7 @@ class MaxGroupsStrategy extends Strategy {
  * Minimizes Σ(groupSize²), equivalent to minimizing the expected number of
  * remaining candidates after the guess (assuming a uniform answer distribution).
  */
-class MinExpectedRemainingStrategy extends Strategy {
+export class MinExpectedRemainingStrategy extends Strategy {
   rankGuesses(_game, candidates, remainingWords, k = candidates.length) {
     const scored = candidates.map(word => {
       let score = 0;
@@ -118,7 +118,7 @@ class MinExpectedRemainingStrategy extends Strategy {
 }
 
 /** Minimizes the largest group, optimizing for the worst case. */
-class MinimaxStrategy extends Strategy {
+export class MinimaxStrategy extends Strategy {
   rankGuesses(_game, candidates, remainingWords, k = candidates.length) {
     const scored = candidates.map(word => {
       let score = 0;

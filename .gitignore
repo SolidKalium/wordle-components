@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build output (Vite)
+dist/
+dist-ssr/
+.vite/
+
+# Test coverage
+coverage/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors
+.idea/
