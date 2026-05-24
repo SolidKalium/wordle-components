@@ -3,9 +3,8 @@ import { partitionByGuess } from './core.mjs';
 /**
  * Base class for Wordle-solving strategies.
  *
- * Subclasses implement `chooseGuess`, receiving the current game state
- * and the remaining valid words. The game state provides access to the
- * full guess history and constraint state if the strategy wants them.
+ * Subclasses implement `rankGuesses`. `chooseGuess` is provided here and
+ * delegates to `rankGuesses(…, 1)`, so subclasses only need to implement one method.
  *
  * Strategies are stateful per-game: a fresh instance is created for each
  * simulation run, so strategies may accumulate internal state across turns.
@@ -17,14 +16,27 @@ export class Strategy {
   }
 
   /**
-   * Choose the next guess.
+   * Return up to k candidates ranked by the strategy's metric.
    *
-   * @param {import('./game.mjs').Game} game - Current game state (read-only use recommended).
-   * @param {string[]} remainingWords - Words consistent with all constraints so far.
-   * @returns {string} The chosen guess.
+   * @param {import('./game.mjs').Game} game
+   * @param {string[]} candidates - Words eligible to be guessed (may be pre-filtered).
+   * @param {string[]} remainingWords - Full set of words consistent with constraints,
+   *   used as the partition target by scoring strategies.
+   * @param {number} [k]
+   * @returns {{ word: string, score: number | null }[]}
    */
-  chooseGuess(game, remainingWords) {
-    throw new Error(`${this.name}.chooseGuess() not implemented`);
+  rankGuesses(game, candidates, remainingWords, k = candidates.length) {
+    throw new Error(`${this.name}.rankGuesses() not implemented`);
+  }
+
+  /**
+   * @param {import('./game.mjs').Game} game
+   * @param {string[]} candidates
+   * @param {string[]} remainingWords
+   * @returns {string}
+   */
+  chooseGuess(game, candidates, remainingWords) {
+    return this.rankGuesses(game, candidates, remainingWords, 1)[0].word;
   }
 }
 
@@ -33,9 +45,14 @@ export class Strategy {
  * Not a good strategy, but a useful baseline and smoke test.
  */
 export class RandomStrategy extends Strategy {
-  chooseGuess(_game, candidates) {
-    const idx = Math.floor(Math.random() * candidates.length);
-    return candidates[idx];
+  rankGuesses(_game, candidates, _remainingWords, k = candidates.length) {
+    const result = candidates.slice();
+    const limit = Math.min(k, result.length);
+    for (let i = 0; i < limit; i++) {
+      const j = i + Math.floor(Math.random() * (result.length - i));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result.slice(0, limit).map(word => ({ word, score: null }));
   }
 }
 
@@ -44,13 +61,13 @@ export class RandomStrategy extends Strategy {
  * if the list is sorted). Deterministic, so useful for reproducible tests.
  */
 export class FirstWordStrategy extends Strategy {
-  chooseGuess(_game, candidates) {
-    return candidates[0];
+  rankGuesses(_game, candidates, _remainingWords, k = candidates.length) {
+    return candidates.slice(0, k).map(word => ({ word, score: null }));
   }
 }
 
 /**
- * Decorate another strategy to make it consider a constrained set of words.
+ * Decorates another strategy to make it consider a filtered subset of candidates.
  */
 class FilteredStrategy extends Strategy {
   constructor(baseStrategy, filters = []) {
@@ -59,64 +76,58 @@ class FilteredStrategy extends Strategy {
     this.filters = filters;
   }
 
-  chooseGuess(game, candidates, remainingWords) {
+  rankGuesses(game, candidates, remainingWords, k = candidates.length) {
     let narrowed = candidates;
     for (const f of this.filters) {
       if (!f.isActive(game, remainingWords)) continue;
       const filtered = f.filter(narrowed, game);
       if (filtered.length > 0) narrowed = filtered;
     }
-    return this.base.chooseGuess(game, narrowed, remainingWords);
+    return this.base.rankGuesses(game, narrowed, remainingWords, k);
   }
 }
 
 /** Maximizes the number of partitions, minimizing average group size. */
 class MaxGroupsStrategy extends Strategy {
-  chooseGuess(_game, candidates, remainingWords) {
-    if (candidates.length <= 2) return candidates[0];
-    let best = candidates[0];
-    let bestScore = -Infinity;
-    for (const word of candidates) {
-      const score = partitionByGuess(word, remainingWords).size;
-      if (score > bestScore) { bestScore = score; best = word; }
-    }
-    return best;
+  rankGuesses(_game, candidates, remainingWords, k = candidates.length) {
+    const scored = candidates.map(word => ({
+      word,
+      score: partitionByGuess(word, remainingWords).size,
+    }));
+    scored.sort((a, b) => b.score - a.score); // descending: more groups is better
+    return scored.slice(0, k);
   }
 }
 
 /**
  * Minimizes Σ(groupSize²), equivalent to minimizing the expected number of
- * remaining candidates after the guess (assuming a uniform answer distribution). Intuively, this can be explained as minimizing the average number of words each word sees in its group. This is optimizing for the average case.
+ * remaining candidates after the guess (assuming a uniform answer distribution).
  */
 class MinExpectedRemainingStrategy extends Strategy {
-  chooseGuess(_game, candidates, remainingWords) {
-    if (candidates.length <= 2) return candidates[0];
-    let best = candidates[0];
-    let bestScore = Infinity;
-    for (const word of candidates) {
+  rankGuesses(_game, candidates, remainingWords, k = candidates.length) {
+    const scored = candidates.map(word => {
       let score = 0;
       for (const group of partitionByGuess(word, remainingWords).values()) {
         score += group.length * group.length;
       }
-      if (score < bestScore) { bestScore = score; best = word; }
-    }
-    return best;
+      return { word, score };
+    });
+    scored.sort((a, b) => a.score - b.score); // ascending: lower is better
+    return scored.slice(0, k);
   }
 }
 
-/** Minimizes the largest group, optimising for the worst case. */
+/** Minimizes the largest group, optimizing for the worst case. */
 class MinimaxStrategy extends Strategy {
-  chooseGuess(_game, candidates, remainingWords) {
-    if (candidates.length <= 2) return candidates[0];
-    let best = candidates[0];
-    let bestScore = Infinity;
-    for (const word of candidates) {
+  rankGuesses(_game, candidates, remainingWords, k = candidates.length) {
+    const scored = candidates.map(word => {
       let score = 0;
       for (const group of partitionByGuess(word, remainingWords).values()) {
         if (group.length > score) score = group.length;
       }
-      if (score < bestScore) { bestScore = score; best = word; }
-    }
-    return best;
+      return { word, score };
+    });
+    scored.sort((a, b) => a.score - b.score); // ascending: lower is better
+    return scored.slice(0, k);
   }
 }
