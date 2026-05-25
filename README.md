@@ -27,9 +27,10 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
     - Maybe start with one game per command run, but then allow it to go repeatedly, possibly with a flag to control that behavior. Repeated runs allow any settings to persist.
   - Help info on `--help`, `help`, and `-h`
   - Maybe `about`, `--version`, or `-v` support? Unknown commands invoke help anyways, so `about` might just be one such invalid word, as could `help`.
+  - Add a basic shell script like `wordle` or `play` in the repo root that calls npm and passes along any arguments?
   - User plays against a computer-chosen word
     - Basic: player must generate their own words without help
-      - Explanation flag? Can say how that word ranks, what the best word would have been, and how many words are left. Probably just uses a fixed default strategy for this, at least for now.
+      - Explanation flag: Shows how many words are left, how the guess ranks compared according to a fixed `Strategy`, and what the best word would have been.
     - Quick-play: User chooses from a short list of plausible guesses from a `Suggester`
       - Explanation flag? After a choice, shows how the words actually rank
       - Allow using a number key to select a suggested word. Ideally just pressing, not requiring Enter.
@@ -103,11 +104,14 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 - Keyboard: accepted words must *only use* letters in the specified letter *set*
 
 ## TODO
-- Worker boundaries
 - CLI UI
-  - TODO sequence the implementation and create non-aspirational documentation as we go
-  - User plays against computer-chosen word
-  - Computer plays against human word using human-chosen strategy, with human grading
+  - Add command-line flags
+  - Add help page
+  - Add `--version` / `-v`
+  - Add raw mode support. Use any libraries to support this?
+    - Basic, Quickplay, and Quickplay Explanation
+  - Add user guess-grading mode
+  - Add any strategy/suggester config access
 - Test suite: CLI ?
 - Analysis HTML UI
   - CLI component
@@ -117,6 +121,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 - Test suite: HTML ?
 - Rapid-play mode in CLI or HTML?
 - CLI: analysis? Delay until after HTML UI
+- Cache precomputed rankings for quesses on the first turn?
 - Claude Skill
 - Test suite: Claude?
 - Strategies: entropy, mixed strategy nash equilibrium
