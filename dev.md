@@ -12,7 +12,7 @@ npm run generate   # build src/lib/words.gen.mjs from words/
 ## Commands
 
 | Command | What it does |
-|---|---|
+| --- | --- |
 | `npm run dev` | Start Vite dev server |
 | `npm run build` | Production build → `dist/` |
 | `npm run preview` | Serve the production build locally |
@@ -23,7 +23,7 @@ npm run generate   # build src/lib/words.gen.mjs from words/
 
 ## Project structure
 
-```
+``` text
 src/
   lib/           Engine — pure logic, no I/O, browser-safe
   ui/            UIs (CLI, HTML components) — to be added
