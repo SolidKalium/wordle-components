@@ -4,7 +4,7 @@ import {
   computePattern, patternToString, patternFromString,
   patternToInt, patternFromInt,
   partitionByGuess,
-} from '../src/core.mjs';
+} from '../src/lib/core.mjs';
 
 describe('computePattern', () => {
   it('exact match → all green', () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { GREEN, YELLOW, GREY, computePattern } from '../src/core.mjs';
-import { ConstraintState } from '../src/constraints.mjs';
+import { GREEN, YELLOW, GREY, computePattern } from '../src/lib/core.mjs';
+import { ConstraintState } from '../src/lib/constraints.mjs';
 
 describe('ConstraintState', () => {
   describe('update + matches — basic feedback', () => {

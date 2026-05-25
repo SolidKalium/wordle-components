@@ -10,12 +10,12 @@ import {
   computePattern, patternToString, patternFromString,
   patternToInt, patternFromInt,
   partitionByGuess,
-} from '../src/core.mjs';
-import { ConstraintState } from '../src/constraints.mjs';
-import { Game, MoveResult } from '../src/game.mjs';
-import { RandomStrategy, FirstWordStrategy } from '../src/strategy.mjs';
-import { runSimulation, summarize, formatSummary } from '../src/analysis.mjs';
-import { TEST_WORDS } from '../src/wordlist.mjs';
+} from '../src/lib/core.mjs';
+import { ConstraintState } from '../src/lib/constraints.mjs';
+import { Game, MoveResult } from '../src/lib/game.mjs';
+import { RandomStrategy, FirstWordStrategy } from '../src/lib/strategy.mjs';
+import { runSimulation, summarize, formatSummary } from '../src/lib/analysis.mjs';
+import { TEST_WORDS } from '../src/lib/wordlist.mjs';
 
 let passed = 0;
 let failed = 0;

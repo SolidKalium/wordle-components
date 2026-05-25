@@ -7,9 +7,9 @@ import {
   MaxGroupsStrategy,
   MinExpectedRemainingStrategy,
   MinimaxStrategy,
-} from '../src/strategy.mjs';
-import { MustContainFilter } from '../src/filter.mjs';
-import { TEST_WORDS } from '../src/wordlist.mjs';
+} from '../src/lib/strategy.mjs';
+import { MustContainFilter } from '../src/lib/filter.mjs';
+import { TEST_WORDS } from '../src/lib/wordlist.mjs';
 
 const CANDIDATES = TEST_WORDS.slice(0, 10);
 const game = () => ({ guesses: [] });

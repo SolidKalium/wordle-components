@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Filter, MustContainFilter, ScrabbleFilter, KeyboardFilter } from '../src/filter.mjs';
+import { Filter, MustContainFilter, ScrabbleFilter, KeyboardFilter } from '../src/lib/filter.mjs';
 
 // Minimal game stub — only guesses[] is accessed by exploration filters.
 const game = (words = []) => ({ guesses: words.map(word => ({ word })) });

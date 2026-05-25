@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Suggester } from '../src/suggester.mjs';
-import { Game } from '../src/game.mjs';
-import { FirstWordStrategy, MaxGroupsStrategy } from '../src/strategy.mjs';
-import { TEST_WORDS } from '../src/wordlist.mjs';
+import { Suggester } from '../src/lib/suggester.mjs';
+import { Game } from '../src/lib/game.mjs';
+import { FirstWordStrategy, MaxGroupsStrategy } from '../src/lib/strategy.mjs';
+import { TEST_WORDS } from '../src/lib/wordlist.mjs';
 
 // Deterministic rng for reproducible results.
 const seededRng = (seed = 42) => {

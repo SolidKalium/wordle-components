@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { runSimulation, summarize, formatSummary } from '../src/analysis.mjs';
-import { FirstWordStrategy } from '../src/strategy.mjs';
-import { TEST_WORDS } from '../src/wordlist.mjs';
+import { runSimulation, summarize, formatSummary } from '../src/lib/analysis.mjs';
+import { FirstWordStrategy } from '../src/lib/strategy.mjs';
+import { TEST_WORDS } from '../src/lib/wordlist.mjs';
 
 // Helpers for building hand-crafted result sets.
 const solved = (answer, ...guesses) => ({
