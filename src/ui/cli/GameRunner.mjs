@@ -17,14 +17,17 @@ export class GameRunner {
   /**
    * @param {import('./TerminalIO.mjs').TerminalIO} io
    * @param {object}   opts
-   * @param {string[]} opts.wordList  All valid guesses.
-   * @param {string[]} opts.answers   Pool of possible answers.
+   * @param {string[]} opts.wordList   All valid guesses.
+   * @param {string[]} opts.answers    Pool of possible answers.
+   * @param {{ suggest(remaining: string[]): Promise<string[]> }} [opts.suggester]
+   *   Optional worker client. When provided, shows suggestions after each scored guess.
    * @param {() => number} [opts.rng=Math.random]
    */
-  constructor(io, { wordList, answers, rng = Math.random } = {}) {
+  constructor(io, { wordList, answers, suggester = null, rng = Math.random } = {}) {
     this.io = io;
     this.wordList = wordList;
     this.answers = answers;
+    this.suggester = suggester;
     this.rng = rng;
   }
 
@@ -53,6 +56,12 @@ export class GameRunner {
       }
 
       this.io.writeGuessResult(guess, result.pattern);
+
+      if (!game.isOver && this.suggester) {
+        const remaining = this.answers.filter(w => game.constraints.matches(w));
+        const words = await this.suggester.suggest(remaining);
+        if (words.length) this._writeSuggestions(words);
+      }
     }
 
     this.io.writeLine('');
@@ -61,5 +70,10 @@ export class GameRunner {
     } else {
       this.io.writeLine(`Game over. The word was ${game.answer.toUpperCase()}.`);
     }
+  }
+
+  _writeSuggestions(words) {
+    const formatted = words.map((w, i) => `${i + 1}.${w}`).join('  ');
+    this.io.writeLine(`  ${formatted}`);
   }
 }

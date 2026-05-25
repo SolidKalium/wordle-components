@@ -20,8 +20,8 @@ class MemoryTerminal extends TerminalIO {
 // Always picks the first answer.
 const firstRng = () => 0;
 
-function makeRunner(io, answers = ['crane'], wordList = TEST_WORDS) {
-  return new GameRunner(io, { wordList, answers, rng: firstRng });
+function makeRunner(io, answers = ['crane'], wordList = TEST_WORDS, suggester = null) {
+  return new GameRunner(io, { wordList, answers, suggester, rng: firstRng });
 }
 
 describe('GameRunner — win', () => {
@@ -88,5 +88,39 @@ describe('GameRunner — output structure', () => {
     await makeRunner(t).run();
     expect(t.output).toContain('Guess 1/6');
     expect(t.output).toContain('Guess 2/6');
+  });
+});
+
+describe('GameRunner — suggestions', () => {
+  // Synchronous mock that resolves immediately with fixed words.
+  const mockSuggester = {
+    suggest: () => Promise.resolve(['about', 'black', 'draft']),
+  };
+
+  it('shows suggestions after a valid guess', async () => {
+    const t = new MemoryTerminal('slate', 'crane');
+    await makeRunner(t, ['crane'], TEST_WORDS, mockSuggester).run();
+    expect(t.output).toContain('about');
+    expect(t.output).toContain('black');
+    expect(t.output).toContain('draft');
+  });
+
+  it('numbers the suggestions starting at 1', async () => {
+    const t = new MemoryTerminal('slate', 'crane');
+    await makeRunner(t, ['crane'], TEST_WORDS, mockSuggester).run();
+    expect(t.output).toContain('1.about');
+  });
+
+  it('does not show suggestions after the winning guess', async () => {
+    const t = new MemoryTerminal('crane');
+    await makeRunner(t, ['crane'], TEST_WORDS, mockSuggester).run();
+    // 'crane' wins immediately; mock suggestions should not appear
+    expect(t.output).not.toContain('about');
+  });
+
+  it('does not show suggestions when no suggester is provided', async () => {
+    const t = new MemoryTerminal('slate', 'crane');
+    await makeRunner(t).run(); // no suggester
+    expect(t.output).not.toContain('1.');
   });
 });

@@ -19,7 +19,7 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
 
 ### UIs
 - **Command line**
-  - TerminalIO abstraction: native terminal and xterm.js rendering sharing the same game
+  - `TerminalIO` abstraction supports both native terminal and xterm.js rendering
   - UI or command to pick a mode. Both may be good to support.
     - Probably start out only having the computer run the min expected group size strategy. Then an optional "game config" panel or command line arguments can be supported.
       - Config format for things like filtered strategies would need to be determined. This is related to how any HTML component configs could be saved, stored, or specified by a Skill.
@@ -32,7 +32,8 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
     - Quick-play mode? User chooses from a short list of plausible guesses.
       - Explanation submode? After a choice, shows how the words actually rank
       - Flashcard submode? The player is rewarded for choosing the actual best move, and it's always available. Filler words might not be the best word overall, but instead be words that are the best on the next turn or two according to the deterministic algorithm.
-    - Ideally, warn the user when what they typed is using letters that are already gray. Also perhaps warn about removing green letters, not trying a yellow letter, or trying yellow in a non-novel location.
+    - While typing, a letter that is known to be green, yellow, or gray in that spot can show that as the background. But a letter that is yellow elsewhere can be shown with a yellow text color.
+    - Ideally, warn the user about removing green letters or not trying a yellow letter.
   - Computer plays against human word using human-chosen strategy, with human grading
     - Optionally show stats on each move
     - Making keyboard input control the colors under the computer's guess would be good.
