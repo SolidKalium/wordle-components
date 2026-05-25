@@ -28,11 +28,17 @@ export class SuggestionWorker {
     });
   }
 
-  /** @param {string[]} remaining  @returns {Promise<string[]>} */
-  suggest(remaining) {
+  /**
+   * Rank `remaining` words and optionally score `played` against them.
+   *
+   * @param {string[]} remaining
+   * @param {string|null} [played]
+   * @returns {Promise<{words: string[], total: number, rank?: number, percentile?: number, bestWord?: string}>}
+   */
+  compute(remaining, played = null) {
     return new Promise((resolve, reject) => {
       this._pending = { resolve, reject };
-      this._worker.postMessage({ remaining });
+      this._worker.postMessage({ remaining, played });
     });
   }
 

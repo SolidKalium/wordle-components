@@ -37,6 +37,7 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
     - UX improvements, using raw mode
       - While typing, a letter that is known to be green, yellow, or gray in that spot can show that as the background. But a letter that is yellow elsewhere can be shown with a yellow text color.
       - Ideally, warn the user about removing green letters or not trying a yellow letter.
+    - LATER? support CLI args or config menus
   - Computer plays against human word using human-chosen strategy, with human grading
     - Optionally show stats on each move
     - Making keyboard input control the colors under the computer's guess would be good.
@@ -46,7 +47,7 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
       - If the computer knows that a letter was already (or must be) green in that spot, it can prefill that. Before making a guess, it can ensure that the new feedback is compatible with what is known: the total letters asserted as yellow or green isn't inherently greater than the word list, and no yellow letters turned gray (after accounting for quantity). No previously gray letter should become green or yellow. Issues can be listed to the right or on one or more info lines below the guess being operated on. ("Letters that shouldn't be gray: XYZ. Letters that should be gray: ABC. To back up a turn, press cmd+z.")
     - Need to handle fixing the grading on an earlier turn.
     - Can allow the computer to know the word in advance and just let the player pace through with Space/Enter. E.g. "Enter your word for auto-play (blank will let you grade the guesses manually):" (that parenthetical could just be in a lighter text color after the colon while nothing has been typed in)
-  - *Maybe* analyses? Probably delay until after HTML UI
+  - LATER? analyses. Probably delay until after HTML UI
 - **Analysis HTML page**
   - Decompose problem into useable UI chunks. Both analysis components and selector components.
     - TODO Design further. Explore strategies, see consequences

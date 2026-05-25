@@ -20,8 +20,19 @@ class MemoryTerminal extends TerminalIO {
 // Always picks the first answer.
 const firstRng = () => 0;
 
-function makeRunner(io, answers = ['crane'], wordList = TEST_WORDS, suggester = null) {
-  return new GameRunner(io, { wordList, answers, suggester, rng: firstRng });
+// Mock suggester using the compute() interface.
+const mockSuggester = {
+  compute: (remaining, played) => Promise.resolve({
+    words: ['about', 'black', 'draft'],
+    total: remaining.length,
+    rank:      played ? 3 : undefined,
+    percentile: played ? 0.06 : undefined,
+    bestWord:   played ? 'about' : undefined,
+  }),
+};
+
+function makeRunner(io, answers = ['crane'], wordList = TEST_WORDS, opts = {}) {
+  return new GameRunner(io, { wordList, answers, rng: firstRng, ...opts });
 }
 
 describe('GameRunner — win', () => {
@@ -34,7 +45,6 @@ describe('GameRunner — win', () => {
   it('output contains colored results for each valid guess', async () => {
     const t = new MemoryTerminal('crane');
     await makeRunner(t).run();
-    // writeGuessResult emits ANSI escapes; the letters should appear.
     expect(t.output).toContain('C');
     expect(t.output).toContain('R');
     expect(t.output).toContain('A');
@@ -45,7 +55,6 @@ describe('GameRunner — win', () => {
 
 describe('GameRunner — loss', () => {
   it('reveals the answer when guesses are exhausted', async () => {
-    // 6 wrong guesses; answer is 'crane'
     const wrong = ['about', 'black', 'draft', 'feast', 'ghost', 'house'];
     const t = new MemoryTerminal(...wrong);
     await makeRunner(t).run();
@@ -91,15 +100,10 @@ describe('GameRunner — output structure', () => {
   });
 });
 
-describe('GameRunner — suggestions', () => {
-  // Synchronous mock that resolves immediately with fixed words.
-  const mockSuggester = {
-    suggest: () => Promise.resolve(['about', 'black', 'draft']),
-  };
-
+describe('GameRunner — quickplay suggestions', () => {
   it('shows suggestions after a valid guess', async () => {
     const t = new MemoryTerminal('slate', 'crane');
-    await makeRunner(t, ['crane'], TEST_WORDS, mockSuggester).run();
+    await makeRunner(t, ['crane'], TEST_WORDS, { mode: 'quickplay', suggester: mockSuggester }).run();
     expect(t.output).toContain('about');
     expect(t.output).toContain('black');
     expect(t.output).toContain('draft');
@@ -107,21 +111,63 @@ describe('GameRunner — suggestions', () => {
 
   it('numbers the suggestions starting at 1', async () => {
     const t = new MemoryTerminal('slate', 'crane');
-    await makeRunner(t, ['crane'], TEST_WORDS, mockSuggester).run();
-    // Number appears before the word (may have ANSI dim codes between them).
+    await makeRunner(t, ['crane'], TEST_WORDS, { mode: 'quickplay', suggester: mockSuggester }).run();
     expect(t.output).toMatch(/1\..+about/);
   });
 
   it('does not show suggestions after the winning guess', async () => {
     const t = new MemoryTerminal('crane');
-    await makeRunner(t, ['crane'], TEST_WORDS, mockSuggester).run();
-    // 'crane' wins immediately; mock suggestions should not appear
+    await makeRunner(t, ['crane'], TEST_WORDS, { mode: 'quickplay', suggester: mockSuggester }).run();
     expect(t.output).not.toContain('about');
   });
 
   it('does not show suggestions when no suggester is provided', async () => {
     const t = new MemoryTerminal('slate', 'crane');
-    await makeRunner(t).run(); // no suggester
+    await makeRunner(t).run();
     expect(t.output).not.toContain('1.');
+  });
+});
+
+describe('GameRunner — basic explanation', () => {
+  it('shows remaining word count after a guess', async () => {
+    const t = new MemoryTerminal('slate', 'crane');
+    await makeRunner(t, ['crane'], TEST_WORDS, { mode: 'basic', explain: true, suggester: mockSuggester }).run();
+    expect(t.output).toMatch(/\d+ words? remain/);
+  });
+
+  it('shows the rank of the played word', async () => {
+    const t = new MemoryTerminal('slate', 'crane');
+    await makeRunner(t, ['crane'], TEST_WORDS, { mode: 'basic', explain: true, suggester: mockSuggester }).run();
+    expect(t.output).toContain('slate ranked 3/');
+  });
+
+  it('shows the best word when it differs from the guess', async () => {
+    const t = new MemoryTerminal('slate', 'crane');
+    await makeRunner(t, ['crane'], TEST_WORDS, { mode: 'basic', explain: true, suggester: mockSuggester }).run();
+    expect(t.output).toContain('Best: about');
+  });
+
+  it('omits Best line when the played word is the best word', async () => {
+    const bestSuggester = {
+      compute: (remaining, played) => Promise.resolve({
+        words: [], total: remaining.length,
+        rank: 1, percentile: 0, bestWord: played,
+      }),
+    };
+    const t = new MemoryTerminal('slate', 'crane');
+    await makeRunner(t, ['crane'], TEST_WORDS, { mode: 'basic', explain: true, suggester: bestSuggester }).run();
+    expect(t.output).not.toContain('Best:');
+  });
+
+  it('does not show explanation after the winning guess', async () => {
+    const t = new MemoryTerminal('crane');
+    await makeRunner(t, ['crane'], TEST_WORDS, { mode: 'basic', explain: true, suggester: mockSuggester }).run();
+    expect(t.output).not.toMatch(/\d+ words? remain/);
+  });
+
+  it('does not show explanation when explain is false', async () => {
+    const t = new MemoryTerminal('slate', 'crane');
+    await makeRunner(t, ['crane'], TEST_WORDS, { mode: 'basic', explain: false, suggester: mockSuggester }).run();
+    expect(t.output).not.toMatch(/ranked/);
   });
 });

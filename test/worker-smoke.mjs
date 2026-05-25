@@ -3,15 +3,17 @@ import { ANSWERS } from '../src/lib/words.gen.mjs';
 import { ConstraintState } from '../src/lib/constraints.mjs';
 import { GREY, GREEN, YELLOW } from '../src/lib/core.mjs';
 
-// Simulate state after guessing "slate" against answer "crane":
-// s→grey, l→grey, a→green(pos2), t→grey, e→yellow
+// Simulate state after guessing "crane" against answer "ghost":
+// c→grey, r→grey, a→grey, n→grey, e→grey
 const cs = new ConstraintState();
-cs.update('slate', [GREY, GREY, GREEN, GREY, YELLOW]);
+cs.update('crane', [GREY, GREY, GREY, GREY, GREY]);
 
 const remaining = ANSWERS.filter(w => cs.matches(w));
-console.log(`Remaining after "slate": ${remaining.length} words`);
+console.log(`Remaining after "crane" all-grey: ${remaining.length} words`);
 
 const worker = new SuggestionWorker();
-const suggestions = await worker.suggest(remaining);
-console.log('Suggestions:', suggestions);
+// Rank 'ghost' among the remaining words (it's the answer, still a candidate).
+const result = await worker.compute(remaining, 'ghost');
+console.log('Suggestions:', result.words);
+console.log(`ghost ranked ${result.rank}/${result.total} (top ${Math.round(result.rank/result.total*100)}%). Best: ${result.bestWord}`);
 await worker.terminate();
