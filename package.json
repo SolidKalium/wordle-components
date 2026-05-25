@@ -5,6 +5,7 @@
   "description": "Wordle game engine, strategy framework, and analysis tools",
   "main": "src/lib/index.mjs",
   "scripts": {
+    "generate": "node scripts/generate-words.mjs",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",

@@ -6,6 +6,8 @@ dist/
 dist-ssr/
 .vite/
 
+# src/lib/words.gen.mjs is generated but committed — do not add it here.
+
 # Test coverage
 coverage/
 

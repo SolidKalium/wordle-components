@@ -6,6 +6,7 @@ Practicing working with Claude
 
 ### Base Code
 - `Analysis` can run a game with a known word and a known `Strategy`
+  - TODO add more details on what it can do?
 - `Game` can run a game where it knows the word and a UI can let the player make moves
 - `Game` can run a game where it doesn't know the word and is supporting a `Strategy` trying to guess a player's word.
 - `Core` can partition a set of words into groups that would look the same after a specific word is played.
@@ -103,7 +104,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 ## TODO
 - Worker boundaries
 - Undo turns
-- Word list bundling
 - TerminalIO abstraction: native terminal and xterm.js rendering sharing the same game logic
 - CLI UI
   - TODO sequence the implementation and create non-aspirational documentation as we go
