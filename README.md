@@ -32,6 +32,7 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
     - Quick-play mode? User chooses from a short list of plausible guesses.
       - Explanation submode? After a choice, shows how the words actually rank
       - Flashcard submode? The player is rewarded for choosing the actual best move, and it's always available. Filler words might not be the best word overall, but instead be words that are the best on the next turn or two according to the deterministic algorithm.
+    - Ideally, warn the user when what they typed is using letters that are already gray. Also perhaps warn about removing green letters, not trying a yellow letter, or trying yellow in a non-novel location.
   - Computer plays against human word using human-chosen strategy, with human grading
     - Optionally show stats on each move
     - Making keyboard input control the colors under the computer's guess would be good.
@@ -102,7 +103,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - Worker boundaries
-- TerminalIO abstraction: native terminal and xterm.js rendering sharing the same game logic
 - CLI UI
   - TODO sequence the implementation and create non-aspirational documentation as we go
   - User plays against computer-chosen word
