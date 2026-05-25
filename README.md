@@ -34,6 +34,7 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
     - Quick-play: User chooses from a short list of plausible guesses from a `Suggester`
       - Explanation flag? After a choice, shows how the words actually rank
       - Allow using a number key to select a suggested word. Ideally just pressing, not requiring Enter.
+      - ... this reimplemented the Suggester instead of using one...
     - LATER Flashcard submode? The player is rewarded for choosing the actual best move, and it's always available. Filler words might not be the next-best words overall, but instead be words that are the best on the next turn or two according to the deterministic algorithm.
     - UX improvements, using raw mode
       - While typing, a letter that is known to be green, yellow, or gray in that spot can show that as the background. But a letter that is yellow elsewhere can be shown with a yellow text color.

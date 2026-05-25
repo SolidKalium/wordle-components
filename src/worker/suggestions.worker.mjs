@@ -3,7 +3,7 @@
  *
  * Accepts: { remaining: string[], played?: string }
  * Replies: {
- *   words:        string[],          // up to 6 suggestions from top 50% by MinExpected
+ *   words:        string[],          // up to 6 best suggestions by MinExpected
  *   total:        number,            // candidates ranked (remaining, or remaining+played)
  *   rank?:        number,            // 1-based rank of `played` (if provided)
  *   percentile?:  number,            // rank / total
@@ -29,8 +29,7 @@ parentPort.on('message', ({ remaining, played = null }) => {
   }
 
   const allRanked = strategy.rankGuesses(null, remaining, remaining);
-  const windowSize = Math.max(1, Math.ceil(allRanked.length * 0.5));
-  const words = allRanked.slice(0, Math.min(6, windowSize)).map(r => r.word);
+  const words = allRanked.slice(0, Math.min(6, allRanked.length)).map(r => r.word);
   const result = { words, total: allRanked.length };
 
   if (played !== null) {
@@ -40,6 +39,7 @@ parentPort.on('message', ({ remaining, played = null }) => {
 
     if (idx === -1) {
       // played is not in the answer pool — rank it among remaining + itself
+      // NOTE: the word group calculation could be done separately and then a binary search could determine where it would have been.
       ranked = strategy.rankGuesses(null, [...remaining, played], remaining);
       idx = ranked.findIndex(r => r.word === played);
       outsidePool = true;
