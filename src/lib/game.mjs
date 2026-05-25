@@ -70,8 +70,6 @@ export class Game {
     /** @type {boolean} */
     this.solved = false;
 
-    /** @private ConstraintState snapshots taken before each move, enabling undoMove(). */
-    this._snapshots = [];
   }
 
   /** Whether the game is over (solved or out of guesses). */
@@ -140,7 +138,6 @@ export class Game {
       }
     }
 
-    this._snapshots.push(this.constraints.clone());
     this.guesses.push({ word, pattern });
     this.constraints.update(word, pattern);
 
@@ -159,9 +156,13 @@ export class Game {
    */
   undoMove() {
     if (this.guesses.length === 0) return null;
-    this.constraints = this._snapshots.pop();
+    const removed = this.guesses.pop();
+    this.constraints = new ConstraintState();
+    for (const { word, pattern } of this.guesses) {
+      this.constraints.update(word, pattern);
+    }
     this.solved = false;
-    return this.guesses.pop();
+    return removed;
   }
 
   /**
