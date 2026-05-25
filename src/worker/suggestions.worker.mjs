@@ -3,11 +3,12 @@
  *
  * Accepts: { remaining: string[], played?: string }
  * Replies: {
- *   words:       string[],          // up to 6 suggestions from top 50% by MinExpected
- *   total:       number,            // remaining.length
- *   rank?:       number,            // 1-based rank of `played` (if provided)
- *   percentile?: number,            // rank / total
- *   bestWord?:   string,            // top-ranked word (if played provided)
+ *   words:        string[],          // up to 6 suggestions from top 50% by MinExpected
+ *   total:        number,            // candidates ranked (remaining, or remaining+played)
+ *   rank?:        number,            // 1-based rank of `played` (if provided)
+ *   percentile?:  number,            // rank / total
+ *   bestWord?:    string,            // top-ranked word (if played provided)
+ *   outsidePool?: boolean,           // true when played is not in the answer pool
  * }
  *
  * Uses MinExpectedRemainingStrategy directly so one rankGuesses() call serves
@@ -33,11 +34,23 @@ parentPort.on('message', ({ remaining, played = null }) => {
   const result = { words, total: allRanked.length };
 
   if (played !== null) {
-    const idx = allRanked.findIndex(r => r.word === played);
+    let idx = allRanked.findIndex(r => r.word === played);
+    let ranked = allRanked;
+    let outsidePool = false;
+
+    if (idx === -1) {
+      // played is not in the answer pool — rank it among remaining + itself
+      ranked = strategy.rankGuesses(null, [...remaining, played], remaining);
+      idx = ranked.findIndex(r => r.word === played);
+      outsidePool = true;
+    }
+
     if (idx !== -1) {
       result.rank = idx + 1;
-      result.percentile = idx / allRanked.length;
-      result.bestWord = allRanked[0].word;
+      result.total = ranked.length;
+      result.percentile = idx / ranked.length;
+      result.bestWord = ranked[0].word;
+      result.outsidePool = outsidePool;
     }
   }
 

@@ -141,10 +141,18 @@ describe('GameRunner — basic explanation', () => {
     expect(t.output).toContain('slate ranked 3/');
   });
 
-  it('shows the best word when it differs from the guess', async () => {
+  it('shows the best word when it differs from the guess and many words remain', async () => {
+    // All share a@pos2, e@pos4, no s/l/t — all survive 'slate' vs 'crane' constraints.
+    const manyAnswers = ['crane', 'grape', 'grace', 'frame', 'grade', 'brave', 'drape', 'crave'];
+    const t = new MemoryTerminal('slate', 'crane');
+    await makeRunner(t, manyAnswers, TEST_WORDS, { mode: 'basic', explain: true, suggester: mockSuggester }).run();
+    expect(t.output).toContain('Best: about');
+  });
+
+  it('hides the best word when 5 or fewer words remain', async () => {
     const t = new MemoryTerminal('slate', 'crane');
     await makeRunner(t, ['crane'], TEST_WORDS, { mode: 'basic', explain: true, suggester: mockSuggester }).run();
-    expect(t.output).toContain('Best: about');
+    expect(t.output).not.toContain('Best:');
   });
 
   it('omits Best line when the played word is the best word', async () => {
@@ -154,8 +162,9 @@ describe('GameRunner — basic explanation', () => {
         rank: 1, percentile: 0, bestWord: played,
       }),
     };
+    const manyAnswers = ['crane', 'grape', 'grace', 'frame', 'grade', 'brave', 'drape', 'crave'];
     const t = new MemoryTerminal('slate', 'crane');
-    await makeRunner(t, ['crane'], TEST_WORDS, { mode: 'basic', explain: true, suggester: bestSuggester }).run();
+    await makeRunner(t, manyAnswers, TEST_WORDS, { mode: 'basic', explain: true, suggester: bestSuggester }).run();
     expect(t.output).not.toContain('Best:');
   });
 
@@ -169,5 +178,19 @@ describe('GameRunner — basic explanation', () => {
     const t = new MemoryTerminal('slate', 'crane');
     await makeRunner(t, ['crane'], TEST_WORDS, { mode: 'basic', explain: false, suggester: mockSuggester }).run();
     expect(t.output).not.toMatch(/ranked/);
+  });
+
+  it('notes "among possible answers" when played word is outside the answer pool', async () => {
+    const outsideSuggester = {
+      compute: (remaining, played) => Promise.resolve({
+        words: ['about', 'black', 'draft'],
+        total: remaining.length + 1,
+        rank: 5, percentile: 5 / (remaining.length + 1),
+        bestWord: 'about', outsidePool: true,
+      }),
+    };
+    const t = new MemoryTerminal('slate', 'crane');
+    await makeRunner(t, ['crane'], TEST_WORDS, { mode: 'basic', explain: true, suggester: outsideSuggester }).run();
+    expect(t.output).toContain('among possible answers');
   });
 });

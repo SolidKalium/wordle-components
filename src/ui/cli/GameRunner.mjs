@@ -101,20 +101,21 @@ export class GameRunner {
   }
 
   _writeSuggestions(words) {
-    const DIM = '[2m';
-    const RESET = '[0m';
+    const DIM = '[2m';
+    const RESET = '[0m';
     const formatted = words.map((w, i) => `${DIM}${i + 1}.${RESET}${w}`).join('  ');
     this.io.writeLine(`  ${formatted}`);
   }
 
-  _writeExplanation(guess, { rank, percentile, bestWord, total }, wordsLeft) {
+  _writeExplanation(guess, { rank, percentile, bestWord, total, outsidePool }, wordsLeft) {
     const plural = wordsLeft === 1 ? 'word remains' : 'words remain';
     let line = `${wordsLeft} ${plural}.`;
 
     if (rank != null) {
       const topPct = Math.max(1, Math.round((rank / total) * 100));
-      line += ` ${guess} ranked ${rank}/${total} (top ${topPct}%).`;
-      if (bestWord && bestWord !== guess) line += ` Best: ${bestWord}.`;
+      const scope = outsidePool ? ' among possible answers' : '';
+      line += ` ${guess} ranked ${rank}/${total}${scope} (top ${topPct}%).`;
+      if (bestWord && bestWord !== guess && wordsLeft > 5) line += ` Best: ${bestWord}.`;
     }
 
     this.io.writeLine(`  ${line}`);
