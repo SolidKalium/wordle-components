@@ -9,12 +9,10 @@ Practicing working with Claude
 - `Game` can run a game where it knows the word and a UI can let the player make moves
 - `Game` can run a game where it doesn't know the word and is supporting a `Strategy` trying to guess a player's word.
 - `Core` can partition a set of words into groups that would look the same after a specific word is played.
-- TODO make suggestions
-  - Need to consider the structure. How many words? From which strategies? How are they chosen from those strategies?
-    - Example: just reporting top words from one strategy, such as random. Maybe this is lame and we only support random-selection round robin from top-k?
-    - Example: Choose x words, roundrobin from y strategies, picking randomly from the top 2x choices from each strategy, disallowing duplicates.
-  - This may need to support differentiating deterministic and non-deterministic strategies and a way to pre-compute them so that they're fast. Although: deterministic strategies will have to handle different states if they suddenly have unexpected word choices and thus an unexpected state.
-  - If this is all in one worker, it can cache partitions for each word being considered, given a current game state, making strategies slightly faster.
+- `Suggester` flexibly provides playable words from the strategies it is given. It can pick words only from possible answers or from the full word list.
+  - The number of words chosen from each strategy, how they are picked, and how strictly that should be followed when the options are limited are all configurable.
+  - TODO This may need to support differentiating deterministic and non-deterministic strategies and a way to pre-compute them so that they're fast. Although: deterministic strategies will have to handle different states if they suddenly have unexpected word choices and thus an unexpected state.
+  - TODO If this is all in one worker, it can cache partitions for each word being considered, given a current game state, making strategies slightly faster.
 
 See [strategies](#strategies) and [filters](#filters) for info about those options.
 
@@ -103,7 +101,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 - Keyboard: accepted words must *only use* letters in the specified letter *set*
 
 ## TODO
-- Code: suggest words
 - Worker boundaries
 - Undo turns
 - Word list bundling
