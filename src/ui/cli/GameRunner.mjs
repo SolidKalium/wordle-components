@@ -73,7 +73,9 @@ export class GameRunner {
   }
 
   _writeSuggestions(words) {
-    const formatted = words.map((w, i) => `${i + 1}.${w}`).join('  ');
+    const DIM = '[2m';
+    const RESET = '[0m';
+    const formatted = words.map((w, i) => `${DIM}${i + 1}.${RESET}${w}`).join('  ');
     this.io.writeLine(`  ${formatted}`);
   }
 }

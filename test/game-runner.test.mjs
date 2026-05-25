@@ -108,7 +108,8 @@ describe('GameRunner — suggestions', () => {
   it('numbers the suggestions starting at 1', async () => {
     const t = new MemoryTerminal('slate', 'crane');
     await makeRunner(t, ['crane'], TEST_WORDS, mockSuggester).run();
-    expect(t.output).toContain('1.about');
+    // Number appears before the word (may have ANSI dim codes between them).
+    expect(t.output).toMatch(/1\..+about/);
   });
 
   it('does not show suggestions after the winning guess', async () => {
