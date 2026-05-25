@@ -40,7 +40,6 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
         - Note: arrow keys might be harder than they seem. Start with WASD and add arrow keys as an upgrade. They use an escape sequence and it can vary accross keyboards. Could need ink, terminal-kit, or `process.stdin.setRawMode(true)`.
       - If the computer knows that a letter was already (or must be) green in that spot, it can prefill that. Before making a guess, it can ensure that the new feedback is compatible with what is known: the total letters asserted as yellow or green isn't inherently greater than the word list, and no yellow letters turned gray (after accounting for quantity). No previously gray letter should become green or yellow. Issues can be listed to the right or on one or more info lines below the guess being operated on. ("Letters that shouldn't be gray: XYZ. Letters that should be gray: ABC. To back up a turn, press cmd+z.")
     - Need to handle fixing the grading on an earlier turn.
-      - «The simplest approach is snapshotting: [Game should] store a ConstraintState.clone() before each move, and undo by restoring the snapshot and truncating the guess history.»
     - Can allow the computer to know the word in advance and just let the player pace through with Space/Enter. E.g. "Enter your word for auto-play (blank will let you grade the guesses manually):" (that parenthetical could just be in a lighter text color after the colon while nothing has been typed in)
   - Needs to handle any workers, such as for rapid-play
     - Rule: «anything that runs a full simulation or precomputes a decision tree goes in a worker; single-move scoring and partition previews stay on the main thread.»
@@ -103,7 +102,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - Worker boundaries
-- Undo turns
 - TerminalIO abstraction: native terminal and xterm.js rendering sharing the same game logic
 - CLI UI
   - TODO sequence the implementation and create non-aspirational documentation as we go

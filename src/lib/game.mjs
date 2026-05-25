@@ -69,6 +69,9 @@ export class Game {
 
     /** @type {boolean} */
     this.solved = false;
+
+    /** @private ConstraintState snapshots taken before each move, enabling undoMove(). */
+    this._snapshots = [];
   }
 
   /** Whether the game is over (solved or out of guesses). */
@@ -137,6 +140,7 @@ export class Game {
       }
     }
 
+    this._snapshots.push(this.constraints.clone());
     this.guesses.push({ word, pattern });
     this.constraints.update(word, pattern);
 
@@ -145,6 +149,19 @@ export class Game {
     }
 
     return { valid: true, error: MoveResult.OK, pattern };
+  }
+
+  /**
+   * Remove the most recent guess and restore constraints to before that move.
+   *
+   * @returns {{ word: string, pattern: string[] } | null}
+   *   The removed guess, or null if there were no guesses to undo.
+   */
+  undoMove() {
+    if (this.guesses.length === 0) return null;
+    this.constraints = this._snapshots.pop();
+    this.solved = false;
+    return this.guesses.pop();
   }
 
   /**
