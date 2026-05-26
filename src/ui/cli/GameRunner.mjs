@@ -29,6 +29,7 @@ export class GameRunner {
    *   Active in 'basic' mode. Quick-play explanation requires raw mode (deferred).
    * @param {{ compute(remaining: string[], played?: string): Promise<object> }} [opts.suggester]
    *   Worker client. Required for quickplay mode and basic+explain.
+   * @param {string}       [opts.answer]  Fixed answer (overrides random selection).
    * @param {() => number} [opts.rng=Math.random]
    */
   constructor(io, {
@@ -37,6 +38,7 @@ export class GameRunner {
     mode = 'basic',
     explain = false,
     suggester = null,
+    answer = null,
     rng = Math.random,
   } = {}) {
     this.io = io;
@@ -45,12 +47,13 @@ export class GameRunner {
     this.mode = mode;
     this.explain = explain;
     this.suggester = suggester;
+    this.answer = answer;
     this.rng = rng;
     this._currentSuggestions = [];
   }
 
   async run() {
-    const answer = this.answers[Math.floor(this.rng() * this.answers.length)];
+    const answer = this.answer ?? this.answers[Math.floor(this.rng() * this.answers.length)];
     const game = new Game({ answer, wordList: this.wordList });
     const useRaw = typeof this.io.readWordRaw === 'function' && !!process.stdin?.isTTY;
 

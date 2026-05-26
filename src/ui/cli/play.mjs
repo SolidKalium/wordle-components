@@ -15,6 +15,7 @@ try {
       mode:      { type: 'string',  short: 'm', default: 'basic' },
       quickplay: { type: 'boolean', short: 'q', default: false },
       explain:   { type: 'boolean', short: 'e', default: false },
+      word:      { type: 'string',  short: 'w' },
       help:      { type: 'boolean', short: 'h', default: false },
       version:   { type: 'boolean', short: 'v', default: false },
     },
@@ -39,6 +40,7 @@ Options:
   -m, --mode <mode>   Game mode: basic (default) or quickplay
   -q, --quickplay     Shorthand for: --mode quickplay
   -e, --explain       Show guess ranking after each move (basic mode only)
+  -w, --word <word>   Use a specific word as the answer (any valid guess word)
   -h, --help          Show this help message
   -v, --version       Show version number`);
   process.exit(0);
@@ -51,6 +53,15 @@ if (!VALID_MODES.includes(mode)) {
   process.exit(1);
 }
 
+let fixedAnswer = null;
+if (flags.word) {
+  fixedAnswer = flags.word.toLowerCase();
+  if (!WORDS.includes(fixedAnswer)) {
+    console.error(`"${flags.word}" is not a valid word.`);
+    process.exit(1);
+  }
+}
+
 const io = new NodeTerminal();
 const suggester = new SuggestionWorker();
 const runner = new GameRunner(io, {
@@ -59,6 +70,7 @@ const runner = new GameRunner(io, {
   mode,
   explain: flags.explain,
   suggester,
+  answer: fixedAnswer,
 });
 
 try {

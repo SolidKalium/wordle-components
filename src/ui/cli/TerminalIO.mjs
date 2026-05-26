@@ -65,38 +65,26 @@ export class TerminalIO {
       slots.push({ kind: 'candidate', letter });
     }
 
-    // Tally high-priority uses of each letter to compute yellow-fg budget.
-    // Budget = max(0, minCounts[L] − greenCount[L] − yellowTileCount[L] − unfilledGreenCount[L])
-    // unfilledGreenCount: known positions for L that the player did NOT fill with L.
-    // Without this, placing L at a non-known position while leaving a known position
-    // unfilled would incorrectly colour it yellow-fg.
-    const greenCount = new Map();
-    const yellowTileCount = new Map();
-    const unfilledGreenCount = new Map();
-    for (const s of slots) {
-      if (s.kind === 'green')       greenCount.set(s.letter,     (greenCount.get(s.letter)     ?? 0) + 1);
-      if (s.kind === 'yellow-tile') yellowTileCount.set(s.letter,(yellowTileCount.get(s.letter) ?? 0) + 1);
-    }
-    for (let i = 0; i < 5; i++) {
-      const L = constraints.known[i];
-      if (L && slots[i].kind !== 'green') {
-        unfilledGreenCount.set(L, (unfilledGreenCount.get(L) ?? 0) + 1);
-      }
+    // How many confirmed positions does each letter have from previous guesses?
+    // Pool for yellow-fg = minCounts[L] − knownCount[L].
+    // Yellow-tile slots (letter at an excluded position) don't reduce the pool —
+    // they are position warnings, not count accumulators.
+    const knownCount = new Map();
+    for (const L of constraints.known) {
+      if (L) knownCount.set(L, (knownCount.get(L) ?? 0) + 1);
     }
 
-    // Pass 2: assign yellow-fg within budget (left-to-right).
+    // Pass 2: assign yellow-fg within pool (left-to-right through candidates).
     const yellowFgUsed = new Map();
     for (const s of slots) {
       if (s.kind !== 'candidate') continue;
       const L = s.letter;
-      const budget = Math.max(0,
+      const pool = Math.max(0,
         (constraints.minCounts.get(L) ?? 0) -
-        (greenCount.get(L)             ?? 0) -
-        (yellowTileCount.get(L)        ?? 0) -
-        (unfilledGreenCount.get(L)     ?? 0)
+        (knownCount.get(L)            ?? 0)
       );
       const used = yellowFgUsed.get(L) ?? 0;
-      s.kind = used < budget ? 'yellow-fg' : 'default';
+      s.kind = used < pool ? 'yellow-fg' : 'default';
       if (s.kind === 'yellow-fg') yellowFgUsed.set(L, used + 1);
     }
 

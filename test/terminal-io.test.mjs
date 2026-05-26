@@ -122,25 +122,33 @@ describe('_pendingTileRow — pending input colouring', () => {
     expect(cells[2].prefix.trim()).toBe('');    // second candidate C → default
   });
 
-  it('known green position unfilled: other occurrences of that letter are not yellow-fg', () => {
-    // Scenario: answer MONTH, guess SOUTH → O is green at pos 1, T green at pos 3, H green at pos 4.
-    // Now type OBOES: O at pos 0 and pos 2, but NOT at the known pos 1.
-    // Neither O should be yellow-fg because the known O slot is unfilled.
-    const cs = makeConstraints([['south', [GREY, GREEN, GREY, GREEN, GREEN]]]);
-    const cells = tileRow('oboes', cs);
-    // O at pos 0 — candidate, but unfilled green at pos 1 consumes the budget
-    expect(cells[0].prefix.trim()).toBe('');
-    // O at pos 2 — also default
-    expect(cells[2].prefix.trim()).toBe('');
+  it('yellow-tile at one position does not block yellow-fg at another', () => {
+    // C was yellow at pos 0 → excluded[0].has('c'), minCounts['c']=1, no confirmed position.
+    // Typing C at pos 0 (yellow-tile) + C at pos 2 (candidate): the yellow-tile must not
+    // consume the pool, so pos 2 should still get yellow-fg.
+    const cs = makeConstraints([['crane', [YELLOW, GREY, GREY, GREY, GREY]]]);
+    const cells = tileRow('cxcxx', cs); // C at pos 0 (excluded) and pos 2 (candidate)
+    expect(cells[0].prefix).toContain('43m'); // pos 0 → yellow-tile (bg)
+    expect(cells[2].prefix).toContain('33m'); // pos 2 → yellow-fg (pool still = 1)
   });
 
-  it('known green position filled: extra occurrences obey normal minCount budget', () => {
-    // Same constraints. Type BOOST: O at pos 1 (fills the green), O at pos 2 (candidate).
-    // minCount for O = 1, greenCount = 1 → budget = 0 → second O is default.
+  it('letter at confirmed position exhausts pool: typing it elsewhere is default', () => {
+    // After SOUTH [grey,GREEN,grey,GREEN,GREEN]: O confirmed at pos 1, minCounts['o']=1.
+    // Pool = minCounts - knownCount = 1 - 1 = 0.
+    // OBOES has O at pos 0 and pos 2 (neither at pos 1) → both default.
+    const cs = makeConstraints([['south', [GREY, GREEN, GREY, GREEN, GREEN]]]);
+    const cells = tileRow('oboes', cs);
+    expect(cells[0].prefix.trim()).toBe(''); // pos 0 → default
+    expect(cells[2].prefix.trim()).toBe(''); // pos 2 → default
+  });
+
+  it('filling the confirmed position still leaves extra occurrences default', () => {
+    // Same constraints. BOOST puts O at pos 1 (green) and O at pos 2 (candidate).
+    // Pool = 1 - 1 = 0, so the extra O at pos 2 is default.
     const cs = makeConstraints([['south', [GREY, GREEN, GREY, GREEN, GREEN]]]);
     const cells = tileRow('boost', cs);
     expect(cells[1].prefix).toContain('42m'); // O at known pos → green
-    expect(cells[2].prefix.trim()).toBe('');   // extra O → default (budget exhausted)
+    expect(cells[2].prefix.trim()).toBe('');   // extra O → default
   });
 });
 
