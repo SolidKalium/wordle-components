@@ -19,6 +19,7 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
 
 ### UIs
 - **Command line**
+  - Run `./wordle` to play in the console. Use `-h` to see options.
   - `TerminalIO` abstraction supports both native terminal and xterm.js rendering
   - UI or command to pick a mode. Both may be good to support.
     - Probably start out only having the computer run the min expected group size strategy. Then an optional "game config" panel or command line arguments can be supported.
@@ -27,7 +28,6 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
     - Maybe start with one game per command run, but then allow it to go repeatedly, possibly with a flag to control that behavior. Repeated runs allow any settings to persist.
   - Help info on `--help`, `help`, and `-h`
   - Maybe `about`, `--version`, or `-v` support? Unknown commands invoke help anyways, so `about` might just be one such invalid word, as could `help`.
-  - Add a basic shell script like `wordle` or `play` in the repo root that calls npm and passes along any arguments?
   - User plays against a computer-chosen word
     - Basic: player must generate their own words without help
       - Explanation flag: Shows how many words are left, how the guess ranks compared according to a fixed `Strategy`, and what the best word would have been.
@@ -39,6 +39,7 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
     - UX improvements, using raw mode
       - While typing, a letter that is known to be green, yellow, or gray in that spot can show that as the background. But a letter that is yellow elsewhere can be shown with a yellow text color.
       - Ideally, warn the user about removing green letters or not trying a yellow letter.
+    - «terminal background detection is unreliable, design with mid-range colors that work on both, offer a flag as override, and optionally attempt OSC 11 as a nicety.»
     - LATER? support CLI args or config menus
   - Computer plays against human word using human-chosen strategy, with human grading
     - Optionally show stats on each move

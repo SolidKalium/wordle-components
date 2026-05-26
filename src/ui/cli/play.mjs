@@ -37,7 +37,7 @@ Usage: ./wordle [options]
 
 Options:
   -m, --mode <mode>   Game mode: basic (default) or quickplay
-  -q, --quickplay     Shorthand for --mode quickplay
+  -q, --quickplay     Shorthand for: --mode quickplay
   -e, --explain       Show guess ranking after each move (basic mode only)
   -h, --help          Show this help message
   -v, --version       Show version number`);
