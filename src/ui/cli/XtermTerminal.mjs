@@ -16,8 +16,9 @@ export class XtermTerminal extends TerminalIO {
     this._terminal = terminal;
     this._lineBuffer = '';
     this._lineResolve = null;
+    this._rawModeHandler = null;
 
-    // xterm.js fires onData for every character the user types.
+    // Single onData listener; routed to raw or line mode depending on state.
     this._terminal.onData(data => this._handleData(data));
   }
 
@@ -38,7 +39,26 @@ export class XtermTerminal extends TerminalIO {
     // Terminal lifecycle is managed externally by the React component.
   }
 
+  async readWordRaw(prompt, constraints, suggestions = []) {
+    return new Promise(resolve => {
+      let buffer = '';
+      this._renderPendingLine(prompt, buffer, constraints);
+
+      this._rawModeHandler = (rawKey) => {
+        const { buffer: next, done } = this._handleWordKey(rawKey, buffer, suggestions);
+        buffer = next;
+        if (done) {
+          this._rawModeHandler = null;
+          resolve(buffer);
+        } else {
+          this._renderPendingLine(prompt, buffer, constraints);
+        }
+      };
+    });
+  }
+
   _handleData(data) {
+    if (this._rawModeHandler) { this._rawModeHandler(data); return; }
     if (!this._lineResolve) return;
 
     if (data === '\r' || data === '\n') {

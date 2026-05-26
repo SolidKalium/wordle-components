@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { GREEN, YELLOW, GREY } from '../src/lib/core.mjs';
 import { TerminalIO } from '../src/ui/cli/TerminalIO.mjs';
+import { ConstraintState } from '../src/lib/constraints.mjs';
 
 // Minimal concrete subclass for capturing output.
 class MemoryTerminal extends TerminalIO {
@@ -36,6 +37,110 @@ describe('writeLine', () => {
     const t = new MemoryTerminal();
     t.writeLine();
     expect(t.output).toBe('\n');
+  });
+});
+
+// Helper: extract visible letters and their ANSI prefix from a tile row string.
+// Returns an array of { letter, prefix } objects (one per non-empty slot).
+// Works for both ANSI-wrapped tiles and plain default tiles (no escape codes).
+function parseTileRow(row) {
+  const RESET = '\x1b[0m';
+  const cells = [];
+  let searchFrom = 0;
+  for (let i = 0; i < row.length; i++) {
+    if (/[A-Z]/.test(row[i])) {
+      cells.push({ letter: row[i], prefix: row.slice(searchFrom, i) });
+      let j = i + 2; // skip letter + trailing space
+      if (row.startsWith(RESET, j)) j += RESET.length;
+      searchFrom = j;
+      i = j - 1; // loop will i++
+    }
+  }
+  return cells;
+}
+
+// Build a ConstraintState by replaying a series of guesses and their patterns.
+function makeConstraints(plays = []) {
+  const cs = new ConstraintState();
+  for (const [guess, pattern] of plays) cs.update(guess, pattern);
+  return cs;
+}
+
+// Capture _pendingTileRow output as an array of cell objects.
+function tileRow(word, constraints) {
+  const t = new MemoryTerminal();
+  return parseTileRow(t._pendingTileRow(word, constraints));
+}
+
+describe('_pendingTileRow — pending input colouring', () => {
+  it('empty word renders five blank cells', () => {
+    const cs = makeConstraints();
+    const t = new MemoryTerminal();
+    expect(t._pendingTileRow('', cs)).toBe('               '); // 5 × "   "
+  });
+
+  it('fully unknown letter with no constraints renders as default (no ANSI)', () => {
+    const cs = makeConstraints();
+    const cells = tileRow('a', cs);
+    expect(cells[0].prefix.trim()).toBe(''); // no escape codes
+  });
+
+  it('letter matching a known (green) position gets green tile', () => {
+    // After CRANE all-green, 'c' at pos 0 is known.
+    const cs = makeConstraints([['crane', [GREEN, GREEN, GREEN, GREEN, GREEN]]]);
+    const cells = tileRow('crane', cs);
+    // Green ANSI contains '42m' (green background)
+    expect(cells[0].prefix).toContain('42m');
+  });
+
+  it('letter at excluded position (yellow-tile) gets yellow tile', () => {
+    // After CRANE with C yellow at pos 0, typing C at pos 0 again triggers yellow-tile.
+    const cs = makeConstraints([['crane', [YELLOW, GREY, GREY, GREY, GREY]]]);
+    const cells = tileRow('c', cs);
+    expect(cells[0].prefix).toContain('43m'); // yellow bg
+  });
+
+  it('eliminated letter gets grey tile', () => {
+    const cs = makeConstraints([['crane', [GREY, GREY, GREY, GREY, GREY]]]);
+    const cells = tileRow('c', cs);
+    expect(cells[0].prefix).toContain('100m'); // dark-grey bg
+  });
+
+  it('letter known to be in word (yellow-fg) but position untested', () => {
+    // After CRANE with C yellow at pos 0, typing C elsewhere (e.g. pos 1) → yellow-fg.
+    const cs = makeConstraints([['crane', [YELLOW, GREY, GREY, GREY, GREY]]]);
+    const cells = tileRow('xc', cs); // C at pos 1, not excluded from pos 1
+    expect(cells[1].prefix).toContain('33m'); // yellow fg
+  });
+
+  it('duplicate letter: yellow-fg count capped at minCount', () => {
+    // After CRANE with C yellow at pos 0 → minCount 1.
+    // Typing CC → first C gets yellow-fg, second gets default.
+    const cs = makeConstraints([['crane', [YELLOW, GREY, GREY, GREY, GREY]]]);
+    const cells = tileRow('xccxx', cs); // C at pos 1 and 2
+    expect(cells[1].prefix).toContain('33m');  // first candidate C → yellow-fg
+    expect(cells[2].prefix.trim()).toBe('');    // second candidate C → default
+  });
+
+  it('known green position unfilled: other occurrences of that letter are not yellow-fg', () => {
+    // Scenario: answer MONTH, guess SOUTH → O is green at pos 1, T green at pos 3, H green at pos 4.
+    // Now type OBOES: O at pos 0 and pos 2, but NOT at the known pos 1.
+    // Neither O should be yellow-fg because the known O slot is unfilled.
+    const cs = makeConstraints([['south', [GREY, GREEN, GREY, GREEN, GREEN]]]);
+    const cells = tileRow('oboes', cs);
+    // O at pos 0 — candidate, but unfilled green at pos 1 consumes the budget
+    expect(cells[0].prefix.trim()).toBe('');
+    // O at pos 2 — also default
+    expect(cells[2].prefix.trim()).toBe('');
+  });
+
+  it('known green position filled: extra occurrences obey normal minCount budget', () => {
+    // Same constraints. Type BOOST: O at pos 1 (fills the green), O at pos 2 (candidate).
+    // minCount for O = 1, greenCount = 1 → budget = 0 → second O is default.
+    const cs = makeConstraints([['south', [GREY, GREEN, GREY, GREEN, GREEN]]]);
+    const cells = tileRow('boost', cs);
+    expect(cells[1].prefix).toContain('42m'); // O at known pos → green
+    expect(cells[2].prefix.trim()).toBe('');   // extra O → default (budget exhausted)
   });
 });
 

@@ -46,11 +46,13 @@ export class GameRunner {
     this.explain = explain;
     this.suggester = suggester;
     this.rng = rng;
+    this._currentSuggestions = [];
   }
 
   async run() {
     const answer = this.answers[Math.floor(this.rng() * this.answers.length)];
     const game = new Game({ answer, wordList: this.wordList });
+    const useRaw = typeof this.io.readWordRaw === 'function' && !!process.stdin?.isTTY;
 
     this.io.writeLine('Wordle');
     this.io.writeLine('──────');
@@ -64,8 +66,10 @@ export class GameRunner {
         : null;
 
       const turn = game.guesses.length + 1;
-      const raw = await this.io.readLine(`Guess ${turn}/${game.maxGuesses}: `);
-      const guess = raw.trim().toLowerCase();
+      const prompt = `Guess ${turn}/${game.maxGuesses}:`;
+      const guess = useRaw
+        ? await this.io.readWordRaw(prompt, game.constraints, this._currentSuggestions)
+        : (await this.io.readLine(prompt + ' ')).trim().toLowerCase();
 
       if (!guess) continue;
 
@@ -73,10 +77,12 @@ export class GameRunner {
 
       if (!result.valid) {
         const msg = ERROR_MESSAGES[result.error] ?? result.detail ?? `Invalid (${result.error})`;
+        if (useRaw) this.io.writeLine(''); // leave the invalid attempt visible
         this.io.writeLine(msg);
         continue;
       }
 
+      if (useRaw) this.io.write('\r' + prompt + ' ');
       this.io.writeGuessResult(guess, result.pattern);
 
       if (!game.isOver && this.suggester) {
@@ -84,6 +90,7 @@ export class GameRunner {
 
         if (this.mode === 'quickplay') {
           const { words } = await this.suggester.compute(remainingAfter, null);
+          this._currentSuggestions = words;
           if (words.length) this._writeSuggestions(words);
         } else if (this.mode === 'basic' && this.explain) {
           const info = await this.suggester.compute(remainingBefore, guess);
