@@ -7,10 +7,12 @@ const ANSI = {
   [YELLOW]: '[43m[1m[30m',   // yellow bg,     bold black (contrast)
   grey:     '[100m[1m[97m',  // dark-grey bg,  bold bright-white
   reset:    '[0m',
+  eraseToEol: '[K',                        // clear from cursor to end of line
 };
 
 const PENDING = {
-  yellowFg: '[33m', // yellow text — letter in word, position unknown
+  yellowFg: '[33m',         // yellow fg — letter in word, position unknown
+  greenFg:  '[1m[32m', // bold green fg — confirmed letter not yet placed
 };
 
 /**
@@ -44,37 +46,43 @@ export class TerminalIO {
   close() {}
 
   /**
-   * Build a 15-character tile row for a partially-typed word, using
-   * constraint-aware colouring.  Untyped positions render as three spaces.
+   * Compute slots and pool for a partially-typed word.
+   * Shared by _pendingTileRow (tests) and _renderPendingLine (live display).
    *
-   * @param {string} word  Letters typed so far (0–5 chars, lowercase).
+   * @param {string} word
    * @param {import('../../lib/constraints.mjs').ConstraintState} constraints
-   * @returns {string}  ANSI-styled string (no leading \r, no trailing \n).
+   * @returns {{ tileRow: string, pool: string }}
    */
-  _pendingTileRow(word, constraints) {
-    const eliminated = constraints.eliminated;
-
-    // Pass 1: assign high-priority colours per position.
-    const slots = [];
-    for (let i = 0; i < 5; i++) {
-      const letter = word[i];
-      if (!letter)                                                        { slots.push({ kind: 'empty',       letter }); continue; }
-      if (constraints.known[i] === letter)                                { slots.push({ kind: 'green',       letter }); continue; }
-      if (constraints.excluded[i].has(letter) && !eliminated.has(letter)){ slots.push({ kind: 'yellow-tile', letter }); continue; }
-      if (eliminated.has(letter))                                         { slots.push({ kind: 'grey',        letter }); continue; }
-      slots.push({ kind: 'candidate', letter });
-    }
-
-    // How many confirmed positions does each letter have from previous guesses?
-    // Pool for yellow-fg = minCounts[L] − knownCount[L].
-    // Yellow-tile slots (letter at an excluded position) don't reduce the pool —
-    // they are position warnings, not count accumulators.
+  _computePending(word, constraints) {
+    // Pre-compute confirmed positions per letter — used in both the
+    // fully-placed check (Pass 1) and the yellow-fg pool (Pass 2).
     const knownCount = new Map();
     for (const L of constraints.known) {
       if (L) knownCount.set(L, (knownCount.get(L) ?? 0) + 1);
     }
 
+    // Pass 1: assign high-priority colours per position.
+    const slots = [];
+    for (let i = 0; i < 5; i++) {
+      const letter = word[i];
+      if (!letter) { slots.push({ kind: 'empty', letter }); continue; }
+      if (constraints.known[i] === letter) { slots.push({ kind: 'green', letter }); continue; }
+
+      // Grey if we know the exact count of this letter and every instance is
+      // already at a confirmed position.  Covers both fully-eliminated letters
+      // (maxCounts = 0) and letters whose copies are all accounted for by greens
+      // (e.g. BOOTH second O after the first O went green).
+      const maxCount = constraints.maxCounts.get(letter);
+      if (maxCount !== undefined && maxCount <= (knownCount.get(letter) ?? 0)) {
+        slots.push({ kind: 'grey', letter }); continue;
+      }
+
+      if (constraints.excluded[i].has(letter)) { slots.push({ kind: 'yellow-tile', letter }); continue; }
+      slots.push({ kind: 'candidate', letter });
+    }
+
     // Pass 2: assign yellow-fg within pool (left-to-right through candidates).
+    // Pool = minCounts[L] − knownCount[L]; yellow-tile slots don't consume pool.
     const yellowFgUsed = new Map();
     for (const s of slots) {
       if (s.kind !== 'candidate') continue;
@@ -88,7 +96,8 @@ export class TerminalIO {
       if (s.kind === 'yellow-fg') yellowFgUsed.set(L, used + 1);
     }
 
-    return slots.map(s => {
+    // Build tile row.
+    const tileRow = slots.map(s => {
       const u = s.letter?.toUpperCase();
       switch (s.kind) {
         case 'empty':       return '   ';
@@ -99,18 +108,53 @@ export class TerminalIO {
         default:            return ` ${u} `;
       }
     }).join('');
+
+    // Build pool: unplaced greens (position order) then remaining yellow-fg (alphabetical).
+    const poolParts = [];
+    for (let i = 0; i < 5; i++) {
+      const L = constraints.known[i];
+      if (L && slots[i].kind !== 'green') {
+        poolParts.push(`${PENDING.greenFg}${L.toUpperCase()}${ANSI.reset}`);
+      }
+    }
+    const yellowRemaining = [];
+    for (const [L, total] of constraints.minCounts) {
+      const poolSize = Math.max(0, total - (knownCount.get(L) ?? 0));
+      const remaining = poolSize - (yellowFgUsed.get(L) ?? 0);
+      for (let i = 0; i < remaining; i++) yellowRemaining.push(L);
+    }
+    yellowRemaining.sort();
+    for (const L of yellowRemaining) {
+      poolParts.push(`${PENDING.yellowFg}${L.toUpperCase()}${ANSI.reset}`);
+    }
+
+    return { tileRow, pool: poolParts.join(' ') };
   }
 
   /**
-   * Overwrite the current terminal line with `prompt + pending tile row`.
-   * Uses \r (no \n) so the line can be updated again or finalised by the caller.
+   * Build a 15-character tile row for a partially-typed word, using
+   * constraint-aware colouring.  Untyped positions render as three spaces.
+   *
+   * @param {string} word  Letters typed so far (0–5 chars, lowercase).
+   * @param {import('../../lib/constraints.mjs').ConstraintState} constraints
+   * @returns {string}  ANSI-styled string (no leading \r, no trailing \n).
+   */
+  _pendingTileRow(word, constraints) {
+    return this._computePending(word, constraints).tileRow;
+  }
+
+  /**
+   * Overwrite the current terminal line with prompt + tile row + pool hint.
+   * Appends ESC[K to erase any leftover content from a longer previous render.
    *
    * @param {string} prompt
    * @param {string} word  Letters typed so far (0–5 chars, lowercase).
    * @param {import('../../lib/constraints.mjs').ConstraintState} constraints
    */
   _renderPendingLine(prompt, word, constraints) {
-    this.write('\r' + prompt + ' ' + this._pendingTileRow(word, constraints));
+    const { tileRow, pool } = this._computePending(word, constraints);
+    const suffix = pool ? '     ' + pool : '';
+    this.write('\r' + prompt + ' ' + tileRow + suffix + ANSI.eraseToEol);
   }
 
   /**
@@ -148,6 +192,7 @@ export class TerminalIO {
 
   /**
    * Render one guess row with ANSI tile colours.
+   * Appends ESC[K before the newline to erase any pool hint left on this line.
    * @param {string}   word     The guessed word.
    * @param {string[]} pattern  Array of GREEN / YELLOW / GREY constants.
    */
@@ -156,6 +201,6 @@ export class TerminalIO {
       const color = ANSI[pattern[i]] ?? ANSI.grey;
       return `${color} ${letter.toUpperCase()} ${ANSI.reset}`;
     });
-    this.writeLine(cells.join(''));
+    this.writeLine(cells.join('') + ANSI.eraseToEol);
   }
 }

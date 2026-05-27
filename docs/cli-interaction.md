@@ -52,6 +52,10 @@ Priorities 2–3 are informational warnings, not blocks.  The player can still
 submit a word that violates known constraints (hard-mode enforcement is handled
 by `game.makeMove`, not by the input layer).
 
+The number of characters with a yellow foreground cannot exceed the number of copies
+of that letter which are known to be in the word but where their locations
+are not known.
+
 The tile format matches `writeGuessResult`: ` L ` (space–letter–space) per cell,
 letter uppercased.
 

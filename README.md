@@ -37,10 +37,9 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
       - ... this reimplemented the Suggester instead of using one...
     - LATER Flashcard submode? The player is rewarded for choosing the actual best move, and it's always available. Filler words might not be the next-best words overall, but instead be words that are the best on the next turn or two according to the deterministic algorithm.
     - UX improvements, using raw mode
-      - While typing, a letter that is known to be green, yellow, or gray in that spot can show that as the background. But a letter that is yellow elsewhere can be shown with a yellow text color.
       - Ideally, warn the user about removing green letters or not trying a yellow letter.
     - «terminal background detection is unreliable, design with mid-range colors that work on both, offer a flag as override, and optionally attempt OSC 11 as a nicety.»
-    - LATER? support CLI args or config menus
+    - LATER? support config menus in addition to CLI args? Probably not
   - Computer plays against human word using human-chosen strategy, with human grading
     - Optionally show stats on each move
     - Making keyboard input control the colors under the computer's guess would be good.

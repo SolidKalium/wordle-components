@@ -150,6 +150,78 @@ describe('_pendingTileRow — pending input colouring', () => {
     expect(cells[1].prefix).toContain('42m'); // O at known pos → green
     expect(cells[2].prefix.trim()).toBe('');   // extra O → default
   });
+
+  it('fully-placed letter: grey everywhere except the confirmed position', () => {
+    // BOOTH vs MONTH: O green at pos 1, O grey at pos 2.
+    // maxCounts['o'] = 1 (exact count), knownCount['o'] = 1 → all non-green O → grey.
+    // This fixes the bug where the grey O at pos 2 was showing as yellow-tile.
+    const cs = makeConstraints([['booth', [GREY, GREEN, GREY, GREEN, GREEN]]]);
+    const cells = tileRow('ooooo', cs);
+    expect(cells[0].prefix).toContain('100m'); // pos 0 → grey
+    expect(cells[1].prefix).toContain('42m');  // pos 1 → green (known)
+    expect(cells[2].prefix).toContain('100m'); // pos 2 → grey (not yellow-tile)
+    expect(cells[3].prefix).toContain('100m'); // pos 3 → grey
+    expect(cells[4].prefix).toContain('100m'); // pos 4 → grey
+  });
+});
+
+describe('_computePending pool', () => {
+  const t = new MemoryTerminal();
+
+  it('empty pool when no constraints', () => {
+    const cs = makeConstraints();
+    expect(t._computePending('', cs).pool).toBe('');
+    expect(t._computePending('crane', cs).pool).toBe('');
+  });
+
+  it('unplaced green letters appear in pool (bold green fg)', () => {
+    // After SOUTH: O confirmed at pos 1, T at pos 3, H at pos 4.
+    // Empty word → pool should show O, T, H as green letters.
+    const cs = makeConstraints([['south', [GREY, GREEN, GREY, GREEN, GREEN]]]);
+    const { pool } = t._computePending('', cs);
+    expect(pool).toContain('O');
+    expect(pool).toContain('T');
+    expect(pool).toContain('H');
+    expect(pool).toContain('32m'); // bold green fg
+  });
+
+  it('pool shrinks as player fills confirmed positions', () => {
+    const cs = makeConstraints([['south', [GREY, GREEN, GREY, GREEN, GREEN]]]);
+    // Type just the O (pos 1 filled) — T and H still pending
+    const { pool } = t._computePending('xo', cs);
+    expect(pool).not.toContain('O');
+    expect(pool).toContain('T');
+    expect(pool).toContain('H');
+  });
+
+  it('pool is empty when all confirmed positions are filled', () => {
+    const cs = makeConstraints([['south', [GREY, GREEN, GREY, GREEN, GREEN]]]);
+    const { pool } = t._computePending('month', cs);
+    expect(pool).toBe('');
+  });
+
+  it('yellow-fg pool letters appear when not yet placed', () => {
+    // C yellow at pos 0 → minCounts['c']=1, knownCount['c']=0. Pool=1.
+    // Type a word without C → C should appear in pool as yellow.
+    const cs = makeConstraints([['crane', [YELLOW, GREY, GREY, GREY, GREY]]]);
+    const { pool } = t._computePending('xxxxx', cs);
+    expect(pool).toContain('C');
+    expect(pool).toContain('33m'); // yellow fg
+  });
+
+  it('yellow-fg pool letter removed when placed as yellow-fg', () => {
+    const cs = makeConstraints([['crane', [YELLOW, GREY, GREY, GREY, GREY]]]);
+    // Place C at pos 1 (not excluded → yellow-fg in tile row)
+    const { pool } = t._computePending('xcxxx', cs);
+    expect(pool).toBe('');
+  });
+
+  it('yellow-tile does not consume pool — letter stays in pool', () => {
+    // C at excluded pos 0 → yellow-tile in tile row, but pool must still show C.
+    const cs = makeConstraints([['crane', [YELLOW, GREY, GREY, GREY, GREY]]]);
+    const { pool } = t._computePending('cxxxx', cs); // C at excluded pos 0
+    expect(pool).toContain('C'); // still needs placing
+  });
 });
 
 describe('writeGuessResult', () => {
