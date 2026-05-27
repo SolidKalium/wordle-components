@@ -122,14 +122,55 @@ describe('_pendingTileRow — pending input colouring', () => {
     expect(cells[2].prefix.trim()).toBe('');    // second candidate C → default
   });
 
-  it('yellow-tile at one position does not block yellow-fg at another', () => {
+  it('yellow-tile does not block yellow-fg; once pool exhausted yellow-tile becomes grey', () => {
     // C was yellow at pos 0 → excluded[0].has('c'), minCounts['c']=1, no confirmed position.
-    // Typing C at pos 0 (yellow-tile) + C at pos 2 (candidate): the yellow-tile must not
-    // consume the pool, so pos 2 should still get yellow-fg.
+    // Typing C at pos 0 (yellow-tile) + C at pos 2 (candidate):
+    //   - yellow-tile must NOT consume the pool → pos 2 gets yellow-fg
+    //   - after Pass 3, yellow-fg at pos 2 has exhausted the pool (1/1) → pos 0 → grey
     const cs = makeConstraints([['crane', [YELLOW, GREY, GREY, GREY, GREY]]]);
     const cells = tileRow('cxcxx', cs); // C at pos 0 (excluded) and pos 2 (candidate)
-    expect(cells[0].prefix).toContain('43m'); // pos 0 → yellow-tile (bg)
-    expect(cells[2].prefix).toContain('33m'); // pos 2 → yellow-fg (pool still = 1)
+    expect(cells[0].prefix).toContain('100m'); // pos 0 → grey (pool exhausted by pos 2)
+    expect(cells[2].prefix).toContain('33m');  // pos 2 → yellow-fg (pool = 1)
+  });
+
+  it('yellow-tile becomes grey once all pool copies are placed as yellow-fg elsewhere', () => {
+    // Scenario from real play: T was yellow in earlier guesses (minCounts=1, no maxCounts).
+    // Typing TENT: T at pos 3 is yellow-fg (using the one pool copy).
+    // T at pos 0 is excluded[0] → was yellow-tile, but pool exhausted → should be grey.
+    const cs = makeConstraints([
+      ['tired', [YELLOW, GREY, GREY, GREY, GREY]], // T yellow at 0
+    ]);
+    // 'tent': T at pos 0 (excluded → yellow-tile → grey after pass 3), T at pos 3 (yellow-fg)
+    const cells = tileRow('tent', cs);
+    expect(cells[0].prefix).toContain('100m'); // pos 0 → grey (pool consumed by pos 3)
+    expect(cells[3].prefix).toContain('33m');  // pos 3 → yellow-fg
+  });
+
+  it('yellow-tile becomes grey when normalize auto-promotes letter, exhausting pool', () => {
+    // T excluded from 0, 2, 4; pos 1 occupied by O → only pos 3 open → _normalize promotes T.
+    // knownCount['t']=1 = minCounts → pool=0 → yellow-tile at pos 0 should be grey.
+    const cs = makeConstraints([
+      ['ticks', [YELLOW, GREY, GREY, GREY, GREY]], // T yellow at 0 → excluded[0]
+      ['enter', [GREY, GREY, YELLOW, GREY, GREY]], // T yellow at 2 → excluded[2]
+      ['court', [GREY, GREEN, GREY, GREY, YELLOW]], // O green at 1; T yellow at 4 → excluded[4]
+    ]);
+    // _normalize: only pos 3 left for T → known[3]='t'. pool=1-1=0.
+    const cells = tileRow('txnth', cs);
+    expect(cells[0].prefix).toContain('100m'); // pos 0: grey (T accounted for at known[3])
+    expect(cells[3].prefix).toContain('42m');  // pos 3: green (T is known here)
+  });
+
+  it('yellow-tile stays yellow when pool has remaining unplaced copies', () => {
+    // If minCounts['t']=2 (two T's in word), typing TT uses only 1 pool copy via yellow-fg.
+    // The yellow-tile at pos 0 should stay yellow-tile (1 T still unaccounted for).
+    const cs = makeConstraints([
+      ['tater', [YELLOW, GREY, YELLOW, GREY, GREY]], // T yellow at 0 and 2 → minCounts=2
+    ]);
+    // 'ttxxx': T at pos 0 (excluded → yellow-tile), T at pos 1 (not excluded → yellow-fg,
+    //          uses 1 of pool 2).  Pool remaining = 1 → yellow-tile at pos 0 stays.
+    const cells = tileRow('ttxxx', cs);
+    expect(cells[0].prefix).toContain('43m'); // pos 0 → yellow-tile (pool not exhausted)
+    expect(cells[1].prefix).toContain('33m'); // pos 1 → yellow-fg (1 of 2 pool copies)
   });
 
   it('letter at confirmed position exhausts pool: typing it elsewhere is default', () => {

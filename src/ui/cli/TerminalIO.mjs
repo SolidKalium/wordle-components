@@ -96,6 +96,22 @@ export class TerminalIO {
       if (s.kind === 'yellow-fg') yellowFgUsed.set(L, used + 1);
     }
 
+    // Pass 3: yellow-tile → grey when yellow-fg has consumed the whole pool for a letter.
+    // E.g. typing TENT after learning there is exactly one T: the yellow-fg at pos 3 uses
+    // the pool (1 unplaced T), so the yellow-tile at pos 0 has no remaining copies to warn
+    // about and should show grey instead.
+    for (const s of slots) {
+      if (s.kind !== 'yellow-tile') continue;
+      const L = s.letter;
+      const pool = Math.max(0,
+        (constraints.minCounts.get(L) ?? 0) -
+        (knownCount.get(L)            ?? 0)
+      );
+      if ((yellowFgUsed.get(L) ?? 0) >= pool) {
+        s.kind = 'grey';
+      }
+    }
+
     // Build tile row.
     // Cursor tile: prepend \x1b[4m (underline) so the letter is visually highlighted.
     // Empty cursor slot: show '_' as a visible insertion-point indicator.
