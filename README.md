@@ -21,25 +21,11 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
 - **Command line**
   - Run `./wordle` to play in the console. Use `-h` to see options.
   - `TerminalIO` abstraction supports both native terminal and xterm.js rendering
-  - UI or command to pick a mode. Both may be good to support.
-    - Probably start out only having the computer run the min expected group size strategy. Then an optional "game config" panel or command line arguments can be supported.
-      - Config format for things like filtered strategies would need to be determined. This is related to how any HTML component configs could be saved, stored, or specified by a Skill.
-        - Config "files" are out of scope for now.
-    - Maybe start with one game per command run, but then allow it to go repeatedly, possibly with a flag to control that behavior. Repeated runs allow any settings to persist.
-  - Help info on `--help`, `help`, and `-h`
-  - Maybe `about`, `--version`, or `-v` support? Unknown commands invoke help anyways, so `about` might just be one such invalid word, as could `help`.
   - User plays against a computer-chosen word
     - Basic: player must generate their own words without help
       - Explanation flag: Shows how many words are left, how the guess ranks compared according to a fixed `Strategy`, and what the best word would have been.
-    - Quick-play: User chooses from a short list of plausible guesses from a `Suggester`
-      - Explanation flag? After a choice, shows how the words actually rank
-      - Allow using a number key to select a suggested word. Ideally just pressing, not requiring Enter.
-      - ... this reimplemented the Suggester instead of using one...
-    - LATER Flashcard submode? The player is rewarded for choosing the actual best move, and it's always available. Filler words might not be the next-best words overall, but instead be words that are the best on the next turn or two according to the deterministic algorithm.
-    - UX improvements, using raw mode
-      - Ideally, warn the user about removing green letters or not trying a yellow letter.
-    - «terminal background detection is unreliable, design with mid-range colors that work on both, offer a flag as override, and optionally attempt OSC 11 as a nicety.»
-    - LATER? support config menus in addition to CLI args? Probably not
+    - Quick-play: User is given a short list of plausible guesses on each turn
+      - Pressing a number key fills in the corresponding word
   - Computer plays against human word using human-chosen strategy, with human grading
     - Optionally show stats on each move
     - Making keyboard input control the colors under the computer's guess would be good.
@@ -48,8 +34,7 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
         - Note: arrow keys might be harder than they seem. Start with WASD and add arrow keys as an upgrade. They use an escape sequence and it can vary accross keyboards. Could need ink, terminal-kit, or `process.stdin.setRawMode(true)`.
       - If the computer knows that a letter was already (or must be) green in that spot, it can prefill that. Before making a guess, it can ensure that the new feedback is compatible with what is known: the total letters asserted as yellow or green isn't inherently greater than the word list, and no yellow letters turned gray (after accounting for quantity). No previously gray letter should become green or yellow. Issues can be listed to the right or on one or more info lines below the guess being operated on. ("Letters that shouldn't be gray: XYZ. Letters that should be gray: ABC. To back up a turn, press cmd+z.")
     - Need to handle fixing the grading on an earlier turn.
-    - Can allow the computer to know the word in advance and just let the player pace through with Space/Enter. E.g. "Enter your word for auto-play (blank will let you grade the guesses manually):" (that parenthetical could just be in a lighter text color after the colon while nothing has been typed in)
-  - LATER? analyses. Probably delay until after HTML UI
+    - Can allow the computer to know the word in advance and just let the player pace through with Space/Enter. E.g. "Enter your word for auto-play (blank will let you grade the guesses manually):" (that parenthetical could just be in a lighter text color after the colon until something has been typed in)
 - **Analysis HTML page**
   - Decompose problem into useable UI chunks. Both analysis components and selector components.
     - TODO Design further. Explore strategies, see consequences
@@ -106,14 +91,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - CLI UI
-  - Add command-line flags
-  - Add help page
-  - Add `--version` / `-v`
-  - Add raw mode support. Use any libraries to support this?
-    - Basic, Quickplay, and Quickplay Explanation
   - Add user guess-grading mode
-  - Add any strategy/suggester config access
-- Test suite: CLI ?
 - Analysis HTML UI
   - CLI component
   - Decision tree
@@ -126,6 +104,21 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 - Claude Skill
 - Test suite: Claude?
 - Strategies: entropy, mixed strategy nash equilibrium
+
+## Postponed / LATER
+- CLI
+  - Quickplay
+    - Flag to not require enter after pressing a number?
+    - Flag to not even allow a custom word in quickplay?
+    - Explanation flag to show how the words actually ranked?
+    - Use a Suggester instead of the weaker reimplementation currently being used
+  - Flashcard mode: The player is rewarded for choosing the actual best move, and it's always available. Filler words might not be the next-best words overall, but instead be words that are the best on the next turn or two according to the deterministic algorithm.
+  - Analyses. Delay at least until after HTML UI for analyses
+  - «terminal background detection is unreliable, design with mid-range colors that work on both, offer a flag as override, and optionally attempt OSC 11 as a nicety.»
+  - Support config menus in addition to CLI args? Possibly not
+    - Mode picker might be most useful GUI
+    - Config format for things like filtered strategies would need to be determined. This is related to how any HTML component configs could be saved, stored, or specified by a Skill. But config "files" are out of scope for now.
+    - Maybe start with one game per command run, but then allow it to go repeatedly, possibly with a flag to control that behavior. Repeated runs allow any GUI-specified settings to persist.
 
 ## Other Topics
 - I'm curious about what might bias a human against quickly finding a word.
