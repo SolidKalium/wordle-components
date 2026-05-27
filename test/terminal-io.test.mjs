@@ -270,3 +270,164 @@ describe('writeGuessResult', () => {
     expect(resets.length).toBeGreaterThanOrEqual(5); // one per cell
   });
 });
+
+// ---------------------------------------------------------------------------
+// _handleWordKey — cursor navigation
+// ---------------------------------------------------------------------------
+
+// Thin wrapper: returns the full result object.
+function key(rawKey, buffer, cursor, suggestions = []) {
+  const t = new MemoryTerminal();
+  return t._handleWordKey(rawKey, buffer, cursor, suggestions);
+}
+
+describe('_handleWordKey — cursor movement', () => {
+  it('left arrow moves cursor left', () => {
+    expect(key('\x1b[D', 'crane', 3).cursor).toBe(2);
+  });
+
+  it('left arrow stops at 0', () => {
+    expect(key('\x1b[D', 'cra', 0).cursor).toBe(0);
+  });
+
+  it('right arrow moves cursor right', () => {
+    expect(key('\x1b[C', 'cra', 1).cursor).toBe(2);
+  });
+
+  it('right arrow stops at buffer.length', () => {
+    expect(key('\x1b[C', 'cra', 3).cursor).toBe(3);
+  });
+
+  it('left/right do not change the buffer', () => {
+    expect(key('\x1b[D', 'crane', 3).buffer).toBe('crane');
+    expect(key('\x1b[C', 'crane', 3).buffer).toBe('crane');
+  });
+});
+
+describe('_handleWordKey — typing with cursor', () => {
+  it('typing at cursor === buffer.length appends (existing behaviour)', () => {
+    const r = key('n', 'cra', 3);
+    expect(r.buffer).toBe('cran');
+    expect(r.cursor).toBe(4);
+  });
+
+  it('typing at cursor < buffer.length replaces character at cursor', () => {
+    const r = key('x', 'crane', 2);
+    expect(r.buffer).toBe('crxne');
+    expect(r.cursor).toBe(3);
+  });
+
+  it('replacing at cursor 0 changes first letter', () => {
+    const r = key('b', 'crane', 0);
+    expect(r.buffer).toBe('brane');
+    expect(r.cursor).toBe(1);
+  });
+
+  it('replacing at last position advances cursor to 5', () => {
+    const r = key('x', 'crane', 4);
+    expect(r.buffer).toBe('cranx');
+    expect(r.cursor).toBe(5);
+  });
+
+  it('typing when buffer is full and cursor is at end does nothing', () => {
+    const r = key('x', 'crane', 5);
+    expect(r.buffer).toBe('crane');
+    expect(r.cursor).toBe(5);
+  });
+});
+
+describe('_handleWordKey — backspace with cursor', () => {
+  it('backspace at end removes last character (existing behaviour)', () => {
+    const r = key('\x7f', 'cran', 4);
+    expect(r.buffer).toBe('cra');
+    expect(r.cursor).toBe(3);
+  });
+
+  it('backspace in middle removes character before cursor', () => {
+    const r = key('\x7f', 'crane', 2);
+    expect(r.buffer).toBe('cane');
+    expect(r.cursor).toBe(1);
+  });
+
+  it('backspace at cursor 0 does nothing', () => {
+    const r = key('\x7f', 'crane', 0);
+    expect(r.buffer).toBe('crane');
+    expect(r.cursor).toBe(0);
+  });
+});
+
+describe('_handleWordKey — number suggestions with cursor', () => {
+  it('number key fills buffer and sets cursor to 5', () => {
+    const r = key('1', 'cr', 1, ['crane', 'trade']);
+    expect(r.buffer).toBe('crane');
+    expect(r.cursor).toBe(5);
+  });
+});
+
+describe('_handleWordKey — escape sequences', () => {
+  it('unrecognised escape sequence is ignored', () => {
+    const r = key('\x1b[A', 'crane', 3); // up arrow
+    expect(r.buffer).toBe('crane');
+    expect(r.cursor).toBe(3);
+    expect(r.done).toBe(false);
+    expect(r.exit).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// _pendingTileRow — cursor highlight
+// ---------------------------------------------------------------------------
+
+describe('_pendingTileRow — cursor highlight', () => {
+  it('cursor position contains underline code (4m)', () => {
+    const cs = makeConstraints();
+    const t = new MemoryTerminal();
+    // cursor at pos 1 in 'crane'
+    const cells = parseTileRow(t._pendingTileRow('crane', cs, 1));
+    expect(cells[1].prefix).toContain('4m');
+  });
+
+  it('non-cursor positions are unaffected by cursor', () => {
+    const cs = makeConstraints();
+    const t = new MemoryTerminal();
+    const cells = parseTileRow(t._pendingTileRow('crane', cs, 2));
+    // pos 0 and 1 are not at cursor and have no constraints → default (no ANSI prefix)
+    expect(cells[0].prefix.trim()).toBe('');
+    expect(cells[1].prefix.trim()).toBe('');
+  });
+
+  it('cursor on green tile keeps green and adds underline', () => {
+    const cs = makeConstraints([['crane', [GREEN, GREEN, GREEN, GREEN, GREEN]]]);
+    const t = new MemoryTerminal();
+    const cells = parseTileRow(t._pendingTileRow('crane', cs, 0));
+    expect(cells[0].prefix).toContain('42m'); // green bg
+    expect(cells[0].prefix).toContain('4m');  // underline
+  });
+
+  it('cursor on grey tile keeps grey and adds underline', () => {
+    const cs = makeConstraints([['crane', [GREY, GREY, GREY, GREY, GREY]]]);
+    const t = new MemoryTerminal();
+    const cells = parseTileRow(t._pendingTileRow('crane', cs, 1));
+    expect(cells[1].prefix).toContain('100m'); // grey bg
+    expect(cells[1].prefix).toContain('4m');   // underline
+  });
+
+  it('cursor on empty slot produces a visible marker (no letter parsed, but underline present)', () => {
+    const cs = makeConstraints();
+    const t = new MemoryTerminal();
+    const raw = t._pendingTileRow('cr', cs, 3); // cursor past typed region
+    // No uppercase letter at pos 3 (empty), but the row contains the underline code
+    expect(raw).toContain('\x1b[4m');
+    // And only 2 cells are parseable (the typed letters)
+    expect(parseTileRow(raw).length).toBe(2);
+  });
+
+  it('no cursor when cursor arg is omitted (backward compat)', () => {
+    const cs = makeConstraints();
+    const t = new MemoryTerminal();
+    const cells = parseTileRow(t._pendingTileRow('crane', cs));
+    for (const cell of cells) {
+      expect(cell.prefix).not.toContain('4m');
+    }
+  });
+});

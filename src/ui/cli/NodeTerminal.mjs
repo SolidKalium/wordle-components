@@ -54,11 +54,14 @@ export class NodeTerminal extends TerminalIO {
     process.stdin.setRawMode(true);
     process.stdin.setEncoding('utf8');
     process.stdin.resume();
+    process.stdout.write('\x1b[?25l'); // hide the blinking cursor while we own the line
 
     return new Promise(resolve => {
       let buffer = '';
+      let cursor = 0;
 
       const cleanup = () => {
+        process.stdout.write('\x1b[?25h'); // restore cursor before handing control back
         process.stdin.removeListener('data', onData);
         process.stdin.setRawMode(false);
         process.stdin.pause();
@@ -67,16 +70,18 @@ export class NodeTerminal extends TerminalIO {
       };
 
       const onData = (rawKey) => {
-        const { buffer: next, done, exit } = this._handleWordKey(rawKey, buffer, suggestions);
+        const { buffer: next, cursor: nextCursor, done, exit } =
+          this._handleWordKey(rawKey, buffer, cursor, suggestions);
         buffer = next;
+        cursor = nextCursor;
 
         if (exit) { cleanup(); process.stdout.write('\n'); process.exit(0); }
         if (done) { cleanup(); resolve(buffer); return; }
-        this._renderPendingLine(prompt, buffer, constraints);
+        this._renderPendingLine(prompt, buffer, constraints, cursor);
       };
 
       process.stdin.on('data', onData);
-      this._renderPendingLine(prompt, buffer, constraints);
+      this._renderPendingLine(prompt, buffer, constraints, cursor);
     });
   }
 

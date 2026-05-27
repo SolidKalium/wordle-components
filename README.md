@@ -91,7 +91,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - CLI UI
-  - Add arrow keys to select letter to change. Includes some kind of cursor indicator
+  - Allow cursor to move to future letters, leaving one blank. Don't allow submission until all letters are filled.
   - Add user guess-grading mode
 - Analysis HTML UI
   - CLI component
@@ -102,7 +102,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 - Test suite: HTML ?
 - Rapid-play mode in CLI or HTML?
 - CLI: analysis? Delay until after HTML UI
-- Cache precomputed rankings for quesses on the first turn?
+- Cache precomputed rankings for first-turn guesses?
 - Claude Skill
 - Test suite: Claude?
 - Strategies: entropy, mixed strategy nash equilibrium

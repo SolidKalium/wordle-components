@@ -42,16 +42,21 @@ export class XtermTerminal extends TerminalIO {
   async readWordRaw(prompt, constraints, suggestions = []) {
     return new Promise(resolve => {
       let buffer = '';
-      this._renderPendingLine(prompt, buffer, constraints);
+      let cursor = 0;
+      this.write('\x1b[?25l'); // hide cursor while we own the input line
+      this._renderPendingLine(prompt, buffer, constraints, cursor);
 
       this._rawModeHandler = (rawKey) => {
-        const { buffer: next, done } = this._handleWordKey(rawKey, buffer, suggestions);
+        const { buffer: next, cursor: nextCursor, done, exit } =
+          this._handleWordKey(rawKey, buffer, cursor, suggestions);
         buffer = next;
-        if (done) {
+        cursor = nextCursor;
+        if (done || exit) {
           this._rawModeHandler = null;
-          resolve(buffer);
+          this.write('\x1b[?25h'); // restore cursor
+          if (done) resolve(buffer);
         } else {
-          this._renderPendingLine(prompt, buffer, constraints);
+          this._renderPendingLine(prompt, buffer, constraints, cursor);
         }
       };
     });

@@ -3,16 +3,17 @@ import { GREEN, YELLOW } from '../../lib/core.mjs';
 // ANSI escape sequences for Wordle tile colours.
 // Each entry covers background + text colour; follow with a letter then RESET.
 const ANSI = {
-  [GREEN]:  '[42m[1m[97m',   // green bg,      bold bright-white
-  [YELLOW]: '[43m[1m[30m',   // yellow bg,     bold black (contrast)
-  grey:     '[100m[1m[97m',  // dark-grey bg,  bold bright-white
-  reset:    '[0m',
-  eraseToEol: '[K',                        // clear from cursor to end of line
+  [GREEN]:  '\x1b[42m\x1b[1m\x1b[97m',   // green bg,      bold bright-white
+  [YELLOW]: '\x1b[43m\x1b[1m\x1b[30m',   // yellow bg,     bold black (contrast)
+  grey:     '\x1b[100m\x1b[1m\x1b[97m',  // dark-grey bg,  bold bright-white
+  reset:    '\x1b[0m',
+  eraseToEol: '\x1b[K',                   // clear from cursor to end of line
+  underline: '\x1b[4m',                   // underline on   — used for cursor highlight
 };
 
 const PENDING = {
-  yellowFg: '[33m',         // yellow fg — letter in word, position unknown
-  greenFg:  '[1m[32m', // bold green fg — confirmed letter not yet placed
+  yellowFg: '\x1b[33m',         // yellow fg — letter in word, position unknown
+  greenFg:  '\x1b[1m\x1b[32m', // bold green fg — confirmed letter not yet placed
 };
 
 /**
@@ -51,9 +52,10 @@ export class TerminalIO {
    *
    * @param {string} word
    * @param {import('../../lib/constraints.mjs').ConstraintState} constraints
+   * @param {number} [cursor=-1]  Cursor position (0–4); -1 means no cursor highlight.
    * @returns {{ tileRow: string, pool: string }}
    */
-  _computePending(word, constraints) {
+  _computePending(word, constraints, cursor = -1) {
     // Pre-compute confirmed positions per letter — used in both the
     // fully-placed check (Pass 1) and the yellow-fg pool (Pass 2).
     const knownCount = new Map();
@@ -95,15 +97,25 @@ export class TerminalIO {
     }
 
     // Build tile row.
-    const tileRow = slots.map(s => {
-      const u = s.letter?.toUpperCase();
+    // Cursor tile: prepend \x1b[4m (underline) so the letter is visually highlighted.
+    // Empty cursor slot: show '_' as a visible insertion-point indicator.
+    // Tile format must end with LETTER + space + RESET for parseTileRow compatibility.
+    const tileRow = slots.map((s, i) => {
+      const u         = s.letter?.toUpperCase();
+      const atCursor  = (cursor >= 0 && cursor < 5 && i === cursor);
+      const ul        = atCursor ? ANSI.underline : '';
+      const glyph     = u ?? (atCursor ? '_' : ' ');
+
+      if (s.kind === 'empty') {
+        return atCursor ? `${ul} ${glyph} ${ANSI.reset}` : '   ';
+      }
+
       switch (s.kind) {
-        case 'empty':       return '   ';
-        case 'green':       return `${ANSI[GREEN]} ${u} ${ANSI.reset}`;
-        case 'yellow-tile': return `${ANSI[YELLOW]} ${u} ${ANSI.reset}`;
-        case 'grey':        return `${ANSI.grey} ${u} ${ANSI.reset}`;
-        case 'yellow-fg':   return `${PENDING.yellowFg} ${u} ${ANSI.reset}`;
-        default:            return ` ${u} `;
+        case 'green':       return `${ul}${ANSI[GREEN]} ${glyph} ${ANSI.reset}`;
+        case 'yellow-tile': return `${ul}${ANSI[YELLOW]} ${glyph} ${ANSI.reset}`;
+        case 'grey':        return `${ul}${ANSI.grey} ${glyph} ${ANSI.reset}`;
+        case 'yellow-fg':   return `${ul}${PENDING.yellowFg} ${glyph} ${ANSI.reset}`;
+        default:            return atCursor ? `${ul} ${glyph} ${ANSI.reset}` : ` ${glyph} `;
       }
     }).join('');
 
@@ -135,10 +147,11 @@ export class TerminalIO {
    *
    * @param {string} word  Letters typed so far (0–5 chars, lowercase).
    * @param {import('../../lib/constraints.mjs').ConstraintState} constraints
+   * @param {number} [cursor=-1]  Cursor position (0–4); -1 means no cursor.
    * @returns {string}  ANSI-styled string (no leading \r, no trailing \n).
    */
-  _pendingTileRow(word, constraints) {
-    return this._computePending(word, constraints).tileRow;
+  _pendingTileRow(word, constraints, cursor = -1) {
+    return this._computePending(word, constraints, cursor).tileRow;
   }
 
   /**
@@ -148,9 +161,10 @@ export class TerminalIO {
    * @param {string} prompt
    * @param {string} word  Letters typed so far (0–5 chars, lowercase).
    * @param {import('../../lib/constraints.mjs').ConstraintState} constraints
+   * @param {number} [cursor=-1]  Cursor position (0–4); -1 means no cursor.
    */
-  _renderPendingLine(prompt, word, constraints) {
-    const { tileRow, pool } = this._computePending(word, constraints);
+  _renderPendingLine(prompt, word, constraints, cursor = -1) {
+    const { tileRow, pool } = this._computePending(word, constraints, cursor);
     const suffix = pool ? '     ' + pool : '';
     this.write('\r' + prompt + ' ' + tileRow + suffix + ANSI.eraseToEol);
   }
@@ -160,32 +174,66 @@ export class TerminalIO {
    * updated word-input state.  Shared by NodeTerminal and XtermTerminal so
    * the key semantics are identical in both environments.
    *
-   * @param {string}   rawKey      Single character or control sequence.
+   * Arrow keys (\x1b[D / \x1b[C) move the cursor; typing at cursor < buffer.length
+   * replaces the character there rather than appending.  All other unrecognised
+   * escape sequences are silently ignored.
+   *
+   * @param {string}   rawKey      Single character or escape sequence.
    * @param {string}   buffer      Current input buffer (0–5 lowercase chars).
+   * @param {number}   cursor      Insertion point (0–buffer.length).
    * @param {string[]} suggestions Words mapped to number keys 1–6.
-   * @returns {{ buffer: string, done: boolean, exit: boolean }}
+   * @returns {{ buffer: string, cursor: number, done: boolean, exit: boolean }}
    */
-  _handleWordKey(rawKey, buffer, suggestions) {
-    if (rawKey === '') return { buffer, done: false, exit: true };
+  _handleWordKey(rawKey, buffer, cursor, suggestions) {
+    if (rawKey === '\x03') return { buffer, cursor, done: false, exit: true };
 
     if (rawKey === '\r' || rawKey === '\n') {
-      return { buffer, done: buffer.length === 5, exit: false };
+      return { buffer, cursor, done: buffer.length === 5, exit: false };
     }
 
-    if (rawKey === '' || rawKey === '\b') {
-      return { buffer: buffer.slice(0, -1), done: false, exit: false };
+    if (rawKey === '\x7f' || rawKey === '\b') {
+      if (cursor > 0) {
+        return {
+          buffer: buffer.slice(0, cursor - 1) + buffer.slice(cursor),
+          cursor: cursor - 1,
+          done: false, exit: false,
+        };
+      }
+      return { buffer, cursor, done: false, exit: false };
     }
+
+    if (rawKey === '\x1b[D') {  // left arrow
+      return { buffer, cursor: Math.max(0, cursor - 1), done: false, exit: false };
+    }
+
+    if (rawKey === '\x1b[C') {  // right arrow
+      return { buffer, cursor: Math.min(buffer.length, cursor + 1), done: false, exit: false };
+    }
+
+    // Ignore all other escape sequences (up/down arrows, function keys, etc.)
+    if (rawKey.startsWith('\x1b')) return { buffer, cursor, done: false, exit: false };
 
     const n = parseInt(rawKey, 10);
     if (n >= 1 && n <= 6 && suggestions[n - 1]) {
-      return { buffer: suggestions[n - 1], done: false, exit: false };
+      return { buffer: suggestions[n - 1], cursor: suggestions[n - 1].length, done: false, exit: false };
     }
 
-    if (/^[a-zA-Z]$/.test(rawKey) && buffer.length < 5) {
-      return { buffer: buffer + rawKey.toLowerCase(), done: false, exit: false };
+    if (/^[a-zA-Z]$/.test(rawKey)) {
+      const ch = rawKey.toLowerCase();
+      if (cursor < buffer.length) {
+        // Replace character at cursor; buffer stays the same length.
+        return {
+          buffer: buffer.slice(0, cursor) + ch + buffer.slice(cursor + 1),
+          cursor: Math.min(5, cursor + 1),
+          done: false, exit: false,
+        };
+      } else if (buffer.length < 5) {
+        // Append at end.
+        return { buffer: buffer + ch, cursor: buffer.length + 1, done: false, exit: false };
+      }
     }
 
-    return { buffer, done: false, exit: false };
+    return { buffer, cursor, done: false, exit: false };
   }
 
   /**
