@@ -42,6 +42,23 @@ export class ConstraintState {
   }
 
   /**
+   * Returns true when every copy of `letter` is already at a confirmed position
+   * (i.e. maxCounts is set and all copies are accounted for by `known`).
+   * Distinct from `eliminated`: eliminated means the letter isn't in the word at
+   * all; isExhausted means it IS in the word but there's nowhere new to place it.
+   *
+   * @param {string} letter
+   * @returns {boolean}
+   */
+  isExhausted(letter) {
+    const max = this.maxCounts.get(letter);
+    if (max === undefined) return false;
+    let placed = 0;
+    for (const L of this.known) if (L === letter) placed++;
+    return max <= placed;
+  }
+
+  /**
    * Incorporate information from a single guess and its result pattern.
    *
    * @param {string}   guess   - The guessed word

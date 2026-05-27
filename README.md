@@ -91,12 +91,14 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - CLI UI
+  - Add arrow keys to select letter to change. Includes some kind of cursor indicator
   - Add user guess-grading mode
 - Analysis HTML UI
   - CLI component
   - Decision tree
   - Other analysis components
   - Selector component(s) to wrap analyses
+  - Make it work as a github page with low per-repo setup
 - Test suite: HTML ?
 - Rapid-play mode in CLI or HTML?
 - CLI: analysis? Delay until after HTML UI

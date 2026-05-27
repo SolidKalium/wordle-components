@@ -68,12 +68,10 @@ export class TerminalIO {
       if (!letter) { slots.push({ kind: 'empty', letter }); continue; }
       if (constraints.known[i] === letter) { slots.push({ kind: 'green', letter }); continue; }
 
-      // Grey if we know the exact count of this letter and every instance is
-      // already at a confirmed position.  Covers both fully-eliminated letters
-      // (maxCounts = 0) and letters whose copies are all accounted for by greens
-      // (e.g. BOOTH second O after the first O went green).
-      const maxCount = constraints.maxCounts.get(letter);
-      if (maxCount !== undefined && maxCount <= (knownCount.get(letter) ?? 0)) {
+      // Grey if every copy of this letter is already at a confirmed position
+      // (covers fully-eliminated letters and letters whose copies are all
+      // accounted for by greens, e.g. the second O in BOOTH after the first went green).
+      if (constraints.isExhausted(letter)) {
         slots.push({ kind: 'grey', letter }); continue;
       }
 
