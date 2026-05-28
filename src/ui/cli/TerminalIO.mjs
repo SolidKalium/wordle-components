@@ -47,13 +47,21 @@ export class TerminalIO {
   close() {}
 
   /**
-   * Compute slots and pool for a partially-typed word.
-   * Shared by _pendingTileRow (tests) and _renderPendingLine (live display).
+   * Compute the styled slot data and pool for a partially-typed word.
    *
-   * @param {string} word
+   * This is a pure computation (no ANSI, no platform specifics) so it can be
+   * consumed by both CLI renderers (_slotsToAnsi / _poolToAnsi) and future
+   * HTML/React renderers without modification.
+   *
+   * @param {string|(string|null)[]} word
+   *   Letters typed so far.  Either a plain string (0–5 chars, positions beyond
+   *   word.length are empty) or a 5-element array where null means "empty slot".
    * @param {import('../../lib/constraints.mjs').ConstraintState} constraints
-   * @param {number} [cursor=-1]  Cursor position (0–4); -1 means no cursor highlight.
-   * @returns {{ tileRow: string, pool: string }}
+   * @param {number} [cursor=-1]  Slot index (0–4) for cursor highlight; -1 = none.
+   * @returns {{
+   *   slots: Array<{kind: string, letter: string|null, atCursor: boolean}>,
+   *   pool:  Array<{kind: 'green-unplaced'|'yellow-unplaced', letter: string}>
+   * }}
    */
   _computePending(word, constraints, cursor = -1) {
     // Pre-compute confirmed positions per letter — used in both the
@@ -66,8 +74,8 @@ export class TerminalIO {
     // Pass 1: assign high-priority colours per position.
     const slots = [];
     for (let i = 0; i < 5; i++) {
-      const letter = word[i];
-      if (!letter) { slots.push({ kind: 'empty', letter }); continue; }
+      const letter = word[i] ?? null; // works for both string and (string|null)[] input
+      if (!letter) { slots.push({ kind: 'empty', letter: null }); continue; }
       if (constraints.known[i] === letter) { slots.push({ kind: 'green', letter }); continue; }
 
       // Grey if every copy of this letter is already at a confirmed position
@@ -96,10 +104,10 @@ export class TerminalIO {
       if (s.kind === 'yellow-fg') yellowFgUsed.set(L, used + 1);
     }
 
-    // Pass 3: yellow-tile → grey when yellow-fg has consumed the whole pool for a letter.
-    // E.g. typing TENT after learning there is exactly one T: the yellow-fg at pos 3 uses
-    // the pool (1 unplaced T), so the yellow-tile at pos 0 has no remaining copies to warn
-    // about and should show grey instead.
+    // Pass 3: yellow-tile → grey when the pool for this letter is exhausted.
+    // Covers two cases:
+    //   • pool > 0 but yellow-fg placed elsewhere already used all copies
+    //   • pool = 0 because _normalize() promoted the letter to a known position
     for (const s of slots) {
       if (s.kind !== 'yellow-tile') continue;
       const L = s.letter;
@@ -112,35 +120,19 @@ export class TerminalIO {
       }
     }
 
-    // Build tile row.
-    // Cursor tile: prepend \x1b[4m (underline) so the letter is visually highlighted.
-    // Empty cursor slot: show '_' as a visible insertion-point indicator.
-    // Tile format must end with LETTER + space + RESET for parseTileRow compatibility.
-    const tileRow = slots.map((s, i) => {
-      const u         = s.letter?.toUpperCase();
-      const atCursor  = (cursor >= 0 && cursor < 5 && i === cursor);
-      const ul        = atCursor ? ANSI.underline : '';
-      const glyph     = u ?? (atCursor ? '_' : ' ');
+    // Attach cursor flag.
+    const slotsWithCursor = slots.map((s, i) => ({
+      ...s,
+      atCursor: cursor >= 0 && cursor < 5 && i === cursor,
+    }));
 
-      if (s.kind === 'empty') {
-        return atCursor ? `${ul} ${glyph} ${ANSI.reset}` : '   ';
-      }
-
-      switch (s.kind) {
-        case 'green':       return `${ul}${ANSI[GREEN]} ${glyph} ${ANSI.reset}`;
-        case 'yellow-tile': return `${ul}${ANSI[YELLOW]} ${glyph} ${ANSI.reset}`;
-        case 'grey':        return `${ul}${ANSI.grey} ${glyph} ${ANSI.reset}`;
-        case 'yellow-fg':   return `${ul}${PENDING.yellowFg} ${glyph} ${ANSI.reset}`;
-        default:            return atCursor ? `${ul} ${glyph} ${ANSI.reset}` : ` ${glyph} `;
-      }
-    }).join('');
-
-    // Build pool: unplaced greens (position order) then remaining yellow-fg (alphabetical).
-    const poolParts = [];
+    // Build pool (structured, renderer-agnostic).
+    // Greens in position order, then yellow-fg remainders alphabetically.
+    const pool = [];
     for (let i = 0; i < 5; i++) {
       const L = constraints.known[i];
       if (L && slots[i].kind !== 'green') {
-        poolParts.push(`${PENDING.greenFg}${L.toUpperCase()}${ANSI.reset}`);
+        pool.push({ kind: 'green-unplaced', letter: L });
       }
     }
     const yellowRemaining = [];
@@ -151,69 +143,120 @@ export class TerminalIO {
     }
     yellowRemaining.sort();
     for (const L of yellowRemaining) {
-      poolParts.push(`${PENDING.yellowFg}${L.toUpperCase()}${ANSI.reset}`);
+      pool.push({ kind: 'yellow-unplaced', letter: L });
     }
 
-    return { tileRow, pool: poolParts.join(' ') };
+    return { slots: slotsWithCursor, pool };
   }
 
   /**
-   * Build a 15-character tile row for a partially-typed word, using
+   * Convert a slots array (from _computePending) to an ANSI tile-row string.
+   * Tile format: LETTER + space + RESET for parseTileRow compatibility.
+   *
+   * @param {Array<{kind: string, letter: string|null, atCursor: boolean}>} slots
+   * @returns {string}
+   */
+  _slotsToAnsi(slots) {
+    return slots.map(({ kind, letter, atCursor }) => {
+      const u     = letter?.toUpperCase();
+      const ul    = atCursor ? ANSI.underline : '';
+      const glyph = u ?? (atCursor ? '_' : ' ');
+
+      if (kind === 'empty') {
+        return atCursor ? `${ul} ${glyph} ${ANSI.reset}` : '   ';
+      }
+      switch (kind) {
+        case 'green':       return `${ul}${ANSI[GREEN]} ${glyph} ${ANSI.reset}`;
+        case 'yellow-tile': return `${ul}${ANSI[YELLOW]} ${glyph} ${ANSI.reset}`;
+        case 'grey':        return `${ul}${ANSI.grey} ${glyph} ${ANSI.reset}`;
+        case 'yellow-fg':   return `${ul}${PENDING.yellowFg} ${glyph} ${ANSI.reset}`;
+        default:            return atCursor ? `${ul} ${glyph} ${ANSI.reset}` : ` ${glyph} `;
+      }
+    }).join('');
+  }
+
+  /**
+   * Convert a pool array (from _computePending) to an ANSI hint string.
+   *
+   * @param {Array<{kind: string, letter: string}>} pool
+   * @returns {string}
+   */
+  _poolToAnsi(pool) {
+    return pool.map(({ kind, letter }) => {
+      const L = letter.toUpperCase();
+      return kind === 'green-unplaced'
+        ? `${PENDING.greenFg}${L}${ANSI.reset}`
+        : `${PENDING.yellowFg}${L}${ANSI.reset}`;
+    }).join(' ');
+  }
+
+  /**
+   * Build a tile-row string for a partially-typed word, using
    * constraint-aware colouring.  Untyped positions render as three spaces.
    *
-   * @param {string} word  Letters typed so far (0–5 chars, lowercase).
+   * @param {string|(string|null)[]} word  Letters typed so far (0–5).
    * @param {import('../../lib/constraints.mjs').ConstraintState} constraints
    * @param {number} [cursor=-1]  Cursor position (0–4); -1 means no cursor.
    * @returns {string}  ANSI-styled string (no leading \r, no trailing \n).
    */
   _pendingTileRow(word, constraints, cursor = -1) {
-    return this._computePending(word, constraints, cursor).tileRow;
+    const { slots } = this._computePending(word, constraints, cursor);
+    return this._slotsToAnsi(slots);
   }
 
   /**
    * Overwrite the current terminal line with prompt + tile row + pool hint.
    * Appends ESC[K to erase any leftover content from a longer previous render.
    *
-   * @param {string} prompt
-   * @param {string} word  Letters typed so far (0–5 chars, lowercase).
+   * @param {string|(string|null)[]} word  Letters typed so far (0–5).
    * @param {import('../../lib/constraints.mjs').ConstraintState} constraints
    * @param {number} [cursor=-1]  Cursor position (0–4); -1 means no cursor.
    */
   _renderPendingLine(prompt, word, constraints, cursor = -1) {
-    const { tileRow, pool } = this._computePending(word, constraints, cursor);
-    const suffix = pool ? '     ' + pool : '';
+    const { slots, pool } = this._computePending(word, constraints, cursor);
+    const tileRow = this._slotsToAnsi(slots);
+    const poolStr = this._poolToAnsi(pool);
+    const suffix  = poolStr ? '     ' + poolStr : '';
     this.write('\r' + prompt + ' ' + tileRow + suffix + ANSI.eraseToEol);
   }
 
   /**
-   * Process one raw key string from a platform keypress source and return the
-   * updated word-input state.  Shared by NodeTerminal and XtermTerminal so
-   * the key semantics are identical in both environments.
+   * Process one raw key string and return the updated word-input state.
+   * Shared by NodeTerminal and XtermTerminal.
    *
-   * Arrow keys (\x1b[D / \x1b[C) move the cursor; typing at cursor < buffer.length
-   * replaces the character there rather than appending.  All other unrecognised
-   * escape sequences are silently ignored.
+   * Buffer is a 5-element array of lowercase chars or null (null = empty slot).
+   * Cursor ranges 0–5; it may advance past typed letters to skip a slot.
    *
-   * @param {string}   rawKey      Single character or escape sequence.
-   * @param {string}   buffer      Current input buffer (0–5 lowercase chars).
-   * @param {number}   cursor      Insertion point (0–buffer.length).
-   * @param {string[]} suggestions Words mapped to number keys 1–6.
-   * @returns {{ buffer: string, cursor: number, done: boolean, exit: boolean }}
+   * Key semantics:
+   *   ← / →        Move cursor (right can enter empty territory up to 5).
+   *   Letter        Write at cursor, advance cursor.  No-op at cursor=5.
+   *   Backspace     Clear slot at cursor−1, move cursor left.  No shift.
+   *   Enter         Submit when all 5 slots are filled; otherwise no-op.
+   *   Tab           Fill all confirmed-green positions; cursor → first empty.
+   *   1–6           Load suggestion; cursor → 5.
+   *   Ctrl-C        Signal exit.
+   *   Other ESC seq Silently ignored.
+   *
+   * @param {string}            rawKey
+   * @param {(string|null)[]}   buffer      5-element slot array.
+   * @param {number}            cursor      Current insertion point (0–5).
+   * @param {string[]}          suggestions Words mapped to keys 1–6.
+   * @param {import('../../lib/constraints.mjs').ConstraintState|null} [constraints]
+   *   Required for Tab autofill; ignored otherwise.
+   * @returns {{ buffer: (string|null)[], cursor: number, done: boolean, exit: boolean }}
    */
-  _handleWordKey(rawKey, buffer, cursor, suggestions) {
+  _handleWordKey(rawKey, buffer, cursor, suggestions, constraints = null) {
     if (rawKey === '\x03') return { buffer, cursor, done: false, exit: true };
 
     if (rawKey === '\r' || rawKey === '\n') {
-      return { buffer, cursor, done: buffer.length === 5, exit: false };
+      return { buffer, cursor, done: buffer.every(c => c !== null), exit: false };
     }
 
     if (rawKey === '\x7f' || rawKey === '\b') {
       if (cursor > 0) {
-        return {
-          buffer: buffer.slice(0, cursor - 1) + buffer.slice(cursor),
-          cursor: cursor - 1,
-          done: false, exit: false,
-        };
+        const next = [...buffer];
+        next[cursor - 1] = null;
+        return { buffer: next, cursor: cursor - 1, done: false, exit: false };
       }
       return { buffer, cursor, done: false, exit: false };
     }
@@ -222,8 +265,17 @@ export class TerminalIO {
       return { buffer, cursor: Math.max(0, cursor - 1), done: false, exit: false };
     }
 
-    if (rawKey === '\x1b[C') {  // right arrow
-      return { buffer, cursor: Math.min(buffer.length, cursor + 1), done: false, exit: false };
+    if (rawKey === '\x1b[C') {  // right arrow — may advance into empty territory
+      return { buffer, cursor: Math.min(5, cursor + 1), done: false, exit: false };
+    }
+
+    if (rawKey === '\t' && constraints) {
+      const next = [...buffer];
+      for (let i = 0; i < 5; i++) {
+        if (constraints.known[i]) next[i] = constraints.known[i];
+      }
+      const firstEmpty = next.indexOf(null);
+      return { buffer: next, cursor: firstEmpty === -1 ? 5 : firstEmpty, done: false, exit: false };
     }
 
     // Ignore all other escape sequences (up/down arrows, function keys, etc.)
@@ -231,22 +283,19 @@ export class TerminalIO {
 
     const n = parseInt(rawKey, 10);
     if (n >= 1 && n <= 6 && suggestions[n - 1]) {
-      return { buffer: suggestions[n - 1], cursor: suggestions[n - 1].length, done: false, exit: false };
+      return { buffer: [...suggestions[n - 1]], cursor: suggestions[n - 1].length, done: false, exit: false };
     }
 
-    if (/^[a-zA-Z]$/.test(rawKey)) {
-      const ch = rawKey.toLowerCase();
-      if (cursor < buffer.length) {
-        // Replace character at cursor; buffer stays the same length.
-        return {
-          buffer: buffer.slice(0, cursor) + ch + buffer.slice(cursor + 1),
-          cursor: Math.min(5, cursor + 1),
-          done: false, exit: false,
-        };
-      } else if (buffer.length < 5) {
-        // Append at end.
-        return { buffer: buffer + ch, cursor: buffer.length + 1, done: false, exit: false };
-      }
+    if (rawKey === ' ' && cursor < 5) {
+      const next = [...buffer];
+      next[cursor] = null;
+      return { buffer: next, cursor: Math.min(5, cursor + 1), done: false, exit: false };
+    }
+
+    if (/^[a-zA-Z]$/.test(rawKey) && cursor < 5) {
+      const next = [...buffer];
+      next[cursor] = rawKey.toLowerCase();
+      return { buffer: next, cursor: Math.min(5, cursor + 1), done: false, exit: false };
     }
 
     return { buffer, cursor, done: false, exit: false };

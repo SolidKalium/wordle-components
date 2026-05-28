@@ -57,7 +57,7 @@ export class NodeTerminal extends TerminalIO {
     process.stdout.write('\x1b[?25l'); // hide the blinking cursor while we own the line
 
     return new Promise(resolve => {
-      let buffer = '';
+      let buffer = [null, null, null, null, null];
       let cursor = 0;
 
       const cleanup = () => {
@@ -71,12 +71,12 @@ export class NodeTerminal extends TerminalIO {
 
       const onData = (rawKey) => {
         const { buffer: next, cursor: nextCursor, done, exit } =
-          this._handleWordKey(rawKey, buffer, cursor, suggestions);
+          this._handleWordKey(rawKey, buffer, cursor, suggestions, constraints);
         buffer = next;
         cursor = nextCursor;
 
         if (exit) { cleanup(); process.stdout.write('\n'); process.exit(0); }
-        if (done) { cleanup(); resolve(buffer); return; }
+        if (done) { cleanup(); resolve(buffer.join('')); return; }
         this._renderPendingLine(prompt, buffer, constraints, cursor);
       };
 
