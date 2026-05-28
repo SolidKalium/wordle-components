@@ -91,7 +91,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - CLI UI
-  - Allow cursor to move to future letters, leaving one blank. Don't allow submission until all letters are filled.
   - Add user guess-grading mode
 - Analysis HTML UI
   - CLI component
