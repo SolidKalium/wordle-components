@@ -40,7 +40,12 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
   - Component for the CLI version, for demo purposes
   - Rapid-play component: choose a word from a prepared menu on each turn, using a combination of random words and best or near-best words from multiple strategies. Maybe allow filtering to options that include one player-chosen letter.
   - Possibly split an "official" static analysis report from a dynamic one. Though they might be tabs of the same page, or something similar.
-  - Need to load word list either dynamically or via inlining/compiling.
+  - Hypotheses and notes
+    - The information-theoretic approaches likely provide similar quality of choices
+    - There are different objectives: average moves, avoid high numbers of moves (e.g. within 6 moves). But the odds of needing more than 6 moves might already be low for any decent algorithm, other than dealing with traps in hard mode. So they might look pretty similar, again, other than the impact of traps in hard mode.
+    - Full-depth trees for either objective might be meaningfully different. But we aren't calculating those yet.
+    - Could show quality of a move in different strategies (score and order)
+      - Could show this for a random sample of words. Inversions of order might be particularly useful to show, but that's harder to calculate. Not sure if a graph would help at all. There's sort of too many words to do the snake graph thing where options get re-ordered. Maybe one order is used as the baseline, it gets colors assigned, and then the re-ordered words are shown with that color system?
 - **React in Claude**
   - TBD, but likely things based on the CLI and Analysis UIs, plus support for anything the skill needs.
 
@@ -69,6 +74,8 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
 ## Strategies
 - Smallest average group size
   - This is the same as maximizing the number of groups
+- Entropy minimization
+  - This is the same as minimizing sum of n*lg(n) across groups.
 - Minimize the number of words in the same group as a word
   - This is the same as minimizing the average square of group size
 - Minimax group size
@@ -90,19 +97,21 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 ## TODO
 - CLI UI
   - Add user guess-grading mode
+- Strategies: single-step entropy
 - Analysis HTML UI
   - CLI component
   - Decision tree
   - Other analysis components
   - Selector component(s) to wrap analyses
   - Make it work as a github page with low per-repo setup
+- Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.
 - Test suite: HTML ?
-- Rapid-play mode in CLI or HTML?
+- Rapid-play mode in HTML
 - CLI: analysis? Delay until after HTML UI
 - Cache precomputed rankings for first-turn guesses?
 - Claude Skill
-- Test suite: Claude?
-- Strategies: entropy, mixed strategy nash equilibrium
+- Test suite: Claude Skill ?
+- Strategies: full-depth calculation (min avg or minimax depth), mixed strategy nash equilibrium ?
 
 ## Postponed / LATER
 - CLI
@@ -118,6 +127,9 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - Mode picker might be most useful GUI
     - Config format for things like filtered strategies would need to be determined. This is related to how any HTML component configs could be saved, stored, or specified by a Skill. But config "files" are out of scope for now.
     - Maybe start with one game per command run, but then allow it to go repeatedly, possibly with a flag to control that behavior. Repeated runs allow any GUI-specified settings to persist.
+- Strategies
+  - What if we didn't restrict the word at all and any sequence of letters were allowed?
+    - Mainly postponed because we don't want to check 26^5 (10^7) options. If we can reduce the set of letters we might want to check on the first turn to 16 options, then that's only 10^6, which is still a lot of brute force... But with some thought, this might have a better approach. But letter frequency and place frequency could make this complicated. And we don't necessarily want the most frequent letters, but letters and positions that split as many groups as possible. Which might point towards just trying all the vowels on the first move, since most words will have 2 or 3 of them. Which might imply that we'd want to place each vowel where it is most common in words with only one distinct vowel, but effects on other paths might overwhelm that... So I'm now leaning towards an incremental search algorithm that explores variants of a strategy. E.g. swap two letters, replace a letter, while tracking options discarded. Might need to prove convex properties to trust that, but it might just do ok. And some varied starting choices converging to the same result could provide a sanity check in lieu of a proof.
 
 ## Other Topics
 - I'm curious about what might bias a human against quickly finding a word.
