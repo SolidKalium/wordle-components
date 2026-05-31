@@ -1,3 +1,4 @@
+import { GREEN, YELLOW, GREY } from '../../lib/core.mjs';
 import { TerminalIO } from './TerminalIO.mjs';
 
 /**
@@ -32,6 +33,36 @@ export class XtermTerminal extends TerminalIO {
     return new Promise(resolve => {
       this._lineBuffer = '';
       this._lineResolve = resolve;
+    });
+  }
+
+  async readGradingRaw(prompt, word, constraints) {
+    return new Promise(resolve => {
+      let slots  = this._computeGradingSlots(word, constraints);
+      let cursor = slots.findIndex(s => !s.fixed);
+      let error  = null;
+
+      if (cursor === -1) {
+        resolve(slots.map(s => s.state));
+        return;
+      }
+
+      this.write('\x1b[?25l');
+      this._renderGradingLine(prompt, slots, cursor, error);
+
+      this._rawModeHandler = (rawKey) => {
+        const result = this._handleGradingKey(rawKey, slots, cursor, constraints);
+        slots  = result.slots;
+        cursor = result.cursor;
+        error  = result.error;
+        if (result.done || result.exit) {
+          this._rawModeHandler = null;
+          this.write('\x1b[?25h');
+          if (result.done) resolve(slots.map(s => s.state));
+        } else {
+          this._renderGradingLine(prompt, slots, cursor, error);
+        }
+      };
     });
   }
 

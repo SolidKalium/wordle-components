@@ -2,6 +2,7 @@ import { parseArgs } from 'node:util';
 import { createRequire } from 'node:module';
 import { NodeTerminal } from './NodeTerminal.mjs';
 import { GameRunner } from './GameRunner.mjs';
+import { GradingRunner } from './GradingRunner.mjs';
 import { SuggestionWorker } from './SuggestionWorker.mjs';
 import { ANSWERS, WORDS } from '../../lib/words.gen.mjs';
 
@@ -14,6 +15,7 @@ try {
     options: {
       mode:      { type: 'string',  short: 'm', default: 'basic' },
       quickplay: { type: 'boolean', short: 'q', default: false },
+      grade:     { type: 'boolean', short: 'g', default: false },
       explain:   { type: 'boolean', short: 'e', default: false },
       word:      { type: 'string',  short: 'w' },
       help:      { type: 'boolean', short: 'h', default: false },
@@ -37,8 +39,9 @@ if (flags.help) {
 Usage: ./wordle [options]
 
 Options:
-  -m, --mode <mode>   Game mode: basic (default) or quickplay
+  -m, --mode <mode>   Game mode: basic (default), quickplay, or grade
   -q, --quickplay     Shorthand for: --mode quickplay
+  -g, --grade         Shorthand for: --mode grade (computer guesses, you grade)
   -e, --explain       Show guess ranking after each move (basic mode only)
   -w, --word <word>   Use a specific word as the answer (any valid guess word)
   -h, --help          Show this help message
@@ -46,8 +49,8 @@ Options:
   process.exit(0);
 }
 
-const VALID_MODES = ['basic', 'quickplay'];
-const mode = flags.quickplay ? 'quickplay' : flags.mode;
+const VALID_MODES = ['basic', 'quickplay', 'grade'];
+const mode = flags.quickplay ? 'quickplay' : flags.grade ? 'grade' : flags.mode;
 if (!VALID_MODES.includes(mode)) {
   console.error(`Unknown mode: "${mode}". Valid modes: ${VALID_MODES.join(', ')}`);
   process.exit(1);
@@ -55,6 +58,10 @@ if (!VALID_MODES.includes(mode)) {
 
 let fixedAnswer = null;
 if (flags.word) {
+  if (mode === 'grade') {
+    console.error('--word is not used in grade mode (the computer chooses its own guesses).');
+    process.exit(1);
+  }
   fixedAnswer = flags.word.toLowerCase();
   if (!WORDS.includes(fixedAnswer)) {
     console.error(`"${flags.word}" is not a valid word.`);
@@ -64,14 +71,20 @@ if (flags.word) {
 
 const io = new NodeTerminal();
 const suggester = new SuggestionWorker();
-const runner = new GameRunner(io, {
-  wordList: WORDS,
-  answers: ANSWERS,
-  mode,
-  explain: flags.explain,
-  suggester,
-  answer: fixedAnswer,
-});
+
+let runner;
+if (mode === 'grade') {
+  runner = new GradingRunner(io, { wordList: WORDS, answers: ANSWERS, suggester });
+} else {
+  runner = new GameRunner(io, {
+    wordList: WORDS,
+    answers: ANSWERS,
+    mode,
+    explain: flags.explain,
+    suggester,
+    answer: fixedAnswer,
+  });
+}
 
 try {
   await runner.run();

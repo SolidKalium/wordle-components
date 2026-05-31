@@ -1,4 +1,5 @@
 import { createInterface } from 'node:readline';
+import { GREEN, YELLOW, GREY } from '../../lib/core.mjs';
 import { TerminalIO } from './TerminalIO.mjs';
 
 /**
@@ -82,6 +83,76 @@ export class NodeTerminal extends TerminalIO {
 
       process.stdin.on('data', onData);
       this._renderPendingLine(prompt, buffer, constraints, cursor);
+    });
+  }
+
+  /**
+   * Enter raw mode and let the human grade the computer's guessed word.
+   *
+   * Renders a coloured tile row the player navigates with arrow keys, cycling
+   * each letter through grey / yellow / green.  Fixed slots (determined by
+   * existing constraints) cannot be changed.
+   *
+   * Falls back to readLine on non-TTY stdin (returns a 5-char pattern string
+   * expected as uppercase G/Y/_ characters, then converted to the constant array).
+   *
+   * @param {string}   prompt
+   * @param {string}   word         The computer's 5-letter guess.
+   * @param {import('../../lib/constraints.mjs').ConstraintState} constraints
+   * @returns {Promise<string[]>}  5-element pattern array (GREEN/YELLOW/GREY constants).
+   */
+  async readGradingRaw(prompt, word, constraints) {
+    if (!process.stdin.isTTY) {
+      const line = (await this.readLine(prompt + ' [grade G/Y/_] ')).trim().toUpperCase();
+      return [...line.padEnd(5, '_')].slice(0, 5).map(c =>
+        c === 'G' ? GREEN : c === 'Y' ? YELLOW : GREY
+      );
+    }
+
+    this._rl.close();
+    process.stdin.setRawMode(true);
+    process.stdin.setEncoding('utf8');
+    process.stdin.resume();
+    process.stdout.write('\x1b[?25l');
+
+    return new Promise(resolve => {
+      let slots  = this._computeGradingSlots(word, constraints);
+      let cursor = slots.findIndex(s => !s.fixed);
+      let error  = null;
+
+      if (cursor === -1) {
+        // All slots fixed — nothing for the user to grade; resolve immediately.
+        process.stdout.write('\x1b[?25h');
+        process.stdin.setRawMode(false);
+        process.stdin.pause();
+        this._rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
+        this._rl.on('close', () => {});
+        resolve(slots.map(s => s.state));
+        return;
+      }
+
+      const cleanup = () => {
+        process.stdout.write('\x1b[?25h');
+        process.stdin.removeListener('data', onData);
+        process.stdin.setRawMode(false);
+        process.stdin.pause();
+        this._rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
+        this._rl.on('close', () => {});
+      };
+
+      const onData = (rawKey) => {
+        const result = this._handleGradingKey(rawKey, slots, cursor, constraints);
+        slots  = result.slots;
+        cursor = result.cursor;
+        error  = result.error;
+
+        if (result.exit) { cleanup(); process.stdout.write('\n'); process.exit(0); }
+        if (result.done) { cleanup(); resolve(slots.map(s => s.state)); return; }
+        this._renderGradingLine(prompt, slots, cursor, error);
+      };
+
+      process.stdin.on('data', onData);
+      this._renderGradingLine(prompt, slots, cursor, error);
     });
   }
 

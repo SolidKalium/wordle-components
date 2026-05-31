@@ -1,4 +1,4 @@
-import { GREEN, YELLOW } from '../../lib/core.mjs';
+import { GREEN, YELLOW, GREY } from '../../lib/core.mjs';
 
 // ANSI escape sequences for Wordle tile colours.
 // Each entry covers background + text colour; follow with a letter then RESET.
@@ -299,6 +299,183 @@ export class TerminalIO {
     }
 
     return { buffer, cursor, done: false, exit: false };
+  }
+
+  // ── Grading mode (human grades the computer's guess) ─────────────────────
+
+  /**
+   * Compute per-slot grading state for a word the computer has just guessed.
+   *
+   * Each slot describes the letter, its current colour, whether it is fixed
+   * (determined entirely by existing constraints — the user cannot change it),
+   * and the ordered list of colours the user may cycle through with Up/Down.
+   *
+   * Cycle order (Up advances): grey → yellow → green → grey.
+   * Fixed slots have a single-element `allowed` array.
+   *
+   * @param {string}   word         The computer's guessed word (5 chars).
+   * @param {import('../../lib/constraints.mjs').ConstraintState} constraints
+   * @returns {Array<{letter:string, state:string, fixed:boolean, allowed:string[]}>}
+   */
+  _computeGradingSlots(word, constraints) {
+    const slots = [];
+    for (let i = 0; i < 5; i++) {
+      const L = word[i].toLowerCase();
+
+      if (constraints.known[i] === L) {
+        slots.push({ letter: L, state: GREEN, fixed: true, allowed: [GREEN] });
+        continue;
+      }
+      if (constraints.isExhausted(L)) {
+        slots.push({ letter: L, state: GREY, fixed: true, allowed: [GREY] });
+        continue;
+      }
+      if (constraints.excluded[i].has(L)) {
+        slots.push({ letter: L, state: YELLOW, fixed: true, allowed: [YELLOW] });
+        continue;
+      }
+
+      // Non-fixed: green allowed unless a different letter is confirmed at this position.
+      const greenAllowed = constraints.known[i] === null;
+      const allowed = [GREY, YELLOW];
+      if (greenAllowed) allowed.push(GREEN);
+      slots.push({ letter: L, state: GREY, fixed: false, allowed });
+    }
+    return slots;
+  }
+
+  /**
+   * Convert a grading slots array to an ANSI tile-row string.
+   * The slot at `cursor` receives an underline highlight.
+   *
+   * @param {ReturnType<TerminalIO['_computeGradingSlots']>} slots
+   * @param {number} cursor  0–4; -1 = no cursor.
+   * @returns {string}
+   */
+  _gradingSlotsToAnsi(slots, cursor = -1) {
+    return slots.map(({ letter, state }, i) => {
+      const ul    = (i === cursor) ? ANSI.underline : '';
+      const color = ANSI[state] ?? ANSI.grey;
+      return `${ul}${color} ${letter.toUpperCase()} ${ANSI.reset}`;
+    }).join('');
+  }
+
+  /**
+   * Overwrite the current terminal line with prompt + grading tile row + optional error.
+   *
+   * @param {string} prompt
+   * @param {ReturnType<TerminalIO['_computeGradingSlots']>} slots
+   * @param {number} cursor
+   * @param {string|null} [error]
+   */
+  _renderGradingLine(prompt, slots, cursor, error = null) {
+    const tileRow = this._gradingSlotsToAnsi(slots, cursor);
+    const suffix  = error ? '   ' + error : '';
+    this.write('\r' + prompt + ' ' + tileRow + suffix + ANSI.eraseToEol);
+  }
+
+  /**
+   * Validate a completed grading against known constraints.
+   * Only cross-letter count checks — per-letter state is already enforced by
+   * the fixed/allowed system.
+   *
+   * @param {ReturnType<TerminalIO['_computeGradingSlots']>} slots
+   * @param {import('../../lib/constraints.mjs').ConstraintState} constraints
+   * @returns {string|null}  Error message, or null if valid.
+   */
+  _validateGradingSlots(slots, constraints) {
+    // Tally yellow+green count per letter across the guessed word.
+    const positiveCount = new Map();
+    for (const { letter, state } of slots) {
+      if (state !== GREY) positiveCount.set(letter, (positiveCount.get(letter) ?? 0) + 1);
+    }
+
+    for (const [letter, count] of positiveCount) {
+      const max = constraints.maxCounts.get(letter);
+      if (max !== undefined && count > max) {
+        return `Known: at most ${max} '${letter.toUpperCase()}'`;
+      }
+    }
+    // Also check letters the word uses that have a minimum — must meet minCounts.
+    for (const { letter } of slots) {
+      const min = constraints.minCounts.get(letter) ?? 0;
+      if (min > 0 && (positiveCount.get(letter) ?? 0) < min) {
+        return `Known: at least ${min} '${letter.toUpperCase()}'`;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Move cursor left or right, skipping fixed slots.
+   * Stops at 0 (leftward) or 4 (rightward) if no non-fixed slot exists further.
+   *
+   * @param {ReturnType<TerminalIO['_computeGradingSlots']>} slots
+   * @param {number} cursor  Current position (0–4).
+   * @param {number} dir     +1 or -1.
+   * @returns {number}  New cursor position.
+   */
+  _gradingMoveCursor(slots, cursor, dir) {
+    let next = cursor + dir;
+    while (next >= 0 && next < 5) {
+      if (!slots[next].fixed) return next;
+      next += dir;
+    }
+    return cursor;
+  }
+
+  /**
+   * Process one raw key in grading mode and return the updated state.
+   *
+   * Key semantics:
+   *   ← / →    Move cursor (skipping fixed slots).
+   *   Space     Advance cursor right (forward).
+   *   ↑         Cycle colour forward  (grey → yellow → green → grey).
+   *   ↓         Cycle colour backward (grey → green → yellow → grey).
+   *   Backspace Reset current slot to grey (no-op on fixed).
+   *   Enter     Validate and submit.
+   *   Ctrl-C    Signal exit.
+   *
+   * @param {string}   rawKey
+   * @param {ReturnType<TerminalIO['_computeGradingSlots']>} slots
+   * @param {number}   cursor
+   * @param {import('../../lib/constraints.mjs').ConstraintState} constraints
+   * @returns {{ slots, cursor: number, done: boolean, exit: boolean, error: string|null }}
+   */
+  _handleGradingKey(rawKey, slots, cursor, constraints) {
+    const ok = (s, c, err = null) => ({ slots: s, cursor: c, done: false, exit: false, error: err });
+
+    if (rawKey === '\x03') return { slots, cursor, done: false, exit: true, error: null };
+
+    if (rawKey === '\r' || rawKey === '\n') {
+      const error = this._validateGradingSlots(slots, constraints);
+      if (error) return ok(slots, cursor, error);
+      return { slots, cursor, done: true, exit: false, error: null };
+    }
+
+    if (rawKey === '\x1b[D') return ok(slots, this._gradingMoveCursor(slots, cursor, -1));
+    if (rawKey === '\x1b[C' || rawKey === ' ') return ok(slots, this._gradingMoveCursor(slots, cursor, +1));
+
+    if (rawKey === '\x1b[A' || rawKey === '\x1b[B') {  // up / down arrow
+      const slot = slots[cursor];
+      if (slot.fixed) return ok(slots, cursor);
+      const dir   = rawKey === '\x1b[A' ? +1 : -1;
+      const idx   = slot.allowed.indexOf(slot.state);
+      const next  = (idx + dir + slot.allowed.length) % slot.allowed.length;
+      const updated = slots.map((s, i) => i === cursor ? { ...s, state: s.allowed[next] } : s);
+      return ok(updated, cursor);
+    }
+
+    if (rawKey === '\x7f' || rawKey === '\b') {
+      const slot = slots[cursor];
+      if (slot.fixed || slot.state === GREY) return ok(slots, cursor);
+      const updated = slots.map((s, i) => i === cursor ? { ...s, state: GREY } : s);
+      return ok(updated, cursor);
+    }
+
+    if (rawKey.startsWith('\x1b')) return ok(slots, cursor);
+
+    return ok(slots, cursor);
   }
 
   /**
