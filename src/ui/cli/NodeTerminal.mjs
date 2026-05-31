@@ -97,11 +97,12 @@ export class NodeTerminal extends TerminalIO {
    * expected as uppercase G/Y/_ characters, then converted to the constant array).
    *
    * @param {string}   prompt
-   * @param {string}   word         The computer's 5-letter guess.
+   * @param {string}   word            The computer's 5-letter guess.
    * @param {import('../../lib/constraints.mjs').ConstraintState} constraints
+   * @param {number|null} [remainingCount]  Words still possible before this guess.
    * @returns {Promise<string[]>}  5-element pattern array (GREEN/YELLOW/GREY constants).
    */
-  async readGradingRaw(prompt, word, constraints) {
+  async readGradingRaw(prompt, word, constraints, remainingCount = null) {
     if (!process.stdin.isTTY) {
       const line = (await this.readLine(prompt + ' [grade G/Y/_] ')).trim().toUpperCase();
       return [...line.padEnd(5, '_')].slice(0, 5).map(c =>
@@ -116,9 +117,10 @@ export class NodeTerminal extends TerminalIO {
     process.stdout.write('\x1b[?25l');
 
     return new Promise(resolve => {
-      let slots  = this._computeGradingSlots(word, constraints);
-      let cursor = slots.findIndex(s => !s.fixed);
-      let error  = null;
+      let slots           = this._computeGradingSlots(word, constraints);
+      let cursor          = slots.findIndex(s => !s.fixed);
+      let error           = null;
+      let errorPressCount = 0;
 
       if (cursor === -1) {
         // All slots fixed — nothing for the user to grade; resolve immediately.
@@ -141,18 +143,19 @@ export class NodeTerminal extends TerminalIO {
       };
 
       const onData = (rawKey) => {
-        const result = this._handleGradingKey(rawKey, slots, cursor, constraints);
-        slots  = result.slots;
-        cursor = result.cursor;
-        error  = result.error;
+        const result = this._handleGradingKey(rawKey, slots, cursor, constraints, errorPressCount);
+        slots           = result.slots;
+        cursor          = result.cursor;
+        error           = result.error;
+        errorPressCount = result.errorPressCount;
 
         if (result.exit) { cleanup(); process.stdout.write('\n'); process.exit(0); }
         if (result.done) { cleanup(); resolve(slots.map(s => s.state)); return; }
-        this._renderGradingLine(prompt, slots, cursor, error);
+        this._renderGradingLine(prompt, slots, cursor, error, remainingCount);
       };
 
       process.stdin.on('data', onData);
-      this._renderGradingLine(prompt, slots, cursor, error);
+      this._renderGradingLine(prompt, slots, cursor, error, remainingCount);
     });
   }
 

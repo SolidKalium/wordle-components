@@ -45,7 +45,7 @@ export class GradingRunner {
 
       const turn   = game.guesses.length + 1;
       const prompt = `Guess ${turn}/${game.maxGuesses}:`;
-      const pattern = await this.io.readGradingRaw(prompt, guess, game.constraints);
+      const pattern = await this.io.readGradingRaw(prompt, guess, game.constraints, remaining.length);
 
       // Overwrite the grading row with the final scored result.
       this.io.write('\r' + prompt + ' ');

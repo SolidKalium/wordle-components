@@ -593,6 +593,42 @@ function makeGradingConstraints() {
   return cs;
 }
 
+describe('_renderGradingLine remaining count', () => {
+  it('shows "N words possible" when no error', () => {
+    const t = new MemoryTerminal();
+    const cs = new ConstraintState();
+    const slots = t._computeGradingSlots('crane', cs);
+    t._renderGradingLine('Guess 1/6:', slots, 0, null, 42);
+    expect(t.output).toContain('42 words possible');
+  });
+
+  it('shows "1 word possible" (singular)', () => {
+    const t = new MemoryTerminal();
+    const cs = new ConstraintState();
+    const slots = t._computeGradingSlots('crane', cs);
+    t._renderGradingLine('Guess 1/6:', slots, 0, null, 1);
+    expect(t.output).toContain('1 word possible');
+  });
+
+  it('shows error instead of count when error is present', () => {
+    const t = new MemoryTerminal();
+    const cs = new ConstraintState();
+    const slots = t._computeGradingSlots('crane', cs);
+    t._renderGradingLine('Guess 1/6:', slots, 0, "Known: at least 1 'A'", 42);
+    expect(t.output).toContain("Known: at least 1 'A'");
+    expect(t.output).not.toContain('42 words possible');
+  });
+
+  it('error is rendered in red (ANSI 31m)', () => {
+    const t = new MemoryTerminal();
+    const cs = new ConstraintState();
+    const slots = t._computeGradingSlots('crane', cs);
+    t._renderGradingLine('Guess 1/6:', slots, 0, 'some error', null);
+    expect(t.output).toContain('[31m');
+    expect(t.output).toContain('some error');
+  });
+});
+
 describe('_computeGradingSlots', () => {
   const t = new MemoryTerminal();
 
@@ -751,6 +787,34 @@ describe('_handleGradingKey', () => {
     expect(r.cursor).toBe(1);
   });
 
+  it('g sets green and advances cursor', () => {
+    const r = grade('g', freshSlots(), 0);
+    expect(r.slots[0].state).toBe(GREEN);
+    expect(r.cursor).toBe(1);
+  });
+
+  it('G (uppercase) sets green and advances', () => {
+    const r = grade('G', freshSlots(), 0);
+    expect(r.slots[0].state).toBe(GREEN);
+    expect(r.cursor).toBe(1);
+  });
+
+  it('y sets yellow and advances cursor', () => {
+    const r = grade('y', freshSlots(), 0);
+    expect(r.slots[0].state).toBe(YELLOW);
+    expect(r.cursor).toBe(1);
+  });
+
+  it('g no-op when green not in allowed', () => {
+    // Slot where known[i] is a different letter → green not allowed.
+    const cs2 = new ConstraintState();
+    cs2.update('bxxxx', [GREEN, GREY, GREY, GREY, GREY]); // pos 0 known 'b'
+    const slots = t._computeGradingSlots('crane', cs2); // 'c' at pos 0, green not allowed
+    const r = t._handleGradingKey('g', slots, 0, cs2);
+    expect(r.slots[0].state).toBe(GREY); // unchanged
+    expect(r.cursor).toBe(0);            // didn't advance
+  });
+
   it('ctrl-c signals exit', () => {
     const r = grade('\x03', freshSlots(), 0);
     expect(r.exit).toBe(true);
@@ -767,14 +831,35 @@ describe('_handleGradingKey', () => {
     expect(r.error).toBeNull();
   });
 
-  it('enter shows error on constraint violation', () => {
-    // A is required (minCounts >= 1) in makeGradingConstraints.
+  it('enter shows error on constraint violation with one !', () => {
     const cs2 = makeGradingConstraints();
-    // 'badge': A at pos 1, non-fixed (not excluded there) — defaults to grey.
     const slots = t._computeGradingSlots('badge', cs2);
-    // All defaults grey → A graded grey → violates minCounts.
-    const r = t._handleGradingKey('\r', slots, 0, cs2);
+    const r = t._handleGradingKey('\r', slots, 0, cs2, 0);
     expect(r.done).toBe(false);
     expect(r.error).toMatch(/at least/i);
+    expect(r.error).toMatch(/!$/);
+    expect(r.errorPressCount).toBe(1);
+  });
+
+  it('consecutive Enter presses cycle ! count 1→2→3→1', () => {
+    const cs2 = makeGradingConstraints();
+    const slots = t._computeGradingSlots('badge', cs2);
+    const r1 = t._handleGradingKey('\r', slots, 0, cs2, 0);
+    expect(r1.error).toMatch(/!$/);
+    expect((r1.error.match(/!+$/)[0])).toHaveLength(1);
+
+    const r2 = t._handleGradingKey('\r', slots, 0, cs2, 1);
+    expect((r2.error.match(/!+$/)[0])).toHaveLength(2);
+
+    const r3 = t._handleGradingKey('\r', slots, 0, cs2, 2);
+    expect((r3.error.match(/!+$/)[0])).toHaveLength(3);
+
+    const r4 = t._handleGradingKey('\r', slots, 0, cs2, 3); // wraps back to 1
+    expect((r4.error.match(/!+$/)[0])).toHaveLength(1);
+  });
+
+  it('non-Enter key resets errorPressCount to 0', () => {
+    const r = grade('\x1b[C', freshSlots(), 0); // right arrow
+    expect(r.errorPressCount).toBe(0);
   });
 });

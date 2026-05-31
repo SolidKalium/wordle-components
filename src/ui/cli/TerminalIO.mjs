@@ -9,6 +9,7 @@ const ANSI = {
   reset:    '\x1b[0m',
   eraseToEol: '\x1b[K',                   // clear from cursor to end of line
   underline: '\x1b[4m',                   // underline on   — used for cursor highlight
+  red:       '\x1b[31m',                  // red fg         — validation errors
 };
 
 const PENDING = {
@@ -361,17 +362,26 @@ export class TerminalIO {
   }
 
   /**
-   * Overwrite the current terminal line with prompt + grading tile row + optional error.
+   * Overwrite the current terminal line with prompt + grading tile row + annotation.
+   *
+   * During active grading the annotation shows either a validation error (if
+   * Enter was just pressed with an inconsistent pattern) or the remaining-word
+   * count (how many answers were still possible before this guess).
    *
    * @param {string} prompt
    * @param {ReturnType<TerminalIO['_computeGradingSlots']>} slots
    * @param {number} cursor
    * @param {string|null} [error]
+   * @param {number|null} [remainingCount]
    */
-  _renderGradingLine(prompt, slots, cursor, error = null) {
-    const tileRow = this._gradingSlotsToAnsi(slots, cursor);
-    const suffix  = error ? '   ' + error : '';
-    this.write('\r' + prompt + ' ' + tileRow + suffix + ANSI.eraseToEol);
+  _renderGradingLine(prompt, slots, cursor, error = null, remainingCount = null) {
+    const tileRow    = this._gradingSlotsToAnsi(slots, cursor);
+    const annotation = error
+      ? '     ' + ANSI.red + error + ANSI.reset
+      : remainingCount !== null
+        ? `     ${remainingCount} ${remainingCount === 1 ? 'word' : 'words'} possible`
+        : '';
+    this.write('\r' + prompt + ' ' + tileRow + annotation + ANSI.eraseToEol);
   }
 
   /**
@@ -432,6 +442,8 @@ export class TerminalIO {
    *   Space     Advance cursor right (forward).
    *   ↑         Cycle colour forward  (grey → yellow → green → grey).
    *   ↓         Cycle colour backward (grey → green → yellow → grey).
+   *   g / G     Set current slot green  (if allowed) and advance cursor.
+   *   y / Y     Set current slot yellow (if allowed) and advance cursor.
    *   Backspace Reset current slot to grey (no-op on fixed).
    *   Enter     Validate and submit.
    *   Ctrl-C    Signal exit.
@@ -440,17 +452,21 @@ export class TerminalIO {
    * @param {ReturnType<TerminalIO['_computeGradingSlots']>} slots
    * @param {number}   cursor
    * @param {import('../../lib/constraints.mjs').ConstraintState} constraints
-   * @returns {{ slots, cursor: number, done: boolean, exit: boolean, error: string|null }}
+   * @param {number}   [errorPressCount=0]  How many consecutive Enter presses have shown the current error.
+   * @returns {{ slots, cursor: number, done: boolean, exit: boolean, error: string|null, errorPressCount: number }}
    */
-  _handleGradingKey(rawKey, slots, cursor, constraints) {
-    const ok = (s, c, err = null) => ({ slots: s, cursor: c, done: false, exit: false, error: err });
+  _handleGradingKey(rawKey, slots, cursor, constraints, errorPressCount = 0) {
+    const ok = (s, c, err = null) => ({ slots: s, cursor: c, done: false, exit: false, error: err, errorPressCount: 0 });
 
-    if (rawKey === '\x03') return { slots, cursor, done: false, exit: true, error: null };
+    if (rawKey === '\x03') return { slots, cursor, done: false, exit: true, error: null, errorPressCount: 0 };
 
     if (rawKey === '\r' || rawKey === '\n') {
-      const error = this._validateGradingSlots(slots, constraints);
-      if (error) return ok(slots, cursor, error);
-      return { slots, cursor, done: true, exit: false, error: null };
+      const baseError = this._validateGradingSlots(slots, constraints);
+      if (baseError) {
+        const nextCount = (errorPressCount % 3) + 1;
+        return { slots, cursor, done: false, exit: false, error: baseError + '!'.repeat(nextCount), errorPressCount: nextCount };
+      }
+      return { slots, cursor, done: true, exit: false, error: null, errorPressCount: 0 };
     }
 
     if (rawKey === '\x1b[D') return ok(slots, this._gradingMoveCursor(slots, cursor, -1));
@@ -471,6 +487,24 @@ export class TerminalIO {
       if (slot.fixed || slot.state === GREY) return ok(slots, cursor);
       const updated = slots.map((s, i) => i === cursor ? { ...s, state: GREY } : s);
       return ok(updated, cursor);
+    }
+
+    if (rawKey === 'g' || rawKey === 'G') {
+      const slot = slots[cursor];
+      if (!slot.fixed && slot.allowed.includes(GREEN)) {
+        const updated = slots.map((s, i) => i === cursor ? { ...s, state: GREEN } : s);
+        return ok(updated, this._gradingMoveCursor(updated, cursor, +1));
+      }
+      return ok(slots, cursor);
+    }
+
+    if (rawKey === 'y' || rawKey === 'Y') {
+      const slot = slots[cursor];
+      if (!slot.fixed && slot.allowed.includes(YELLOW)) {
+        const updated = slots.map((s, i) => i === cursor ? { ...s, state: YELLOW } : s);
+        return ok(updated, this._gradingMoveCursor(updated, cursor, +1));
+      }
+      return ok(slots, cursor);
     }
 
     if (rawKey.startsWith('\x1b')) return ok(slots, cursor);

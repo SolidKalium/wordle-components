@@ -36,11 +36,12 @@ export class XtermTerminal extends TerminalIO {
     });
   }
 
-  async readGradingRaw(prompt, word, constraints) {
+  async readGradingRaw(prompt, word, constraints, remainingCount = null) {
     return new Promise(resolve => {
-      let slots  = this._computeGradingSlots(word, constraints);
-      let cursor = slots.findIndex(s => !s.fixed);
-      let error  = null;
+      let slots           = this._computeGradingSlots(word, constraints);
+      let cursor          = slots.findIndex(s => !s.fixed);
+      let error           = null;
+      let errorPressCount = 0;
 
       if (cursor === -1) {
         resolve(slots.map(s => s.state));
@@ -48,19 +49,20 @@ export class XtermTerminal extends TerminalIO {
       }
 
       this.write('\x1b[?25l');
-      this._renderGradingLine(prompt, slots, cursor, error);
+      this._renderGradingLine(prompt, slots, cursor, error, remainingCount);
 
       this._rawModeHandler = (rawKey) => {
-        const result = this._handleGradingKey(rawKey, slots, cursor, constraints);
-        slots  = result.slots;
-        cursor = result.cursor;
-        error  = result.error;
+        const result = this._handleGradingKey(rawKey, slots, cursor, constraints, errorPressCount);
+        slots           = result.slots;
+        cursor          = result.cursor;
+        error           = result.error;
+        errorPressCount = result.errorPressCount;
         if (result.done || result.exit) {
           this._rawModeHandler = null;
           this.write('\x1b[?25h');
           if (result.done) resolve(slots.map(s => s.state));
         } else {
-          this._renderGradingLine(prompt, slots, cursor, error);
+          this._renderGradingLine(prompt, slots, cursor, error, remainingCount);
         }
       };
     });
