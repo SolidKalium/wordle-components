@@ -1,7 +1,5 @@
 # Wordle
 
-Practicing working with Claude
-
 ## Ways to Interact with this Project
 
 ### Base Code

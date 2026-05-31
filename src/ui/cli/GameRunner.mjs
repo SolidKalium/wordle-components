@@ -12,8 +12,6 @@ const ERROR_MESSAGES = {
  *
  * Designed to work with any TerminalIO implementation (NodeTerminal,
  * XtermTerminal, or a test double).
- *
- * TODO: expose mode and explain as CLI flags / config options.
  */
 export class GameRunner {
   /**
