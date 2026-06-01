@@ -121,6 +121,11 @@ export function CliTerminal() {
           continue;
         }
 
+        if (answer && mode === 'quickplay' && !ANSWERS.includes(answer)) {
+          io.writeLine(`Quick-play only supports Wordle answer words. The provided word is only in the valid guess list.`);
+          continue;
+        }
+
         io.writeLine('');
         const runner = mode === 'grade'
           ? new GradingRunner(io, { wordList: WORDS, answers: ANSWERS, suggester, openingWords: OPENING_WORDS, answer, explain })
