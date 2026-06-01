@@ -25,6 +25,7 @@ export function CliTerminal({ mode = 'basic', answer = null, explain = false }) 
       cursorBlink: true,
       fontFamily: '"Cascadia Code", "Fira Code", "Courier New", monospace',
       fontSize: 14,
+      theme: { background: '#000000' },
     });
     const fitAddon = new FitAddon();
     terminal.loadAddon(fitAddon);

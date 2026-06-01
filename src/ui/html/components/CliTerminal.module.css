@@ -1,4 +1,17 @@
 .terminal {
   height: 400px;
-  width: 100%;
+}
+
+/* addon-fit reads .xterm's computed padding when calculating cols/rows, so
+   padding here is correctly accounted for. background covers the padding area. */
+.terminal :global(.xterm) {
+  padding: 6px 10px;
+  background: #000;
+  box-sizing: border-box;
+}
+
+/* xterm sets this inline from the theme option; !important guards against
+   any mismatch if the theme isn't applied before the element is measured. */
+.terminal :global(.xterm-viewport) {
+  background-color: #000 !important;
 }
