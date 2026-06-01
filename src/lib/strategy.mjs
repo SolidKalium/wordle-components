@@ -117,6 +117,27 @@ export class MinExpectedRemainingStrategy extends Strategy {
   }
 }
 
+/**
+ * Maximizes expected Shannon information gain.
+ *
+ * For a fixed set of remaining words, maximizing expected entropy gain is
+ * equivalent to minimizing Σ(n * lg(n)), where n is each partition group's size.
+ */
+export class MaxEntropyStrategy extends Strategy {
+  rankGuesses(_game, candidates, remainingWords, k = candidates.length) {
+    const scored = candidates.map(word => {
+      let score = 0;
+      for (const group of partitionByGuess(word, remainingWords).values()) {
+        const n = group.length;
+        score += n * Math.log2(n);
+      }
+      return { word, score };
+    });
+    scored.sort((a, b) => a.score - b.score); // ascending: lower expected remaining entropy is better
+    return scored.slice(0, k);
+  }
+}
+
 /** Minimizes the largest group, optimizing for the worst case. */
 export class MinimaxStrategy extends Strategy {
   rankGuesses(_game, candidates, remainingWords, k = candidates.length) {
