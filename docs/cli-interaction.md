@@ -8,18 +8,19 @@ Line-buffered fallback (readline) is used when `process.stdin.isTTY` is false
 
 ## Modes and applicability
 
-| Mode       | Suggestions | Explain | Raw input |
-|------------|-------------|---------|-----------|
-| Basic      | no          | opt-in  | yes       |
-| Quickplay  | yes         | (later) | yes       |
+| Mode       | Suggestions | Explain | Raw input          |
+|------------|-------------|---------|--------------------|
+| Basic      | no          | opt-in  | yes (word input)   |
+| Quickplay  | yes         | (later) | yes (word input)   |
+| Grade      | n/a         | opt-in  | yes (grading block)|
 
-Raw mode applies to the guess-input step in both modes.  The user-guess-grading
-mode ("computer guesses, human grades") is a separate feature; this doc covers
-only the "computer picks a word, player guesses" flow.
+Raw mode applies to different steps depending on mode.  Sections below cover
+both the "player guesses a computer-chosen word" flow (Basic/Quickplay) and
+the "computer guesses, player grades" flow (Grade).
 
 ---
 
-## Screen layout per turn
+## Screen layout per turn — Basic / Quickplay
 
 ``` text
 Guess N/6:  _  _  _  _  _     A B C    ← prompt + tile row + pool hint (one line, rewritten in-place)
@@ -108,7 +109,7 @@ separated by five spaces.
 
 ---
 
-## Key bindings
+## Key bindings — Basic / Quickplay
 
 | Key | Condition | Action |
 | --- | --------- | ------ |
@@ -136,7 +137,7 @@ backspace clears slot 4 and moves to cursor 4.
 
 ---
 
-## In-place grading
+## In-place grading — Basic / Quickplay
 
 When the player presses Enter with a complete word:
 
@@ -158,13 +159,139 @@ path, so the two modes are indistinguishable in the scrollback.
 
 ---
 
+## Grading mode — screen layout
+
+The computer guesses; the player grades each letter.  Raw input is used for the
+grading block rather than word entry.  The block occupies three terminal rows:
+
+```text
+              ▁▁▁            ▁▁▁   ← top hint row: lower-eighth strips in Up-cycle colour
+Guess N/6:  C  R  A  N  E     N words possible
+              ▔▔▔            ▔▔▔   ← bottom hint row: upper-eighth strips in Down-cycle colour
+```
+
+- **Top hint row** — shows what pressing Up (or W) would cycle the slot to, using
+  `▁▁▁` (U+2581 LOWER ONE EIGHTH BLOCK) in the foreground colour of the target
+  state.  The strip sits flush against the tile row below.
+- **Tile row** — the computer's guessed word with each letter coloured according
+  to the current grading state.  The active cursor slot is underlined.
+  An optional annotation (words remaining, or a validation error) appears to
+  the right.
+- **Bottom hint row** — shows what pressing Down (or S) would cycle the slot to,
+  using `▔▔▔` (U+2594 UPPER ONE EIGHTH BLOCK) flush against the tile row above.
+
+Non-cursor slots in both hint rows are dimmed (`ESC[2m`) so the active slot
+stands out.  Fixed slots (where existing constraints fully determine the colour)
+render as three spaces in both hint rows — they cannot be changed.
+
+On the first render the block is written from the current cursor position.
+Subsequent renders reposition with `ESC[2A` to overwrite all three rows in place.
+On submission or undo the block is collapsed with `ESC[2A\r ESC[J`.
+
+---
+
+## Grading mode — fixed vs. editable slots
+
+`_computeGradingSlots` determines which slots are fixed before the grading block
+appears.  A slot is fixed when existing constraints fully determine its colour:
+
+| Condition | Fixed colour |
+| --------- | ------------ |
+| `constraints.known[i] === letter` | Green |
+| `constraints.isExhausted(letter)` | Grey |
+| `constraints.excluded[i].has(letter)` | Yellow |
+
+A fixed slot's `allowed` array contains only its fixed colour; its hint-row
+cells are always blank.  Editable slots start grey and cycle through
+`[GREY, YELLOW, GREEN]` (green omitted when a different letter is confirmed at
+that position).
+
+---
+
+## Key bindings — Grading mode
+
+| Key | Condition | Action |
+| --- | --------- | ------ |
+| `↑` / `W` | slot not fixed | Cycle colour forward: grey → yellow → green → grey |
+| `↓` / `S` | slot not fixed | Cycle colour backward: grey → green → yellow → grey |
+| `←` / `A` | any | Move cursor left, skipping fixed slots |
+| `→` / `D` / Space | any | Move cursor right, skipping fixed slots |
+| `G` / `g` | slot not fixed, green in allowed | Set slot green; advance cursor (skip fixed) |
+| `Y` / `y` | slot not fixed | Set slot yellow; advance cursor (skip fixed) |
+| Backspace | slot not fixed, not already grey | Reset slot to grey |
+| Enter | — | Validate and submit; show error if constraint violated |
+| Ctrl+Z | — | Undo: collapse block, signal GradingRunner to undo last committed word |
+| Ctrl+C | — | Restore terminal cursor; exit process |
+| Other keys / ESC sequences | — | No-op |
+
+**Cursor movement** skips fixed slots in the direction of travel, stopping at
+the first non-fixed slot found.  If no non-fixed slot exists further in that
+direction the cursor does not move.
+
+**Validation on Enter** — `_validateGradingSlots` checks cross-letter count
+constraints against `constraints.maxCounts` and `constraints.minCounts`.
+(Per-slot state is already enforced by the fixed/allowed system, so only
+aggregate count errors remain.)  If invalid, the error is shown in red in
+the annotation space with escalating `!` marks on repeated Enter presses
+(one `!` → two `!` → three `!` → cycles back).
+
+---
+
+## Grading mode — undo
+
+Pressing Ctrl+Z during grading:
+1. `readGradingRaw` collapses the block (`ESC[2A\r ESC[J`), restores the
+   terminal cursor, and resolves with `null`.
+2. `GradingRunner` sees `null`, calls `game.undoMove()` to pop the last
+   committed guess and rebuild constraints.
+3. The runner then erases the committed result line plus any warning lines that
+   appeared before it, using the formula:
+   `warningLines(current iteration) + 1 + warningLines(preceding the undone move)`.
+4. The undone word is re-presented as the next guess (no re-computation).
+
+If there is nothing to undo (first turn), the same word is simply re-presented.
+
+---
+
+## Grading mode — pool exhaustion
+
+After each committed guess, `GradingRunner` filters the answer list against the
+current constraints.
+
+1. **Answers exhausted** — if no answer-list word matches, a one-time warning is
+   printed and the runner falls back to the full valid-word list.  The warning is
+   suppressed on subsequent turns until the player undoes above the point where it
+   first appeared.
+
+2. **Full list exhausted** — if even the full word list yields no matches,
+   `readUndoOrQuit` is called:
+   - Ctrl+Z → undo the last committed word (see Undo section above).
+   - Enter / Ctrl+C → end the session.
+
+In auto-play mode (`-w` flag), full exhaustion prints a diagnostic line and
+exits the loop immediately.
+
+---
+
+## Grading mode — auto-play (`-w`)
+
+When a word is supplied with `-w`, `GradingRunner` constructs a `Game` with
+`answer` set.  Each turn the game grades itself via `game.makeMove(guess)` and
+the result is printed immediately — no interactive grading block is shown.
+The `-e` flag appends a word-count annotation to each committed line.
+
+---
+
 ## TerminalIO abstractions
 
 `TerminalIO` (base class) owns all slot/pool computation and ANSI rendering.
-`NodeTerminal` and `XtermTerminal` each implement `write()`, `readLine()`, and
-`readWordRaw()`.  `GameRunner` is agnostic to the concrete subclass.
+`NodeTerminal` and `XtermTerminal` each implement `write()`, `readLine()`,
+`readWordRaw()`, `readGradingRaw()`, and `readUndoOrQuit()`.
+`GameRunner` and `GradingRunner` are agnostic to the concrete subclass.
 
-### `_computePending(word, constraints, cursor = -1)`
+### Word-input methods
+
+#### `_computePending(word, constraints, cursor = -1)`
 
 Pure computation — no ANSI, no platform specifics.
 
@@ -182,18 +309,18 @@ of `'green' | 'yellow-tile' | 'grey' | 'yellow-fg' | 'default' | 'empty'`.
 Green-unplaced entries appear first (in position order); yellow-unplaced entries
 follow (alphabetically).
 
-### `_slotsToAnsi(slots)` / `_poolToAnsi(pool)`
+#### `_slotsToAnsi(slots)` / `_poolToAnsi(pool)`
 
 Convert the structured output of `_computePending` to ANSI strings for CLI
 rendering.  HTML or React renderers consume `_computePending` directly and skip
 these methods.
 
-### `_renderPendingLine(prompt, word, constraints, cursor = -1)`
+#### `_renderPendingLine(prompt, word, constraints, cursor = -1)`
 
 Overwrites the current terminal line with `\r` + prompt + tile row + pool hint +
 `ESC[K`.  Calls `_computePending`, `_slotsToAnsi`, and `_poolToAnsi` internally.
 
-### `_handleWordKey(rawKey, buffer, cursor, suggestions, constraints)`
+#### `_handleWordKey(rawKey, buffer, cursor, suggestions, constraints)`
 
 Pure state-transition function.  No I/O side effects.
 
@@ -206,11 +333,82 @@ constraints — ConstraintState (required for Tab; ignored otherwise)
 → { buffer, cursor, done, exit }
 ```
 
-### `readWordRaw(prompt, constraints, suggestions = [])`
+#### `readWordRaw(prompt, constraints, suggestions = [])`
 
 Node: enters raw mode, hides cursor, runs the key loop, restores on exit.
 Xterm: registers `_rawModeHandler` on the shared `onData` listener.
 Both fall back to `readLine` when raw input is unavailable.
+
+---
+
+### Grading methods
+
+#### `_computeGradingSlots(word, constraints)`
+
+Pure computation.  Returns a 5-element array of
+`{ letter, state, fixed, allowed }` where `state` is the current colour
+constant (`GREEN | YELLOW | GREY`), `fixed` is a boolean, and `allowed` is the
+ordered cycle array (single-element for fixed slots).
+
+#### `_gradingSlotsToAnsi(slots, cursor = -1)`
+
+Converts the slots array to an ANSI tile-row string.  The slot at `cursor`
+receives an underline prefix.
+
+#### `_hintRowAnsi(slots, dir, cursor = -1)`
+
+Builds one hint-row ANSI string.  `dir = +1` → top row (`▁▁▁`, lower-eighth
+block, fg = colour of Up-cycle target).  `dir = -1` → bottom row (`▔▔▔`,
+upper-eighth block, fg = colour of Down-cycle target).  Non-cursor editable
+slots are dimmed; fixed slots render as three spaces.
+
+#### `_renderGradingBlock(prompt, slots, cursor, error, remainingCount, firstRender)`
+
+Renders the three-row grading block.  On `firstRender = false` prepends
+`ESC[2A` to overwrite the previous block in place.  The annotation on the
+middle row shows `error` (red) if set, otherwise `remainingCount` (plain text)
+if provided.
+
+#### `_validateGradingSlots(slots, constraints)`
+
+Returns an error string if the current slot states violate known count
+constraints (`maxCounts` / `minCounts`), or `null` if valid.
+
+#### `_gradingMoveCursor(slots, cursor, dir)`
+
+Returns the next cursor position in direction `dir` (+1 or -1), skipping fixed
+slots.  Does not move past position 0 or 4.
+
+#### `_handleGradingKey(rawKey, slots, cursor, constraints, errorPressCount = 0)`
+
+Pure state-transition function.
+
+```text
+→ { slots, cursor, done, exit, undo, error, errorPressCount }
+```
+
+`done: true` means Enter was pressed and validation passed.  `undo: true` means
+Ctrl+Z was pressed.  `exit: true` means Ctrl+C was pressed.
+
+#### `readGradingRaw(prompt, word, constraints, remainingCount = null)`
+
+Renders the grading block and drives the key loop until done, undo, or exit.
+Returns the 5-element pattern array (`GREEN | YELLOW | GREY` per slot) on
+success, or `null` to signal undo to the caller.
+
+Node: enters raw mode; Xterm: uses `_rawModeHandler`.  If `cursor === -1` on
+entry (all slots fixed), resolves immediately without entering raw mode.
+
+#### `readUndoOrQuit(message)`
+
+Writes `message` then waits for the player to press Ctrl+Z (`→ 'undo'`) or
+Enter / Ctrl+C (`→ 'quit'`).  Used by `GradingRunner` when the word pool is
+fully exhausted.
+
+#### `writeGuessResult(word, pattern, suffix = '')`
+
+Writes a single scored tile row followed by `ESC[K` and a newline.  `suffix`
+is appended after the tiles (used by `-e` to show word count in grade mode).
 
 ---
 
@@ -221,11 +419,15 @@ Both fall back to `readLine` when raw input is unavailable.
 | green bg | `ESC[42m ESC[1m ESC[97m` | Green tile |
 | yellow bg | `ESC[43m ESC[1m ESC[30m` | Yellow tile |
 | grey bg | `ESC[100m ESC[1m ESC[97m` | Grey tile |
-| yellow fg | `ESC[33m` | Yellow-fg tile; yellow pool items |
+| yellow fg | `ESC[33m` | Yellow-fg tile; yellow pool items; yellow hint strip |
 | green fg | `ESC[1m ESC[32m` | Green pool items |
+| grey fg | `ESC[90m` | Grey hint strip |
 | underline | `ESC[4m` | Cursor highlight (prepended to tile) |
+| dim | `ESC[2m` | Non-cursor hint-row strips in grading block |
+| red fg | `ESC[31m` | Validation error annotation |
 | reset | `ESC[0m` | End of every styled cell |
 | erase to EOL | `ESC[K` | Clear after tile row on each re-render |
+| cursor up N | `ESC[2A` | Reposition to top of grading block on re-render |
 | hide cursor | `ESC[?25l` | On raw-mode entry |
 | show cursor | `ESC[?25h` | On raw-mode exit (including Ctrl+C) |
 

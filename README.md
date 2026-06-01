@@ -27,8 +27,7 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
   - Computer plays against human word, with the human grading the guesses
     - Use `-w` to supply the word in advance and watch the computer play
     - Use `-e` to see words remaining on the committed line
-    - The randomly computer uses one of a small number of good guesses on the first turn
-    - Use the keyboard (arrow keys, WASD or Y/G/\[space]) to grade the guess, then press \[enter]. Use ctrl+z to undo a committed grading.
+    - The computer picks its first guess randomly from a small pool of good openers
     - Use <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd>, <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>, or <kbd>Y</kbd><kbd>G</kbd><kbd>Space</kbd><kbd>Delete</kbd> to grade the guess, then press <kbd>Enter</kbd>. Use <kbd>Ctrl</kbd>+<kbd>Z</kbd> to undo a committed grading.
 - **Analysis HTML page**
   - Decompose problem into useable UI chunks. Both analysis components and selector components.
@@ -92,8 +91,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 - Keyboard: accepted words must *only use* letters in the specified letter *set*
 
 ## TODO
-- CLI UI
-  - Cleanup README, add any notes to CLI md
 - Analysis HTML UI
   - CLI component
   - Decision tree
@@ -166,7 +163,7 @@ For hard mode specifically: how often does the optimal guess (by any single-step
     - Explanation flag to show how the words actually ranked?
     - Use a Suggester instead of the weaker reimplementation currently being used
   - Grading mode
-    - Show additional stats on each move, when -e is used?
+    - Show additional stats on each move, when -e is used? (In addition to words remaining.)
     - Support a choice of algorithm? This might belong in the analysis section instead of here.
   - Flashcard mode: The player is rewarded for choosing the actual best move, and it's always available. Filler words might not be the next-best words overall, but instead be words that are the best on the next turn or two according to the deterministic algorithm.
   - Analyses. Delay at least until after HTML UI for analyses
