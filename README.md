@@ -24,15 +24,11 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
       - Explanation flag: Shows how many words are left, how the guess ranks compared according to a fixed `Strategy`, and what the best word would have been.
     - Quick-play: User is given a short list of plausible guesses on each turn
       - Pressing a number key fills in the corresponding word
-  - Computer plays against human word using human-chosen strategy, with human grading
-    - Optionally show stats on each move
-    - Making keyboard input control the colors under the computer's guess would be good.
-      - G/Y/_ would work but be cumbersome.
-      - Default of gray for each letter. Up (green), Down (yellow), Right (go forward), Left (backup), Delete (gray), Space or Enter (commit grading). Might or might not support an empty space past the end of the word. Could support WASD or numpad as an alternate. Could support an alternate "return to gray" key (minus? do up and down cycle the colors in a circle instead of being specific colors? We could hint the up/down colors with like just a pixel or two in a lighter version of the color, if that's possible.) Need an undo command, probably just command/ctrl z? Also need to handle an interrupt gracefully.
-        - Note: arrow keys might be harder than they seem. Start with WASD and add arrow keys as an upgrade. They use an escape sequence and it can vary accross keyboards. Could need ink, terminal-kit, or `process.stdin.setRawMode(true)`.
-      - If the computer knows that a letter was already (or must be) green in that spot, it can prefill that. Before making a guess, it can ensure that the new feedback is compatible with what is known: the total letters asserted as yellow or green isn't inherently greater than the word list, and no yellow letters turned gray (after accounting for quantity). No previously gray letter should become green or yellow. Issues can be listed to the right or on one or more info lines below the guess being operated on. ("Letters that shouldn't be gray: XYZ. Letters that should be gray: ABC. To back up a turn, press cmd+z.")
-    - Need to handle fixing the grading on an earlier turn.
-    - Can allow the computer to know the word in advance and just let the player pace through with Space/Enter. E.g. "Enter your word for auto-play (blank will let you grade the guesses manually):" (that parenthetical could just be in a lighter text color after the colon until something has been typed in)
+  - Computer plays against human word, with the human grading the guesses
+    - Use `-w` to supply the word in advance and watch the computer play
+    - Use `-e` to see words remaining on the committed line
+    - The randomly computer uses one of a small number of good guesses on the first turn
+    - Use the keyboard (arrow keys or y/g/\[space]) to grade the guess, then press \[enter]. Use ctrl+z to undo a committed grading.
 - **Analysis HTML page**
   - Decompose problem into useable UI chunks. Both analysis components and selector components.
     - TODO Design further. Explore strategies, see consequences
@@ -98,6 +94,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 - CLI UI
   - Grading mode
     - Provided word, game plays itself. Could require enter after each guess (or after the grading?). Could make it do a keystroke every ~0.2 seconds? Probably too fancy and not useful. Just use the -w arg to set a word? or also start with "enter word or hit return to grade it manually". Maybe rename it away from "grading mode" if this is meant to test strategies.
+    - WASD instead of arrow keys?
     - Pool exhaustion
       - Warn and fall back to fuller list?
       - If still no valid words, then maybe prompt command+z to undo, enter to quit
@@ -173,6 +170,9 @@ For hard mode specifically: how often does the optimal guess (by any single-step
     - Flag to not even allow a custom word in quickplay?
     - Explanation flag to show how the words actually ranked?
     - Use a Suggester instead of the weaker reimplementation currently being used
+  - Grading mode
+    - Show additional stats on each move, when -e is used?
+    - Support a choice of algorithm? This might belong in the analysis section instead of here.
   - Flashcard mode: The player is rewarded for choosing the actual best move, and it's always available. Filler words might not be the next-best words overall, but instead be words that are the best on the next turn or two according to the deterministic algorithm.
   - Analyses. Delay at least until after HTML UI for analyses
   - «terminal background detection is unreliable, design with mid-range colors that work on both, offer a flag as override, and optionally attempt OSC 11 as a nicety.»

@@ -43,7 +43,7 @@ Options:
   -q, --quickplay     Shorthand for: --mode quickplay
   -g, --grade         Shorthand for: --mode grade (computer guesses, you grade)
   -e, --explain       Show guess ranking after each move (basic mode only)
-  -w, --word <word>   Use a specific word as the answer (any valid guess word)
+  -w, --word <word>   Use a specific answer word (basic/quickplay: fixed answer; grade: auto-play)
   -h, --help          Show this help message
   -v, --version       Show version number`);
   process.exit(0);
@@ -58,10 +58,6 @@ if (!VALID_MODES.includes(mode)) {
 
 let fixedAnswer = null;
 if (flags.word) {
-  if (mode === 'grade') {
-    console.error('--word is not used in grade mode (the computer chooses its own guesses).');
-    process.exit(1);
-  }
   fixedAnswer = flags.word.toLowerCase();
   if (!WORDS.includes(fixedAnswer)) {
     console.error(`"${flags.word}" is not a valid word.`);
@@ -75,7 +71,10 @@ const suggester = new SuggestionWorker();
 let runner;
 if (mode === 'grade') {
   const openingWords = ['crane', 'slate', 'trace', 'raise', 'stare'];
-  runner = new GradingRunner(io, { wordList: WORDS, answers: ANSWERS, suggester, openingWords });
+  runner = new GradingRunner(io, {
+    wordList: WORDS, answers: ANSWERS, suggester, openingWords,
+    answer: fixedAnswer, explain: flags.explain,
+  });
 } else {
   runner = new GameRunner(io, {
     wordList: WORDS,

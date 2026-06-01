@@ -570,15 +570,16 @@ export class TerminalIO {
 
   /**
    * Render one guess row with ANSI tile colours.
-   * Appends ESC[K before the newline to erase any pool hint left on this line.
+   * Appends ESC[K before the newline to erase any leftover content on this line.
    * @param {string}   word     The guessed word.
    * @param {string[]} pattern  Array of GREEN / YELLOW / GREY constants.
+   * @param {string}   [suffix='']  Optional annotation appended after the tiles.
    */
-  writeGuessResult(word, pattern) {
+  writeGuessResult(word, pattern, suffix = '') {
     const cells = [...word].map((letter, i) => {
       const color = ANSI[pattern[i]] ?? ANSI.grey;
       return `${color} ${letter.toUpperCase()} ${ANSI.reset}`;
     });
-    this.writeLine(cells.join('') + ANSI.eraseToEol);
+    this.writeLine(cells.join('') + suffix + ANSI.eraseToEol);
   }
 }
