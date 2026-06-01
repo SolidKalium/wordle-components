@@ -167,4 +167,30 @@ export class NodeTerminal extends TerminalIO {
   close() {
     this._rl.close();
   }
+
+  async readUndoOrQuit(message) {
+    this.writeLine(message);
+    if (!process.stdin.isTTY) return 'quit';
+
+    this._rl.close();
+    process.stdin.setRawMode(true);
+    process.stdin.setEncoding('utf8');
+    process.stdin.resume();
+
+    return new Promise(resolve => {
+      const cleanup = () => {
+        process.stdin.removeListener('data', onData);
+        process.stdin.setRawMode(false);
+        process.stdin.pause();
+        this._rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
+        this._rl.on('close', () => {});
+      };
+      const onData = (key) => {
+        if (key === '\x1a') { cleanup(); resolve('undo'); }
+        else if (key === '\x03') { cleanup(); process.stdout.write('\n'); process.exit(0); }
+        else if (key === '\r' || key === '\n') { cleanup(); resolve('quit'); }
+      };
+      process.stdin.on('data', onData);
+    });
+  }
 }

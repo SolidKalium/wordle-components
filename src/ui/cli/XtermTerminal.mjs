@@ -75,6 +75,16 @@ export class XtermTerminal extends TerminalIO {
     // Terminal lifecycle is managed externally by the React component.
   }
 
+  async readUndoOrQuit(message) {
+    this.writeLine(message);
+    return new Promise(resolve => {
+      this._rawModeHandler = (key) => {
+        if (key === '\x1a') { this._rawModeHandler = null; resolve('undo'); }
+        else if (key === '\r' || key === '\n' || key === '\x03') { this._rawModeHandler = null; resolve('quit'); }
+      };
+    });
+  }
+
   async readWordRaw(prompt, constraints, suggestions = []) {
     return new Promise(resolve => {
       let buffer = [null, null, null, null, null];

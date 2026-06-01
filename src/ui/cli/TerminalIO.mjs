@@ -59,6 +59,16 @@ export class TerminalIO {
   close() {}
 
   /**
+   * Write `message` then wait for the user to press Ctrl-Z (undo) or Enter/Ctrl-C (quit).
+   * Returns 'undo' or 'quit'.  Used when the word pool is fully exhausted.
+   * @param {string} message
+   * @returns {Promise<'undo'|'quit'>}
+   */
+  readUndoOrQuit(_message) {
+    throw new Error(`${this.constructor.name}.readUndoOrQuit() not implemented`);
+  }
+
+  /**
    * Compute the styled slot data and pool for a partially-typed word.
    *
    * This is a pure computation (no ANSI, no platform specifics) so it can be

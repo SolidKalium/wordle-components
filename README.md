@@ -93,11 +93,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - CLI UI
-  - Grading mode
-    - Pool exhaustion
-      - Warn and fall back to fuller list?
-      - If still no valid words, then maybe prompt command+z to undo, enter to quit
-  - Consider using Ink and ink-web or ink-canvas?
   - Cleanup README, add any notes to CLI md
 - Analysis HTML UI
   - CLI component
@@ -164,6 +159,7 @@ For hard mode specifically: how often does the optimal guess (by any single-step
 
 ## Postponed / LATER
 - CLI
+  - If the UI will become more complicated, consider using Ink and ink-web or ink-canvas
   - Quickplay
     - Flag to not require enter after pressing a number?
     - Flag to not even allow a custom word in quickplay?

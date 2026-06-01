@@ -46,10 +46,52 @@ export class GradingRunner {
     }
     this.io.writeLine('');
 
-    let pendingGuess = null; // set after undo to re-present the same word
+    // warningLinesPerMove[i] = warning lines printed before game.guesses[i] was committed.
+    // Used by undo to know how far up to erase.
+    const warningLinesPerMove = [];
+    let pendingGuess         = null; // set after undo to re-present the same word
+    let shownFallbackWarning = false; // suppress repeat fallback notices within one stretch
 
     while (!game.isOver) {
-      const remaining = this.answers.filter(w => game.constraints.matches(w));
+      let warningLines = 0;
+
+      // Determine candidate pool, falling back to the full word list once if
+      // no answer is consistent with the current constraints.
+      let remaining = this.answers.filter(w => game.constraints.matches(w));
+      if (remaining.length === 0) {
+        if (!shownFallbackWarning) {
+          this.io.writeLine("Your word isn't in the Wordle answer list; falling back to valid guesses.");
+          warningLines++;
+          shownFallbackWarning = true;
+        }
+        remaining = this.wordList.filter(w => game.constraints.matches(w));
+      } else {
+        shownFallbackWarning = false; // back in normal territory
+      }
+
+      // Full exhaustion — nothing left in either list.
+      if (remaining.length === 0) {
+        if (this.answer) {
+          this.io.writeLine("No valid words remain — strategy failed.");
+          break;
+        }
+        const action = await this.io.readUndoOrQuit(
+          "No valid words remain. Press Ctrl+Z to undo the last guess, or Enter to quit."
+        );
+        warningLines++;
+        if (action === 'undo') {
+          const undone = game.undoMove();
+          if (undone) {
+            const prevWarningLines = warningLinesPerMove.pop() ?? 0;
+            this.io.write(`\x1b[${warningLines + 1 + prevWarningLines}A\r\x1b[J`);
+            pendingGuess = undone.word;
+            shownFallbackWarning = false;
+          }
+        } else {
+          break; // quit
+        }
+        continue;
+      }
 
       let guess;
       if (pendingGuess !== null) {
@@ -62,10 +104,7 @@ export class GradingRunner {
         guess = words[0];
       }
 
-      if (!guess) {
-        this.io.writeLine('No valid guesses remaining — is the grading correct?');
-        break;
-      }
+      if (!guess) break; // suggester returned nothing (shouldn't happen given the above)
 
       const turn   = game.guesses.length + 1;
       const prompt = `Guess ${turn}/${game.maxGuesses}:`;
@@ -84,11 +123,13 @@ export class GradingRunner {
         const pattern = await this.io.readGradingRaw(prompt, guess, game.constraints, remaining.length);
 
         if (pattern === null) {
-          // Undo: erase the last committed result and go back to re-grading that word.
+          // Undo: erase current iteration's warnings + committed result + that result's preceding warnings.
           const undone = game.undoMove();
           if (undone) {
-            this.io.write('\x1b[1A\r\x1b[J'); // erase the committed result line
+            const prevWarningLines = warningLinesPerMove.pop() ?? 0;
+            this.io.write(`\x1b[${warningLines + 1 + prevWarningLines}A\r\x1b[J`);
             pendingGuess = undone.word;
+            shownFallbackWarning = false;
           } else {
             pendingGuess = guess; // nothing to undo — re-present the same word
           }
@@ -100,6 +141,7 @@ export class GradingRunner {
         this.io.writeGuessResult(guess, pattern, suffix);
 
         game.makeMove(guess, pattern);
+        warningLinesPerMove.push(warningLines);
       }
     }
 
