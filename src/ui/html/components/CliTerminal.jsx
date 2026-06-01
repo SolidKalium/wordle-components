@@ -68,7 +68,7 @@ function parseArgs(argv) {
  * Embeds the CLI game in a browser terminal (xterm.js) with a minimal shell.
  * Type `./wordle` at the prompt to start; Ctrl+C returns to the prompt.
  */
-export function CliTerminal() {
+export function CliTerminal({ autoFocus = false }) {
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -83,6 +83,7 @@ export function CliTerminal() {
     terminal.loadAddon(fitAddon);
     terminal.open(containerRef.current);
     fitAddon.fit();
+    if (autoFocus) terminal.focus();
 
     const io        = new XtermTerminal(terminal);
     const suggester = new BrowserSuggestionWorker();

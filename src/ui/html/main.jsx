@@ -4,6 +4,6 @@ import { CliTerminal } from './components/CliTerminal.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <CliTerminal mode="basic" />
+    <CliTerminal autoFocus />
   </StrictMode>
 );
