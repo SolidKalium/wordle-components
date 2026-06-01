@@ -14,14 +14,17 @@ export class GradingRunner {
    * @param {string[]} opts.wordList
    * @param {string[]} opts.answers
    * @param {{ compute(remaining: string[], played?: string): Promise<{words: string[]}> }} opts.suggester
+   * @param {string[]} [opts.openingWords]  Pool of first-guess words to pick from randomly.
+   *   When provided, the suggester is skipped on turn 1 (avoiding a full-list computation).
    * @param {() => number} [opts.rng=Math.random]
    */
-  constructor(io, { wordList, answers, suggester, rng = Math.random }) {
-    this.io        = io;
-    this.wordList  = wordList;
-    this.answers   = answers;
-    this.suggester = suggester;
-    this.rng       = rng;
+  constructor(io, { wordList, answers, suggester, openingWords = null, rng = Math.random }) {
+    this.io           = io;
+    this.wordList     = wordList;
+    this.answers      = answers;
+    this.suggester    = suggester;
+    this.openingWords = openingWords;
+    this.rng          = rng;
   }
 
   async run() {
@@ -35,8 +38,14 @@ export class GradingRunner {
 
     while (!game.isOver) {
       const remaining = this.answers.filter(w => game.constraints.matches(w));
-      const { words }  = await this.suggester.compute(remaining, null);
-      const guess      = words[0];
+
+      let guess;
+      if (game.guesses.length === 0 && this.openingWords?.length) {
+        guess = this.openingWords[Math.floor(this.rng() * this.openingWords.length)];
+      } else {
+        const { words } = await this.suggester.compute(remaining, null);
+        guess = words[0];
+      }
 
       if (!guess) {
         this.io.writeLine('No valid guesses remaining — is the grading correct?');

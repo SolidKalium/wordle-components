@@ -74,7 +74,8 @@ const suggester = new SuggestionWorker();
 
 let runner;
 if (mode === 'grade') {
-  runner = new GradingRunner(io, { wordList: WORDS, answers: ANSWERS, suggester });
+  const openingWords = ['crane', 'slate', 'trace', 'raise', 'stare'];
+  runner = new GradingRunner(io, { wordList: WORDS, answers: ANSWERS, suggester, openingWords });
 } else {
   runner = new GameRunner(io, {
     wordList: WORDS,
