@@ -26,10 +26,12 @@ npm run generate   # build src/lib/words.gen.mjs from words/
 ``` text
 src/
   lib/           Engine — pure logic, no I/O, browser-safe
-  ui/            UIs (CLI, HTML components) — to be added
-  worker/        Web Worker entry points — to be added
+  ui/
+    cli/         Command-line UI (TerminalIO, NodeTerminal, XtermTerminal,
+                 GameRunner, GradingRunner, SuggestionWorker, play.mjs)
+  worker/        Web Worker entry points (suggestions.worker.mjs)
   main.jsx       React entry point
-test/            Vitest test suite (imports from src/lib/)
+test/            Vitest test suite (imports from src/lib/ and src/ui/cli/)
 scripts/         Build/codegen tools (Node.js only)
 words/           Source word lists (not generated)
   wordle-answers.txt   2315 curated answer words

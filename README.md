@@ -2,6 +2,8 @@
 
 ## Ways to Interact with this Project
 
+A [dev.md](dev.md) file exists and contains some minimal info.
+
 ### Base Code
 - `Analysis` can run a game with a known word and a known `Strategy`
   - TODO add more details on what it can do?
