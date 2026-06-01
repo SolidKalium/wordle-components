@@ -36,7 +36,8 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
     - TODO Design further. Explore strategies, see consequences
   - Component to visualize the implicit decision tree (for deterministic strategies)
   - Component for the CLI version, for demo purposes
-  - Rapid-play component: choose a word from a prepared menu on each turn, using a combination of random words and best or near-best words from multiple strategies. Maybe allow filtering to options that include one player-chosen letter.
+  - Quick-play component: choose a word from a prepared menu on each turn, using a combination of random words and best or near-best words from multiple strategies.
+    - Maybe allow filtering to options that include one player-chosen letter.
   - Possibly split an "official" static analysis report from a dynamic one. Though they might be tabs of the same page, or something similar.
   - Hypotheses and notes
     - The information-theoretic approaches likely provide similar quality of choices
@@ -97,7 +98,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
   - CLI component
   - Decision tree
   - Other analysis components
-  - Selector component(s) to wrap analyses
+  - Selector component(s) to wrap analyses (e.g. strategy, word list, filter(s), etc) (maybe one selector shows a minimal-ish set of options in an always-displayed config area, while another shows a gear icon with a popover? Or maybe some analyses work well for comparing two things and it's a mix of the two styles, with the selected feature for comparison always shown, and other settings a little more hidden)
   - Make it work as a github page with low per-repo setup
 - Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.
 - Test suite: HTML ?
