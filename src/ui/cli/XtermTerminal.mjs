@@ -49,7 +49,7 @@ export class XtermTerminal extends TerminalIO {
       }
 
       this.write('\x1b[?25l');
-      this._renderGradingLine(prompt, slots, cursor, error, remainingCount);
+      this._renderGradingBlock(prompt, slots, cursor, error, remainingCount, true);
 
       this._rawModeHandler = (rawKey) => {
         const result = this._handleGradingKey(rawKey, slots, cursor, constraints, errorPressCount);
@@ -60,9 +60,12 @@ export class XtermTerminal extends TerminalIO {
         if (result.done || result.exit) {
           this._rawModeHandler = null;
           this.write('\x1b[?25h');
-          if (result.done) resolve(slots.map(s => s.state));
+          if (result.done) {
+            this.write('\x1b[2A\r\x1b[J'); // collapse 3-row block to single line
+            resolve(slots.map(s => s.state));
+          }
         } else {
-          this._renderGradingLine(prompt, slots, cursor, error, remainingCount);
+          this._renderGradingBlock(prompt, slots, cursor, error, remainingCount, false);
         }
       };
     });

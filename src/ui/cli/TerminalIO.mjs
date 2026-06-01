@@ -17,6 +17,17 @@ const PENDING = {
   greenFg:  '\x1b[1m\x1b[32m', // bold green fg — confirmed letter not yet placed
 };
 
+// Colours for the grading hint-row block characters.
+// Top row uses ▂ (lower-quarter) with fg colour — produces a strip at the bottom
+// of each cell, adjacent to the main tile row below.
+// Bottom row uses ▆ (lower-three-quarters) inverted (bg=colour, fg=black) so that
+// only the upper quarter of each cell shows colour, adjacent to the main row above.
+const STRIP = {
+  [GREEN]:  { fg: '\x1b[32m', bg: '\x1b[42m' },
+  [YELLOW]: { fg: '\x1b[33m', bg: '\x1b[43m' },
+  grey:     { fg: '\x1b[90m', bg: '\x1b[100m' },
+};
+
 /**
  * Abstract base for terminal I/O.
  *
@@ -362,26 +373,69 @@ export class TerminalIO {
   }
 
   /**
-   * Overwrite the current terminal line with prompt + grading tile row + annotation.
+   * Build one hint-row ANSI string showing what Up (+1) or Down (-1) would
+   * cycle each slot to.
    *
-   * During active grading the annotation shows either a validation error (if
-   * Enter was just pressed with an inconsistent pattern) or the remaining-word
-   * count (how many answers were still possible before this guess).
+   * Top row (dir=+1): ▁▁▁ (lower-eighth block) with fg=colour — the strip
+   * appears at the bottom of the character cell, flush against the tile row below.
+   *
+   * Bottom row (dir=-1): ▔▔▔ (upper-eighth block) with fg=colour — the strip
+   * appears at the top of the character cell, flush against the tile row above.
+   * Unicode has no "upper quarter" block; ▔ (upper eighth) is the closest option
+   * that keeps colour in the foreground, so dim works the same way as the top row.
+   *
+   * Non-cursor slots are dimmed (2m) to make the active slot visually distinct.
+   * Fixed slots render as three spaces (no indicator — they cannot change).
+   *
+   * @param {ReturnType<TerminalIO['_computeGradingSlots']>} slots
+   * @param {+1|-1} dir     +1 = top hint row, -1 = bottom hint row.
+   * @param {number} cursor  0–4; slot at this index is NOT dimmed.  -1 = no dimming.
+   * @returns {string}
+   */
+  _hintRowAnsi(slots, dir, cursor = -1) {
+    return slots.map(({ state, fixed, allowed }, i) => {
+      if (fixed) return '   ';
+      const nextState = allowed[(allowed.indexOf(state) + dir + allowed.length) % allowed.length];
+      const colors    = STRIP[nextState] ?? STRIP.grey;
+      const dim       = (cursor !== -1 && i !== cursor) ? '\x1b[2m' : '';
+      const char      = dir === +1 ? '▁▁▁' : '▔▔▔';
+      return `${dim}${colors.fg}${char}${ANSI.reset}`;
+    }).join('');
+  }
+
+  /**
+   * Render the three-row grading block:
+   *   top row    — dim hint tiles showing what Up would cycle to
+   *   middle row — active grading tiles with cursor underline + annotation
+   *   bottom row — dim hint tiles showing what Down would cycle to
+   *
+   * On the first render the block is written from the current cursor position.
+   * On subsequent renders `\x1b[2A` repositions to the top of the block first.
    *
    * @param {string} prompt
    * @param {ReturnType<TerminalIO['_computeGradingSlots']>} slots
    * @param {number} cursor
    * @param {string|null} [error]
    * @param {number|null} [remainingCount]
+   * @param {boolean} [firstRender=false]
    */
-  _renderGradingLine(prompt, slots, cursor, error = null, remainingCount = null) {
-    const tileRow    = this._gradingSlotsToAnsi(slots, cursor);
+  _renderGradingBlock(prompt, slots, cursor, error = null, remainingCount = null, firstRender = false) {
+    const pad    = ' '.repeat(prompt.length + 1); // align hint rows with tile columns
+    const top    = pad + this._hintRowAnsi(slots, +1, cursor);
+    const mid    = prompt + ' ' + this._gradingSlotsToAnsi(slots, cursor);
+    const bot    = pad + this._hintRowAnsi(slots, -1, cursor);
     const annotation = error
       ? '     ' + ANSI.red + error + ANSI.reset
       : remainingCount !== null
         ? `     ${remainingCount} ${remainingCount === 1 ? 'word' : 'words'} possible`
         : '';
-    this.write('\r' + prompt + ' ' + tileRow + annotation + ANSI.eraseToEol);
+    const reposition = firstRender ? '' : '\x1b[2A';
+    this.write(
+      reposition +
+      '\r' + top + ANSI.eraseToEol + '\n' +
+      '\r' + mid + annotation + ANSI.eraseToEol + '\n' +
+      '\r' + bot + ANSI.eraseToEol
+    );
   }
 
   /**

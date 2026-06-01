@@ -593,39 +593,124 @@ function makeGradingConstraints() {
   return cs;
 }
 
-describe('_renderGradingLine remaining count', () => {
-  it('shows "N words possible" when no error', () => {
+describe('_renderGradingBlock', () => {
+  const prompt = 'Guess 1/6:';
+  function render(t, slots, opts = {}) {
+    const { error = null, count = null, firstRender = true } = opts;
+    t._renderGradingBlock(prompt, slots, 0, error, count, firstRender);
+  }
+
+  it('shows "N words possible" on middle row when no error', () => {
     const t = new MemoryTerminal();
-    const cs = new ConstraintState();
-    const slots = t._computeGradingSlots('crane', cs);
-    t._renderGradingLine('Guess 1/6:', slots, 0, null, 42);
+    const slots = t._computeGradingSlots('crane', new ConstraintState());
+    render(t, slots, { count: 42 });
     expect(t.output).toContain('42 words possible');
   });
 
   it('shows "1 word possible" (singular)', () => {
     const t = new MemoryTerminal();
-    const cs = new ConstraintState();
-    const slots = t._computeGradingSlots('crane', cs);
-    t._renderGradingLine('Guess 1/6:', slots, 0, null, 1);
+    const slots = t._computeGradingSlots('crane', new ConstraintState());
+    render(t, slots, { count: 1 });
     expect(t.output).toContain('1 word possible');
   });
 
-  it('shows error instead of count when error is present', () => {
+  it('shows error instead of count when error present', () => {
     const t = new MemoryTerminal();
-    const cs = new ConstraintState();
-    const slots = t._computeGradingSlots('crane', cs);
-    t._renderGradingLine('Guess 1/6:', slots, 0, "Known: at least 1 'A'", 42);
+    const slots = t._computeGradingSlots('crane', new ConstraintState());
+    render(t, slots, { error: "Known: at least 1 'A'", count: 42 });
     expect(t.output).toContain("Known: at least 1 'A'");
     expect(t.output).not.toContain('42 words possible');
   });
 
   it('error is rendered in red (ANSI 31m)', () => {
     const t = new MemoryTerminal();
-    const cs = new ConstraintState();
-    const slots = t._computeGradingSlots('crane', cs);
-    t._renderGradingLine('Guess 1/6:', slots, 0, 'some error', null);
+    const slots = t._computeGradingSlots('crane', new ConstraintState());
+    render(t, slots, { error: 'some error' });
     expect(t.output).toContain('[31m');
     expect(t.output).toContain('some error');
+  });
+
+  it('emits three rows (top hint, middle, bottom hint)', () => {
+    const t = new MemoryTerminal();
+    const slots = t._computeGradingSlots('crane', new ConstraintState());
+    render(t, slots, { firstRender: true });
+    // Two \n characters separate the three rows.
+    const newlines = (t.output.match(/\n/g) ?? []).length;
+    expect(newlines).toBe(2);
+  });
+
+  it('subsequent render emits \\x1b[2A reposition prefix', () => {
+    const t = new MemoryTerminal();
+    const slots = t._computeGradingSlots('crane', new ConstraintState());
+    render(t, slots, { firstRender: false });
+    expect(t.output).toContain('\x1b[2A');
+  });
+
+  it('first render does NOT emit \\x1b[2A', () => {
+    const t = new MemoryTerminal();
+    const slots = t._computeGradingSlots('crane', new ConstraintState());
+    render(t, slots, { firstRender: true });
+    expect(t.output).not.toContain('\x1b[2A');
+  });
+
+  it('hint rows use block characters (▁/▔), not letters', () => {
+    const t = new MemoryTerminal();
+    const slots = t._computeGradingSlots('crane', new ConstraintState());
+    render(t, slots, { firstRender: true });
+    const rows = t.output.split('\n');
+    expect(rows).toHaveLength(3);
+    // Top hint row uses ▁ (lower-eighth); bottom hint row uses ▔ (upper-eighth).
+    expect(rows[0]).toContain('▁');
+    expect(rows[2]).toContain('▔');
+    // Hint rows do NOT contain the letters of the word.
+    expect(rows[0]).not.toMatch(/[CRANE]/);
+    expect(rows[2]).not.toMatch(/[CRANE]/);
+  });
+
+  it('fixed slots in hint rows render as blank (three spaces)', () => {
+    const cs = makeGradingConstraints(); // C, R, N, E all fixed in 'crane'
+    const t = new MemoryTerminal();
+    const slots = t._computeGradingSlots('crane', cs);
+    render(t, slots, { firstRender: true });
+    const rows = t.output.split('\n');
+    // All slots fixed for 'crane' with these constraints → hint rows have no block chars.
+    expect(rows[0]).not.toContain('▁');
+    expect(rows[2]).not.toContain('▔');
+  });
+
+  it('neither hint row uses reverse video (\\x1b[7m)', () => {
+    const t = new MemoryTerminal();
+    const slots = t._computeGradingSlots('crane', new ConstraintState());
+    render(t, slots, { firstRender: true });
+    expect(t.output).not.toContain('\x1b[7m');
+  });
+
+  it('non-cursor slots in hint rows are dimmed (2m), cursor slot is not', () => {
+    const t = new MemoryTerminal();
+    const slots = t._computeGradingSlots('crane', new ConstraintState()); // all non-fixed
+    // cursor=0 is passed implicitly via render() helper (always passes 0).
+    render(t, slots, { firstRender: true });
+    const rows = t.output.split('\n');
+    const topRow = rows[0];
+    // Slots 1-4 are non-cursor → should be dimmed.
+    expect(topRow).toContain('\x1b[2m');
+    // The cursor slot (0) should appear before any dim code in the hint content.
+    const padStart = '\r' + ' '.repeat(prompt.length + 1);
+    const afterPad = topRow.slice(topRow.indexOf(padStart) + padStart.length);
+    expect(afterPad.startsWith('\x1b[2m')).toBe(false);
+  });
+
+  it('hint rows are padded to align tiles with middle row', () => {
+    const t = new MemoryTerminal();
+    const slots = t._computeGradingSlots('crane', new ConstraintState());
+    render(t, slots, { firstRender: true });
+    const rows = t.output.split('\n');
+    // Middle row starts with '\r' + prompt + ' ', hint rows with '\r' + same-length pad.
+    const midStart  = `\r${prompt} `;
+    const padStart  = '\r' + ' '.repeat(prompt.length + 1);
+    expect(rows[1]).toContain(midStart);
+    expect(rows[0]).toContain(padStart);
+    expect(rows[2]).toContain(padStart);
   });
 });
 
