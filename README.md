@@ -97,14 +97,12 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 ## TODO
 - CLI UI
   - Grading mode
-    - Undo
     - Provided word, game plays itself. Just use the -w arg? or also start with "enter word or hit return to grade it manually". Maybe rename it away from "grading mode"
     - Pool exhaustion
       - Warn and fall back to fuller list?
       - If still no valid words, then maybe prompt command+z to undo, enter to quit
   - Consider using Ink and ink-web or ink-canvas?
   - Cleanup README, add any notes to CLI md
-- Strategies: single-step entropy
 - Analysis HTML UI
   - CLI component
   - Decision tree

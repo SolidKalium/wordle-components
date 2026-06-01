@@ -150,12 +150,10 @@ export class NodeTerminal extends TerminalIO {
         errorPressCount = result.errorPressCount;
 
         if (result.exit) { cleanup(); process.stdout.write('\n'); process.exit(0); }
-        if (result.done) {
-          // Collapse the 3-row block to a single line so the caller can
-          // overwrite it with the final scored result.
-          process.stdout.write('\x1b[2A\r\x1b[J');
+        if (result.undo || result.done) {
+          process.stdout.write('\x1b[2A\r\x1b[J'); // collapse 3-row block
           cleanup();
-          resolve(slots.map(s => s.state));
+          resolve(result.done ? slots.map(s => s.state) : null); // null signals undo
           return;
         }
         this._renderGradingBlock(prompt, slots, cursor, error, remainingCount, false);

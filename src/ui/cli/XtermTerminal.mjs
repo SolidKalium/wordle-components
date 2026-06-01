@@ -57,12 +57,12 @@ export class XtermTerminal extends TerminalIO {
         cursor          = result.cursor;
         error           = result.error;
         errorPressCount = result.errorPressCount;
-        if (result.done || result.exit) {
+        if (result.done || result.exit || result.undo) {
           this._rawModeHandler = null;
           this.write('\x1b[?25h');
-          if (result.done) {
-            this.write('\x1b[2A\r\x1b[J'); // collapse 3-row block to single line
-            resolve(slots.map(s => s.state));
+          if (result.undo || result.done) {
+            this.write('\x1b[2A\r\x1b[J'); // collapse 3-row block
+            resolve(result.done ? slots.map(s => s.state) : null); // null signals undo
           }
         } else {
           this._renderGradingBlock(prompt, slots, cursor, error, remainingCount, false);

@@ -501,26 +501,28 @@ export class TerminalIO {
    *   Backspace Reset current slot to grey (no-op on fixed).
    *   Enter     Validate and submit.
    *   Ctrl-C    Signal exit.
+   *   Ctrl-Z    Signal undo (caller collapses block and returns null to GradingRunner).
    *
    * @param {string}   rawKey
    * @param {ReturnType<TerminalIO['_computeGradingSlots']>} slots
    * @param {number}   cursor
    * @param {import('../../lib/constraints.mjs').ConstraintState} constraints
    * @param {number}   [errorPressCount=0]  How many consecutive Enter presses have shown the current error.
-   * @returns {{ slots, cursor: number, done: boolean, exit: boolean, error: string|null, errorPressCount: number }}
+   * @returns {{ slots, cursor: number, done: boolean, exit: boolean, undo: boolean, error: string|null, errorPressCount: number }}
    */
   _handleGradingKey(rawKey, slots, cursor, constraints, errorPressCount = 0) {
-    const ok = (s, c, err = null) => ({ slots: s, cursor: c, done: false, exit: false, error: err, errorPressCount: 0 });
+    const ok = (s, c, err = null) => ({ slots: s, cursor: c, done: false, exit: false, undo: false, error: err, errorPressCount: 0 });
 
-    if (rawKey === '\x03') return { slots, cursor, done: false, exit: true, error: null, errorPressCount: 0 };
+    if (rawKey === '\x03') return { slots, cursor, done: false, exit: true,  undo: false, error: null, errorPressCount: 0 };
+    if (rawKey === '\x1a') return { slots, cursor, done: false, exit: false, undo: true,  error: null, errorPressCount: 0 };
 
     if (rawKey === '\r' || rawKey === '\n') {
       const baseError = this._validateGradingSlots(slots, constraints);
       if (baseError) {
         const nextCount = (errorPressCount % 3) + 1;
-        return { slots, cursor, done: false, exit: false, error: baseError + '!'.repeat(nextCount), errorPressCount: nextCount };
+        return { slots, cursor, done: false, exit: false, undo: false, error: baseError + '!'.repeat(nextCount), errorPressCount: nextCount };
       }
-      return { slots, cursor, done: true, exit: false, error: null, errorPressCount: 0 };
+      return { slots, cursor, done: true, exit: false, undo: false, error: null, errorPressCount: 0 };
     }
 
     if (rawKey === '\x1b[D') return ok(slots, this._gradingMoveCursor(slots, cursor, -1));

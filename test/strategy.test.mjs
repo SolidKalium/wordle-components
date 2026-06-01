@@ -6,6 +6,7 @@ import {
   FilteredStrategy,
   MaxGroupsStrategy,
   MinExpectedRemainingStrategy,
+  MaxEntropyStrategy,
   MinimaxStrategy,
 } from '../src/lib/strategy.mjs';
 import { MustContainFilter } from '../src/lib/filter.mjs';
@@ -104,6 +105,35 @@ describe('MinExpectedRemainingStrategy', () => {
 
   it('sorts ascending — lower sum-of-squares first', () => {
     const ranked = new MinExpectedRemainingStrategy().rankGuesses(game(), CANDIDATES, CANDIDATES);
+    for (let i = 1; i < ranked.length; i++) {
+      expect(ranked[i - 1].score).toBeLessThanOrEqual(ranked[i].score);
+    }
+  });
+});
+
+describe('MaxEntropyStrategy', () => {
+  it('returns k items with numeric scores', () => {
+    const ranked = new MaxEntropyStrategy().rankGuesses(game(), CANDIDATES, CANDIDATES, 3);
+    expect(ranked).toHaveLength(3);
+    expect(ranked.every(r => typeof r.score === 'number')).toBe(true);
+  });
+
+  it('scores as the sum of n*lg(n) over partition group sizes', () => {
+    const ranked = new MaxEntropyStrategy().rankGuesses(
+      game(),
+      ['abcde'],
+      ['abcde', 'fghij', 'klmno', 'pqrst'],
+      1,
+    );
+
+    expect(ranked[0]).toEqual({
+      word: 'abcde',
+      score: 3 * Math.log2(3),
+    });
+  });
+
+  it('sorts ascending — lower entropy cost first', () => {
+    const ranked = new MaxEntropyStrategy().rankGuesses(game(), CANDIDATES, CANDIDATES);
     for (let i = 1; i < ranked.length; i++) {
       expect(ranked[i - 1].score).toBeLessThanOrEqual(ranked[i].score);
     }

@@ -947,4 +947,20 @@ describe('_handleGradingKey', () => {
     const r = grade('\x1b[C', freshSlots(), 0); // right arrow
     expect(r.errorPressCount).toBe(0);
   });
+
+  it('ctrl+z signals undo (does not alter slots or cursor)', () => {
+    const slots = freshSlots();
+    const r = grade('\x1a', slots, 2);
+    expect(r.undo).toBe(true);
+    expect(r.done).toBe(false);
+    expect(r.exit).toBe(false);
+    expect(r.slots).toEqual(slots); // unchanged
+    expect(r.cursor).toBe(2);      // unchanged
+  });
+
+  it('normal keys do not set undo', () => {
+    expect(grade('\x1b[C', freshSlots(), 0).undo).toBeFalsy();
+    expect(grade('\x1b[A', freshSlots(), 0).undo).toBeFalsy();
+    expect(grade('g',      freshSlots(), 0).undo).toBeFalsy();
+  });
 });
