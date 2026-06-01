@@ -97,7 +97,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 ## TODO
 - CLI UI
   - Grading mode
-    - Provided word, game plays itself. Just use the -w arg? or also start with "enter word or hit return to grade it manually". Maybe rename it away from "grading mode"
+    - Provided word, game plays itself. Could require enter after each guess (or after the grading?). Could make it do a keystroke every ~0.2 seconds? Probably too fancy and not useful. Just use the -w arg to set a word? or also start with "enter word or hit return to grade it manually". Maybe rename it away from "grading mode" if this is meant to test strategies.
     - Pool exhaustion
       - Warn and fall back to fuller list?
       - If still no valid words, then maybe prompt command+z to undo, enter to quit
