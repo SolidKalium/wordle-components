@@ -42,7 +42,7 @@ export class GradingRunner {
       this.io.writeLine("I'll guess; the word grades itself.");
     } else {
       this.io.writeLine("I'll guess; you grade each letter.");
-      this.io.writeLine('Up/Down arrows cycle the colour.  Enter to confirm.  Ctrl-Z to undo.');
+      this.io.writeLine('Up/Down or W/S cycle the colour.  Left/Right or A/D move cursor.  Enter to confirm.  Ctrl-Z to undo.');
     }
     this.io.writeLine('');
 

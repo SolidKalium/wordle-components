@@ -28,7 +28,8 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
     - Use `-w` to supply the word in advance and watch the computer play
     - Use `-e` to see words remaining on the committed line
     - The randomly computer uses one of a small number of good guesses on the first turn
-    - Use the keyboard (arrow keys or y/g/\[space]) to grade the guess, then press \[enter]. Use ctrl+z to undo a committed grading.
+    - Use the keyboard (arrow keys, WASD or Y/G/\[space]) to grade the guess, then press \[enter]. Use ctrl+z to undo a committed grading.
+    - Use <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd>, <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>, or <kbd>Y</kbd><kbd>G</kbd><kbd>Space</kbd><kbd>Delete</kbd> to grade the guess, then press <kbd>Enter</kbd>. Use <kbd>Ctrl</kbd>+<kbd>Z</kbd> to undo a committed grading.
 - **Analysis HTML page**
   - Decompose problem into useable UI chunks. Both analysis components and selector components.
     - TODO Design further. Explore strategies, see consequences
@@ -93,8 +94,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 ## TODO
 - CLI UI
   - Grading mode
-    - Provided word, game plays itself. Could require enter after each guess (or after the grading?). Could make it do a keystroke every ~0.2 seconds? Probably too fancy and not useful. Just use the -w arg to set a word? or also start with "enter word or hit return to grade it manually". Maybe rename it away from "grading mode" if this is meant to test strategies.
-    - WASD instead of arrow keys?
     - Pool exhaustion
       - Warn and fall back to fuller list?
       - If still no valid words, then maybe prompt command+z to undo, enter to quit

@@ -492,10 +492,10 @@ export class TerminalIO {
    * Process one raw key in grading mode and return the updated state.
    *
    * Key semantics:
-   *   ← / →    Move cursor (skipping fixed slots).
-   *   Space     Advance cursor right (forward).
-   *   ↑         Cycle colour forward  (grey → yellow → green → grey).
-   *   ↓         Cycle colour backward (grey → green → yellow → grey).
+   *   ← / → / A / D   Move cursor (skipping fixed slots).
+   *   Space            Advance cursor right (forward).
+   *   ↑ / W            Cycle colour forward  (grey → yellow → green → grey).
+   *   ↓ / S            Cycle colour backward (grey → green → yellow → grey).
    *   g / G     Set current slot green  (if allowed) and advance cursor.
    *   y / Y     Set current slot yellow (if allowed) and advance cursor.
    *   Backspace Reset current slot to grey (no-op on fixed).
@@ -525,13 +525,14 @@ export class TerminalIO {
       return { slots, cursor, done: true, exit: false, undo: false, error: null, errorPressCount: 0 };
     }
 
-    if (rawKey === '\x1b[D') return ok(slots, this._gradingMoveCursor(slots, cursor, -1));
-    if (rawKey === '\x1b[C' || rawKey === ' ') return ok(slots, this._gradingMoveCursor(slots, cursor, +1));
+    if (rawKey === '\x1b[D' || rawKey === 'a' || rawKey === 'A') return ok(slots, this._gradingMoveCursor(slots, cursor, -1));
+    if (rawKey === '\x1b[C' || rawKey === 'd' || rawKey === 'D' || rawKey === ' ') return ok(slots, this._gradingMoveCursor(slots, cursor, +1));
 
-    if (rawKey === '\x1b[A' || rawKey === '\x1b[B') {  // up / down arrow
+    if (rawKey === '\x1b[A' || rawKey === 'w' || rawKey === 'W' ||
+        rawKey === '\x1b[B' || rawKey === 's' || rawKey === 'S') {  // up / down arrow or W / S
       const slot = slots[cursor];
       if (slot.fixed) return ok(slots, cursor);
-      const dir   = rawKey === '\x1b[A' ? +1 : -1;
+      const dir   = (rawKey === '\x1b[A' || rawKey === 'w' || rawKey === 'W') ? +1 : -1;
       const idx   = slot.allowed.indexOf(slot.state);
       const next  = (idx + dir + slot.allowed.length) % slot.allowed.length;
       const updated = slots.map((s, i) => i === cursor ? { ...s, state: s.allowed[next] } : s);
