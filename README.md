@@ -1,4 +1,6 @@
-# Wordle
+# Wordle Components
+
+This project is not affiliated with the NY Times.
 
 ## Ways to Interact with this Project
 

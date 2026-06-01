@@ -53,7 +53,7 @@ export class GameRunner {
   async run() {
     const answer = this.answer ?? this.answers[Math.floor(this.rng() * this.answers.length)];
     const game = new Game({ answer, wordList: this.wordList });
-    const useRaw = typeof this.io.readWordRaw === 'function' && !!process.stdin?.isTTY;
+    const useRaw = typeof this.io.readWordRaw === 'function';
 
     this.io.writeLine('Wordle');
     this.io.writeLine('──────');
