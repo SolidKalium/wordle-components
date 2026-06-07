@@ -71,7 +71,7 @@ Wraps the current strategy configuration.
 Single-responsibility. Declare which stores they subscribe to. Examples:
 
 | Component | Reads | Writes | Purpose |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `GameBoard` | game: guesses | game: makeMove | Renders the guess grid, accepts input |
 | `ConstraintDisplay` | game: constraints | — | Shows known/excluded/eliminated letters |
 | `RemainingWords` | game: constraints, wordList | — | Lists or counts words matching constraints |
@@ -83,7 +83,7 @@ Single-responsibility. Declare which stores they subscribe to. Examples:
 | `FilterControls` | strategy: filters | strategy: addFilter, removeFilter | Toggle/configure filters |
 | `HardModeToggle` | game: hardMode | game: setHardMode | Single toggle |
 
-This list is not exhaustive. Components are added as needed.
+This list is not exhaustive. Components are added as needed. These might not all be built as described.
 
 ### Tier 2: Composite Components
 

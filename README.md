@@ -38,6 +38,17 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
 - **Analysis HTML page**
   - Explore strategies, see consequences
   - See [ui-spec](docs/ui-spec.md)
+  - Rough design:
+    - Card: mostly dumb, any info is pulled from the one thing inside it.
+      - Can highlight itself when any other card with the same channel is active (LATER)
+    - Component: inputs or outputs a bundle of things (e.g. a game, strategy, etc). Kinda vague... and doesn't deal with cases where the game is shared but the strategy isn't.
+      - Either analysis or selector
+    - Component layout: abstracts multiple components into a visible shape, able to be slotted into a card instead of a single component. But this way the card only has one thing inside it.
+    - Channels correlate to game or strategy stores
+      - Word list channel is LATER
+    - E.g. One card for either playing a game or entering an existing game state, then one card that just shows the current constraints in a different format, then one that allows exploring the full space of remaining 5 letter "words", then one that shows a decision tree for a particular algorithm. So one source of data can influence stats shown elsewhere.
+  - Selector components for strategy
+    - maybe one selector shows a minimal-ish set of options in an always-displayed config area, while another shows a gear icon with a popover? Or maybe some analyses work well for comparing two things and it's a mix of the two styles, with the selected feature for comparison always shown, and other settings a little more hidden
   - Component to visualize the implicit decision tree (for deterministic strategies)
   - Component to see the constraints. Useful for fact checking any typed inputs that an AI transforms.
   - Quick-play component: choose a word from a prepared menu on each turn, using a combination of random words and best or near-best words from multiple strategies.
@@ -102,23 +113,33 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - Analysis HTML UI
-  - How do analysis and selectors interact? Thinking they shouldn't be too strictly tied via a card system. Allow them to interact across cards if wired that way, though it might make it trickier for AI to generate.
-    - Might be tricker for people to reason about which things are connected to which other things. Maybe just let the things track what they are connected to, then let the cards read from the components inside what whether any card connected is "active" and change the border a little?
-    - So the design looks like:
-      - Card: mostly dumb, any info is pulled from the one thing inside it.
-      - Component: inputs or outputs a bundle of things (e.g. a game, strategy, etc). Kinda vague... and doesn't deal with cases where the game is shared but the strategy isn't.
-        - Either analysis or selector
-      - Component layout: abstracts multiple components into a visible shape, able to be slotted into a card instead of a single component. But this way the card only has one thing inside it.
-    - E.g. One card for playing either playing a game or entering an existing game state, then one card that just shows the current constraints in a different format, then one that allows exploring the full space of remaining 5 letter "words", then one that shows a decision tree for a particular algorithm. So one source of data can influence stats shown elsewhere.
+  - Create the channels and stores
+    - How do we handle static settings? E.g. just a static strategy for a card. Maybe have an "invisible" component for this? Or pass the details to the component directly?
   - Bar chart with how many words need each number of moves, with expected moves overall also shown.
+  - Create the card class to wrap things
+    - Give it a toggle to collapse.
+    - Highlight when channel active elsewhere? LATER
+  - Strategy selector
+    - Then add optional filters
+    - There might be multiple versions of this for different contexts. Full card vs menu. Just do full card for now.
   - Decision tree
     - Showing all the words would be hard. But we could show at least 2 turns. Words, options remaining (toggle somewhere for words or bits), expected moves, max moves, maybe a tiny bar chart
     - Then allow it to be navigated.
-  - Other analysis components
-  - Selector component(s) to wrap analyses (e.g. strategy, word list, filter(s), etc) (maybe one selector shows a minimal-ish set of options in an always-displayed config area, while another shows a gear icon with a popover? Or maybe some analyses work well for comparing two things and it's a mix of the two styles, with the selected feature for comparison always shown, and other settings a little more hidden)
-    - Also a "fixed card" with no UI to do the selection? Or make selectors live separate but get wired together and put inside a card?
-  - Make it work as a github page with low per-repo setup. TODO test
-  - When three letters are green, or there are otherwise "few" options without the word list being considered (e.g. 200-400 "words"), show all the possible inputs that fit the rules. This is more like "I can't think of any words that work with these 3 letters, so just show me the brute force options so I can read through them."
+    - Once game board is added, make it re-anchor when a game exists and a move is made
+      - Also: optionally track the partial input for the game and use that instead of the best move for the current game state
+  - Game board
+    - Separately: word entry (user's keyboard)
+      - Grade input when constraints known. Support arrow keys
+    - Separately: select word from a short list of options
+    - Separately: visualize constraints
+    - Separately: word entry (virtual keyboard) (LATER)
+    - Test set up: game board + one or multiple inputs, etc
+    - Test set up: constraints (instead of game board) + input
+  - Hard mode toggle
+  - Other analysis components? E.g. compare across strategies
+  - Pre-built composite components (LATER)
+  - Brute force options list
+    - Explanation: When three letters are green, or there are otherwise "few" options without the word list being considered (e.g. 200-400 "words"), show all the possible inputs that fit the rules. This is more like "I can't think of any words that work with these 3 letters, so just show me the brute force options so I can read through them."
     - This might let the user select some of them to put in a "options to consider bar"? Enhancement, not initial feature.
     - These could be dynamically generated in order, or allow pinning specific letters, enabling larger spaces to be explored via brute force without wasting memory.
 - Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.
@@ -231,4 +252,4 @@ Things considered but skipped for now
 - See [bias estimation doc](docs/bias-estimation.md). Extending player biases and player move analysis into guessing how a specific player would play in response to a word.
 
 ## What I Wish Official Wordle Had
-- Completely censor a friend's first turn, so I don't accidentally gain knowledge from it.
+- Completely censor a friend's first turn until I've finished the daily game, so I don't accidentally gain knowledge from it.
