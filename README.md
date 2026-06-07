@@ -36,19 +36,22 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
     - The computer picks its first guess randomly from a small pool of good openers
     - Use <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd>, <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>, or <kbd>Y</kbd><kbd>G</kbd><kbd>Space</kbd><kbd>Delete</kbd> to grade the guess, then press <kbd>Enter</kbd>. Use <kbd>Ctrl</kbd>+<kbd>Z</kbd> to undo a committed grading.
 - **Analysis HTML page**
-  - Decompose problem into useable UI chunks. Both analysis components and selector components.
-    - TODO Design further. Explore strategies, see consequences
+  - Explore strategies, see consequences
+  - See [ui-spec](docs/ui-spec.md)
   - Component to visualize the implicit decision tree (for deterministic strategies)
-  - Component for the CLI version, for demo purposes
+  - Component to see the constraints. Useful for fact checking any typed inputs that an AI transforms.
   - Quick-play component: choose a word from a prepared menu on each turn, using a combination of random words and best or near-best words from multiple strategies.
     - Maybe allow filtering to options that include one player-chosen letter.
-  - Possibly split an "official" static analysis report from a dynamic one. Though they might be tabs of the same page, or something similar.
+  - Separate pages for pre-built static and/or dynamic analysis report, and for build-your-own.
+  - Any text-based analyses? E.g. that put the analysis into words instead of graphics.
   - Hypotheses and notes
     - The information-theoretic approaches likely provide similar quality of choices
+      - Always picking a worse word by a metric, such as 90% best, might do worse regardless of which two information-theoretic strategies are used for top-1 and beats-90%.
+        - Potential hypothesis «luck dominates between strategies that pick any reasonable top-quartile guess, because follow-up play recovers from a slightly suboptimal choice.»
     - There are different objectives: average moves, avoid high numbers of moves (e.g. within 6 moves). But the odds of needing more than 6 moves might already be low for any decent algorithm, other than dealing with traps in hard mode. So they might look pretty similar, again, other than the impact of traps in hard mode.
     - Full-depth trees for either objective might be meaningfully different. But we aren't calculating those yet.
     - Could show quality of a move in different strategies (score and order)
-      - Could show this for a random sample of words. Inversions of order might be particularly useful to show, but that's harder to calculate. Not sure if a graph would help at all. There's sort of too many words to do the snake graph thing (bump/slope chart) where options get re-ordered. Maybe one order is used as the baseline, it gets colors assigned, and then the re-ordered words are shown with that color system?
+      - Could show this for a random sample of words. Inversions of order might be particularly useful to show, but that's harder to calculate. Well, maybe not that hard: calculate scores for options, then look for examples that differed by a lot between any two measures, or look at max and min values that differ a lot, maybe also ensuring each algorithm gets some repesentative highs and lows. Not sure if a graph would help at all. There's sort of too many words to do the snake graph thing (bump/slope chart) where options get re-ordered. Maybe one order is used as the baseline, it gets colors assigned, and then the re-ordered words are shown with that color system?
 - **React in Claude**
   - TBD, but likely things based on the CLI and Analysis UIs, plus support for anything the skill needs.
 
@@ -99,26 +102,47 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - Analysis HTML UI
-  - CLI component
+  - How do analysis and selectors interact? Thinking they shouldn't be too strictly tied via a card system. Allow them to interact across cards if wired that way, though it might make it trickier for AI to generate.
+    - Might be tricker for people to reason about which things are connected to which other things. Maybe just let the things track what they are connected to, then let the cards read from the components inside what whether any card connected is "active" and change the border a little?
+    - So the design looks like:
+      - Card: mostly dumb, any info is pulled from the one thing inside it.
+      - Component: inputs or outputs a bundle of things (e.g. a game, strategy, etc). Kinda vague... and doesn't deal with cases where the game is shared but the strategy isn't.
+        - Either analysis or selector
+      - Component layout: abstracts multiple components into a visible shape, able to be slotted into a card instead of a single component. But this way the card only has one thing inside it.
+    - E.g. One card for playing either playing a game or entering an existing game state, then one card that just shows the current constraints in a different format, then one that allows exploring the full space of remaining 5 letter "words", then one that shows a decision tree for a particular algorithm. So one source of data can influence stats shown elsewhere.
+  - Bar chart with how many words need each number of moves, with expected moves overall also shown.
   - Decision tree
+    - Showing all the words would be hard. But we could show at least 2 turns. Words, options remaining (toggle somewhere for words or bits), expected moves, max moves, maybe a tiny bar chart
+    - Then allow it to be navigated.
   - Other analysis components
   - Selector component(s) to wrap analyses (e.g. strategy, word list, filter(s), etc) (maybe one selector shows a minimal-ish set of options in an always-displayed config area, while another shows a gear icon with a popover? Or maybe some analyses work well for comparing two things and it's a mix of the two styles, with the selected feature for comparison always shown, and other settings a little more hidden)
-  - Make it work as a github page with low per-repo setup
+    - Also a "fixed card" with no UI to do the selection? Or make selectors live separate but get wired together and put inside a card?
+  - Make it work as a github page with low per-repo setup. TODO test
+  - When three letters are green, or there are otherwise "few" options without the word list being considered (e.g. 200-400 "words"), show all the possible inputs that fit the rules. This is more like "I can't think of any words that work with these 3 letters, so just show me the brute force options so I can read through them."
+    - This might let the user select some of them to put in a "options to consider bar"? Enhancement, not initial feature.
+    - These could be dynamically generated in order, or allow pinning specific letters, enabling larger spaces to be explored via brute force without wasting memory.
 - Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.
 - Test suite: HTML ?
 - Rapid-play mode in HTML
+- Revisit the three worker classes and how they relate?
 - CLI: analysis? Delay until after HTML UI
 - Cache precomputed rankings for first-turn guesses?
+  - Probably create a script that knows the best first move on a few dimensions at once: all-guesses vs valid answers, hard mode on/off (won't matter for information-theoretic first turns, only exhaustive search), strategy, maybe certain filters. Assumes unchanged answer-word list. Probably include a hash of the list to validate the list and computed values match. Maybe warn somewhere in a build script if the computations are stale.
+  - Might also cache related statistics for that first move? But if only needing stats for one guess, it shouldn't be too bad to recompute.
+  - For some strategies, like the exhaustive ones or allowing all valid guesses, caching the second turn might also be useful.
 - Claude Skill
 - Test suite: Claude Skill ?
 - Strategies: full-depth calculation (min avg or minimax depth), mixed strategy nash equilibrium ?
 
 ## Hypotheses and Analysis Topics
-This was generated by LLM summary of a discussion.
+This was initially generated by LLM summary of a discussion.
 
 ### Strategy behavior
 - Do single-step heuristics (group count, x², entropy, minimax) produce meaningfully different average guess counts?
 - How much does the distribution overlap vs diverge? Is variance within a strategy (across words) larger than variance between strategies (for the same word)?
+  - Variance within a strategy: entropy (for example) solves some words in 2 guesses and others in 5. The spread across different answer words is large — maybe a standard deviation of 0.8 guesses. (AI Hypothesis)
+  - Variance between strategies: for the same answer word, entropy takes 4 guesses and x² also takes 4, or maybe 3. The difference between strategies on any given word is small — usually 0 or 1 guess. (AI Hypothesis)
+  - But note that those aren't very comparable. So we might care more about cases where strategies produce 2 or more turns of difference for a word. Not quite sure how this should be calculated. "bits remaining" when the word was chosen is more like luck and just how it got split when the word was chosen. Naming and showing the variances is useful, but good framing for them or how to explore them in an interesting way is more difficult.
 - Which specific words cause the most disagreement between strategies? What properties do those words share?
 - How does the "penalty curve" differ — where does entropy tolerate a large group that x² wouldn't, and vice versa?
 - For a given game state, compare the top-k word recommendations across strategies: which words appear in multiple strategies' top lists, which are unique to one?
