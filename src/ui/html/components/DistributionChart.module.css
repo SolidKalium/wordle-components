@@ -13,12 +13,13 @@
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #818384;
+  color: #b0b3b5;
+  margin-bottom: 6px;
 }
 
 .loading {
   font-size: 13px;
-  color: #818384;
+  color: #b0b3b5;
   padding: 24px 0;
 }
 
@@ -39,7 +40,7 @@
 
 .count {
   font-size: 11px;
-  color: #818384;
+  color: #b0b3b5;
   min-height: 14px;
   line-height: 14px;
 }
@@ -67,7 +68,7 @@
 
 .turnLabel {
   font-size: 12px;
-  color: #818384;
+  color: #b0b3b5;
 }
 
 .footer {
@@ -78,13 +79,13 @@
 
 .stat {
   font-size: 12px;
-  color: #818384;
+  color: #b0b3b5;
   letter-spacing: 0.03em;
 }
 
 .toggle {
   font-size: 11px;
-  color: #818384;
+  color: #b0b3b5;
   background: none;
   border: 1px solid #3a3a3c;
   border-radius: 3px;
@@ -94,5 +95,5 @@
 
 .toggle:hover {
   color: #fff;
-  border-color: #818384;
+  border-color: #b0b3b5;
 }

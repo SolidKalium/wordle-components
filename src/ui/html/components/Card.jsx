@@ -11,7 +11,7 @@ export function Card({ title, children, variant = 'default', collapsible = false
           <span className={styles.title}>{title}</span>
           {collapsible && (
             <button className={styles.collapseBtn} onClick={() => setCollapsed(c => !c)}>
-              {collapsed ? '▾' : '▴'}
+              <span style={{ display: 'inline-block', transition: 'transform 0.15s', transform: collapsed ? 'rotate(180deg)' : 'none' }}>▾</span>
             </button>
           )}
         </div>

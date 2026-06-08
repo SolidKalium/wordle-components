@@ -35,17 +35,18 @@
   font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: #818384;
+  color: #b0b0b1;
   user-select: none;
 }
 
 .collapseBtn {
   background: none;
   border: none;
-  color: #818384;
+  color: #b0b0b1;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 14px;
   padding: 0 2px;
+  margin-left: 16px;
   line-height: 1;
 }
 
