@@ -1,0 +1,10 @@
+html {
+  background-color: #3b5050; /* fills overscroll area */
+}
+
+body {
+  margin: 0;
+  background-color: #3b5050;
+  color: #fff;
+  font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
+}
