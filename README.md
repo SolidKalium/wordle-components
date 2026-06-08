@@ -113,9 +113,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - Analysis HTML UI
-  - Create the card class to wrap things
-    - Give it a toggle to collapse.
-    - Highlight when channel active elsewhere? LATER
   - Strategy selector
     - Then add optional filters
     - There might be multiple versions of this for different contexts. Full card vs menu. Just do full card for now.
@@ -142,6 +139,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
   - Bar chart with how many words need each number of moves, with expected moves overall also shown.
     - How to handle the toggle? Allow it to be passed to the component. Let the creator decide whether it's even user facing. Maybe redesign it to be more hidden.
     - Determine how the average is calculated.- Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.
+  - Card: Highlight when channel active elsewhere? LATER
 - Test suite: HTML ?
 - Rapid-play mode in HTML
 - Revisit the three worker classes and how they relate?

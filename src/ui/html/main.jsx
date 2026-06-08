@@ -8,14 +8,30 @@ import { CliTerminal } from './components/CliTerminal.jsx';
 import { DistributionChart } from './components/DistributionChart.jsx';
 import './page.css';
 
-const gameStore     = createGameStore({ wordList: WORDS, answers: ANSWERS });
-const strategyStore = createStrategyStore({ strategyName: 'maxGroups' });
+const gameStore = createGameStore({ wordList: WORDS, answers: ANSWERS });
+const strategyStoreMaxGroups = createStrategyStore({ strategyName: 'maxGroups' });
+const strategyStoreMaxEntropy = createStrategyStore({ strategyName: 'maxEntropy' });
+const strategyStoreMinExpectedRemaining = createStrategyStore({ strategyName: 'minExpectedRemaining' });
+const strategyStoreMinimax = createStrategyStore({ strategyName: 'minimax' });
 
 function App() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 16, padding: 24 }}>
-      <Card title="Strategy Distribution" collapsible>
-        <DistributionChart />
+      <Card title="Strategy Distributions" collapsible>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, auto)', gap: 1, background: '#2c2c2e' }}>
+          <StrategyStoreContext.Provider value={strategyStoreMaxGroups}>
+            <DistributionChart />
+          </StrategyStoreContext.Provider>
+          <StrategyStoreContext.Provider value={strategyStoreMaxEntropy}>
+            <DistributionChart />
+          </StrategyStoreContext.Provider>
+          <StrategyStoreContext.Provider value={strategyStoreMinExpectedRemaining}>
+            <DistributionChart />
+          </StrategyStoreContext.Provider>
+          <StrategyStoreContext.Provider value={strategyStoreMinimax}>
+            <DistributionChart />
+          </StrategyStoreContext.Provider>
+        </div>
       </Card>
       <Card title="Terminal" variant="dark">
         <CliTerminal autoFocus />
@@ -27,9 +43,7 @@ function App() {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <GameStoreContext.Provider value={gameStore}>
-      <StrategyStoreContext.Provider value={strategyStore}>
         <App />
-      </StrategyStoreContext.Provider>
     </GameStoreContext.Provider>
   </StrictMode>
 );
