@@ -4,6 +4,7 @@
   border-radius: 6px;
   border: 1px solid #2c2c2e;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* Default: slightly lighter panel — data/tool feel */
