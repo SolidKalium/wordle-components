@@ -26,11 +26,11 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
   - Run `./wordle` to play in the console. Use `-h` to see options.
   - `TerminalIO` abstraction supports both native terminal and xterm.js rendering
   - User plays against a computer-chosen word
-    - Basic: player must generate their own words without help
-      - Explanation flag: Shows how many words are left, how the guess ranks compared according to a fixed `Strategy`, and what the best word would have been.
-    - Quick-play: User is given a short list of plausible guesses on each turn
+    - Basic (the default mode): player must generate their own guesses without help
+      - `-e` / `--explain`: Shows how many words are left, how the guess ranks compared according to a fixed `Strategy`, and what the best word would have been.
+    - Quick-play `-q` / `--quickplay`: User is given a short list of plausible guesses on each turn
       - Pressing a number key fills in the corresponding word
-  - Computer plays against human word, with the human grading the guesses
+  - `-g` / `--grade`: Computer plays against human word, with the human grading the guesses
     - Use `-w` to supply the word in advance and watch the computer play
     - Use `-e` to see words remaining on the committed line
     - The computer picks its first guess randomly from a small pool of good openers
@@ -113,8 +113,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - Analysis HTML UI
-  - Create the channels and stores
-    - How do we handle static settings? E.g. just a static strategy for a card. Maybe have an "invisible" component for this? Or pass the details to the component directly?
+  - Support the context providers and stores
   - Bar chart with how many words need each number of moves, with expected moves overall also shown.
   - Create the card class to wrap things
     - Give it a toggle to collapse.
