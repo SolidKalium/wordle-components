@@ -8,7 +8,7 @@
 export class SimulationWorker {
   constructor() {
     this._worker = new Worker(
-      new URL('../../worker/simulation.browser.worker.mjs', import.meta.url),
+      new URL('../../../worker/simulation.browser.worker.mjs', import.meta.url),
       { type: 'module' },
     );
     this._reqId    = 0;

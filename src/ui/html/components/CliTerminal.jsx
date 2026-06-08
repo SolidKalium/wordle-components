@@ -5,7 +5,7 @@ import '@xterm/xterm/css/xterm.css';
 import { XtermTerminal, TerminalInterrupt } from '../../cli/XtermTerminal.mjs';
 import { GameRunner } from '../../cli/GameRunner.mjs';
 import { GradingRunner } from '../../cli/GradingRunner.mjs';
-import { BrowserSuggestionWorker } from '../BrowserSuggestionWorker.mjs';
+import { BrowserSuggestionWorker } from '../workers/BrowserSuggestionWorker.mjs';
 import { ANSWERS, WORDS } from '../../../lib/words.gen.mjs';
 import styles from './CliTerminal.module.css';
 

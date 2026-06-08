@@ -5,7 +5,7 @@
 export class BrowserSuggestionWorker {
   constructor() {
     this._worker = new Worker(
-      new URL('../../worker/suggestions.browser.worker.mjs', import.meta.url),
+      new URL('../../../worker/suggestions.browser.worker.mjs', import.meta.url),
       { type: 'module' }
     );
     this._pending = null;

@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 import { createStore, useStore } from 'zustand';
-import { SimulationWorker } from '../SimulationWorker.mjs';
+import { SimulationWorker } from '../workers/SimulationWorker.mjs';
 
 export const STRATEGY_DISPLAY_NAMES = {
   maxGroups:            'Max Groups',
