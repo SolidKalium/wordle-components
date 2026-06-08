@@ -27,12 +27,12 @@ function buildBuckets(distribution, collapsed) {
   };
 }
 
-export function DistributionChart() {
+export function DistributionChart({ defaultCollapsed = false, collapsible = true } = {}) {
   const summary  = useStrategyStore(s => s.simulationSummary);
   const pending  = useStrategyStore(s => s.simulationPending);
   const progress = useStrategyStore(s => s.simulationProgress);
   const name     = useStrategyStore(s => s.strategyName);
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
   const label = STRATEGY_DISPLAY_NAMES[name] ?? name;
 
@@ -73,7 +73,7 @@ export function DistributionChart() {
       </div>
       <div className={styles.footer}>
         <span className={styles.stat}>Expected: {mean.toFixed(2)} moves</span>
-        {hasOverflow && (
+        {collapsible && hasOverflow && (
           <button className={styles.toggle} onClick={() => setCollapsed(c => !c)}>
             {collapsed ? 'expand' : 'collapse'}
           </button>

@@ -20,16 +20,16 @@ function App() {
       <Card title="Strategy Distributions" collapsible>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, auto)', gap: 1, background: '#2c2c2e' }}>
           <StrategyStoreContext.Provider value={strategyStoreMaxGroups}>
-            <DistributionChart />
+            <DistributionChart defaultCollapsed={false} collapsible={false}/>
           </StrategyStoreContext.Provider>
           <StrategyStoreContext.Provider value={strategyStoreMaxEntropy}>
-            <DistributionChart />
+            <DistributionChart  defaultCollapsed={false} collapsible={false}/>
           </StrategyStoreContext.Provider>
           <StrategyStoreContext.Provider value={strategyStoreMinExpectedRemaining}>
-            <DistributionChart />
+            <DistributionChart  defaultCollapsed={false} collapsible={false}/>
           </StrategyStoreContext.Provider>
           <StrategyStoreContext.Provider value={strategyStoreMinimax}>
-            <DistributionChart />
+            <DistributionChart  defaultCollapsed={false} collapsible={false}/>
           </StrategyStoreContext.Provider>
         </div>
       </Card>
