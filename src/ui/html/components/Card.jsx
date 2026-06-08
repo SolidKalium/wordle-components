@@ -16,7 +16,7 @@ export function Card({ title, children, variant = 'default', collapsible = false
           )}
         </div>
       )}
-      {!collapsed && <div className={styles.body}>{children}</div>}
+      <div className={styles.body} style={collapsed ? { display: 'none' } : undefined}>{children}</div>
     </div>
   );
 }
