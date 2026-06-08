@@ -1,4 +1,5 @@
 import { Game } from './game.mjs';
+import { partitionByGuess, ALL_GREEN_STR, MAX_GUESSES } from './core.mjs';
 
 /**
  * Run a strategy against every word in an answer set and collect results.
@@ -134,4 +135,70 @@ export function formatSummary(summary, strategyName = 'Strategy') {
   }
 
   return lines.join('\n');
+}
+
+/**
+ * Run a strategy as a tree traversal rather than per-word simulation.
+ *
+ * For deterministic, stateless strategies this produces the same distribution
+ * as runSimulation + summarize but is dramatically more efficient: each unique
+ * remaining-word set is evaluated exactly once. When using the answer list as
+ * candidates, node count ≈ |answers| (each word is guessed exactly once at the
+ * depth where it becomes the strategy's top pick for its branch).
+ *
+ * @param {import('./strategy.mjs').Strategy} strategy
+ *   A single, stateless strategy instance — NOT a factory.
+ * @param {string[]} answers - Words to simulate against.
+ * @param {object}  [opts]
+ * @param {number}  [opts.maxGuesses]
+ * @param {(resolved: number, total: number) => void} [opts.onProgress]
+ * @returns {SimulationSummary}
+ */
+export function runTreeSimulation(strategy, answers, opts = {}) {
+  const { maxGuesses = MAX_GUESSES, onProgress } = opts;
+  const distribution = {};
+  const failures     = [];
+  let resolved   = 0;
+  let totalTurns = 0;
+
+  function traverse(remaining, depth) {
+    if (remaining.length === 0) return;
+
+    const guess      = strategy.chooseGuess(null, remaining, remaining);
+    const partitions = partitionByGuess(guess, remaining);
+
+    for (const [pattern, group] of partitions) {
+      if (pattern === ALL_GREEN_STR) {
+        distribution[depth] = (distribution[depth] ?? 0) + group.length;
+        resolved   += group.length;
+        totalTurns += depth * group.length;
+        onProgress?.(resolved + failures.length, answers.length);
+      } else if (depth >= maxGuesses) {
+        for (const w of group) failures.push({ answer: w, guesses: [] });
+        onProgress?.(resolved + failures.length, answers.length);
+      } else {
+        traverse(group, depth + 1);
+      }
+    }
+  }
+
+  traverse(answers, 1);
+
+  const mean = resolved > 0 ? totalTurns / resolved : NaN;
+  const sortedTurns = Object.entries(distribution)
+    .flatMap(([t, n]) => Array(n).fill(Number(t)))
+    .sort((a, b) => a - b);
+
+  return {
+    total:       answers.length,
+    solvedCount: resolved,
+    failedCount: failures.length,
+    solveRate:   resolved / answers.length,
+    mean,
+    median: sortedTurns[Math.floor(sortedTurns.length / 2)] ?? NaN,
+    min:    sortedTurns[0] ?? NaN,
+    max:    sortedTurns[sortedTurns.length - 1] ?? NaN,
+    distribution,
+    failures,
+  };
 }
