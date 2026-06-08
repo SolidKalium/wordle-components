@@ -82,7 +82,7 @@ export function summarize(results) {
     solvedCount: solved.length,
     failedCount: failed.length,
     solveRate: solved.length / total,
-    mean,
+    meanSolved: mean,
     median,
     min,
     max,
@@ -97,7 +97,7 @@ export function summarize(results) {
  * @property {number} solvedCount
  * @property {number} failedCount
  * @property {number} solveRate
- * @property {number} mean
+ * @property {number} meanSolved - Mean turns across words that were solved (failures excluded).
  * @property {number} median
  * @property {number} min
  * @property {number} max
@@ -113,7 +113,7 @@ export function formatSummary(summary, strategyName = 'Strategy') {
     `=== ${strategyName} ===`,
     `Games: ${summary.total}`,
     `Solved: ${summary.solvedCount}/${summary.total} (${(summary.solveRate * 100).toFixed(1)}%)`,
-    `Turns — mean: ${summary.mean.toFixed(2)}, median: ${summary.median}, range: ${summary.min}–${summary.max}`,
+    `Turns — mean: ${summary.meanSolved.toFixed(2)}, median: ${summary.median}, range: ${summary.min}–${summary.max}`,
     `Distribution:`,
   ];
 
@@ -143,14 +143,14 @@ export function formatSummary(summary, strategyName = 'Strategy') {
  * For deterministic, stateless strategies this produces the same distribution
  * as runSimulation + summarize but is dramatically more efficient: each unique
  * remaining-word set is evaluated exactly once. When using the answer list as
- * candidates, node count ≈ |answers| (each word is guessed exactly once at the
+ * candidates, node count = |answers| (each word is guessed exactly once at the
  * depth where it becomes the strategy's top pick for its branch).
  *
  * @param {import('./strategy.mjs').Strategy} strategy
  *   A single, stateless strategy instance — NOT a factory.
  * @param {string[]} answers - Words to simulate against.
  * @param {object}  [opts]
- * @param {number}  [opts.maxGuesses]
+ * @param {number}  [opts.maxDepth]
  * @param {(resolved: number, total: number) => void} [opts.onProgress]
  * @returns {SimulationSummary}
  */
@@ -194,7 +194,7 @@ export function runTreeSimulation(strategy, answers, opts = {}) {
     solvedCount: resolved,
     failedCount: failures.length,
     solveRate:   resolved / answers.length,
-    mean,
+    meanSolved:  mean,
     median: sortedTurns[Math.floor(sortedTurns.length / 2)] ?? NaN,
     min:    sortedTurns[0] ?? NaN,
     max:    sortedTurns[sortedTurns.length - 1] ?? NaN,

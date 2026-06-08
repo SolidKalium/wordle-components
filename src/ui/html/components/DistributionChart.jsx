@@ -50,7 +50,7 @@ export function DistributionChart({ defaultCollapsed = false, collapsible = true
 
   if (!summary) return null;
 
-  const { distribution, mean } = summary;
+  const { distribution, meanSolved } = summary;
   const { buckets, hasOverflow } = buildBuckets(distribution, collapsed);
   const maxCount = Math.max(...buckets.map(b => b.count), 1);
 
@@ -72,7 +72,7 @@ export function DistributionChart({ defaultCollapsed = false, collapsible = true
         ))}
       </div>
       <div className={styles.footer}>
-        <span className={styles.stat}>Expected: {mean.toFixed(2)} moves</span>
+        <span className={styles.stat}>Mean: {meanSolved.toFixed(2)}</span>
         {collapsible && hasOverflow && (
           <button className={styles.toggle} onClick={() => setCollapsed(c => !c)}>
             {collapsed ? 'expand' : 'collapse'}
