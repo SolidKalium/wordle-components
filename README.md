@@ -113,8 +113,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - Analysis HTML UI
-  - Support the context providers and stores
-  - Bar chart with how many words need each number of moves, with expected moves overall also shown.
   - Create the card class to wrap things
     - Give it a toggle to collapse.
     - Highlight when channel active elsewhere? LATER
@@ -141,7 +139,9 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - Explanation: When three letters are green, or there are otherwise "few" options without the word list being considered (e.g. 200-400 "words"), show all the possible inputs that fit the rules. This is more like "I can't think of any words that work with these 3 letters, so just show me the brute force options so I can read through them."
     - This might let the user select some of them to put in a "options to consider bar"? Enhancement, not initial feature.
     - These could be dynamically generated in order, or allow pinning specific letters, enabling larger spaces to be explored via brute force without wasting memory.
-- Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.
+  - Bar chart with how many words need each number of moves, with expected moves overall also shown.
+    - How to handle the toggle? Allow it to be passed to the component. Let the creator decide whether it's even user facing. Maybe redesign it to be more hidden.
+    - Determine how the average is calculated.- Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.
 - Test suite: HTML ?
 - Rapid-play mode in HTML
 - Revisit the three worker classes and how they relate?

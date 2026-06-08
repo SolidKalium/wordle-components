@@ -155,7 +155,7 @@ export function formatSummary(summary, strategyName = 'Strategy') {
  * @returns {SimulationSummary}
  */
 export function runTreeSimulation(strategy, answers, opts = {}) {
-  const { maxGuesses = MAX_GUESSES, onProgress } = opts;
+  const { maxDepth = 12, onProgress } = opts;
   const distribution = {};
   const failures     = [];
   let resolved   = 0;
@@ -173,7 +173,7 @@ export function runTreeSimulation(strategy, answers, opts = {}) {
         resolved   += group.length;
         totalTurns += depth * group.length;
         onProgress?.(resolved + failures.length, answers.length);
-      } else if (depth >= maxGuesses) {
+      } else if (depth >= maxDepth) {
         for (const w of group) failures.push({ answer: w, guesses: [] });
         onProgress?.(resolved + failures.length, answers.length);
       } else {
