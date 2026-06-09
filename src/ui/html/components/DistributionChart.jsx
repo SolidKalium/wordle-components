@@ -72,7 +72,7 @@ export function DistributionChart({ defaultCollapsed = false, collapsible = true
         ))}
       </div>
       <div className={styles.footer}>
-        <span className={styles.stat}>Mean: {meanSolved.toFixed(2)}{singlePath ? <span className={styles.stat_note}> (single run w/ memoized tree)</span> : ''}</span>
+        <span className={styles.stat}>Mean: {meanSolved.toFixed(2)}{singlePath ? <span className={styles.statNote}> (single run w/ memoized tree)</span> : ''}</span>
         {collapsible && hasOverflow && (
           <button className={styles.toggle} onClick={() => setCollapsed(c => !c)}>
             {collapsed ? 'expand' : 'collapse'}

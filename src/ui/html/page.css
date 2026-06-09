@@ -1,10 +1,14 @@
+:root {
+  --page-bg: #3b5050;
+}
+
 html {
-  background-color: #3b5050; /* fills overscroll area */
+  background-color: var(--page-bg); /* fills overscroll area */
 }
 
 body {
   margin: 0;
-  background-color: #3b5050;
+  background-color: var(--page-bg);
   color: #fff;
   font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
 }

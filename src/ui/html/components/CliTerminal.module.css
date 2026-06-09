@@ -1,4 +1,6 @@
 .terminal {
+  --bg: #000;
+
   height: 400px;
 }
 
@@ -6,12 +8,12 @@
    padding here is correctly accounted for. background covers the padding area. */
 .terminal :global(.xterm) {
   padding: 6px 10px;
-  background: #000;
+  background: var(--bg);
   box-sizing: border-box;
 }
 
 /* xterm sets this inline from the theme option; !important guards against
    any mismatch if the theme isn't applied before the element is measured. */
 .terminal :global(.xterm-viewport) {
-  background-color: #000 !important;
+  background-color: var(--bg) !important;
 }

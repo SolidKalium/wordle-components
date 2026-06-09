@@ -1,4 +1,8 @@
 .shell {
+  --text:         #b0b3b5;
+  --bar:          #538d4e;
+  --bar-overflow: #b59f3b;
+
   display: inline-flex;
   flex-direction: column;
   align-items: center;
@@ -13,13 +17,13 @@
   font-weight: 700;
   letter-spacing: 0.05em;
   font-variant-caps: small-caps;
-  color: #b0b3b5;
+  color: var(--text);
   margin-bottom: 6px;
 }
 
 .loading {
   font-size: 13px;
-  color: #b0b3b5;
+  color: var(--text);
   padding: 24px 0;
 }
 
@@ -40,7 +44,7 @@
 
 .count {
   font-size: 11px;
-  color: #b0b3b5;
+  color: var(--text);
   min-height: 14px;
   line-height: 14px;
 }
@@ -54,21 +58,21 @@
 
 .bar {
   width: 100%;
-  background: #538d4e;
+  background: var(--bar);
   min-height: 2px;
   transition: height 0.3s ease;
 }
 
 .barOverflow {
   width: 100%;
-  background: #b59f3b;
+  background: var(--bar-overflow);
   min-height: 2px;
   transition: height 0.3s ease;
 }
 
 .turnLabel {
   font-size: 12px;
-  color: #b0b3b5;
+  color: var(--text);
 }
 
 .footer {
@@ -79,17 +83,17 @@
 
 .stat {
   font-size: 12px;
-  color: #b0b3b5;
+  color: var(--text);
   letter-spacing: 0.03em;
 }
 
-.stat_note {
-  color: #888;
+.statNote {
+  color: color-mix(in srgb, currentColor 70%, transparent);
 }
 
 .toggle {
   font-size: 11px;
-  color: #b0b3b5;
+  color: var(--text);
   background: none;
   border: 1px solid #3a3a3c;
   border-radius: 3px;
@@ -99,5 +103,5 @@
 
 .toggle:hover {
   color: #fff;
-  border-color: #b0b3b5;
+  border-color: var(--text);
 }
