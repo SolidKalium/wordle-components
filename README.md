@@ -140,6 +140,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - How to handle the toggle? Allow it to be passed to the component. Let the creator decide whether it's even user facing. Maybe redesign it to be more hidden.
     - Determine how the average is calculated.- Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.
   - Card: Highlight when channel active elsewhere? LATER
+  - Given every first word, how do the information theoretic approaches do on subsequent turns?
 - Test suite: HTML ?
 - Rapid-play mode in HTML
 - Revisit the three worker classes and how they relate?

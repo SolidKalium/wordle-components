@@ -155,7 +155,11 @@ export function formatSummary(summary, strategyName = 'Strategy') {
  * @returns {SimulationSummary}
  */
 export function runTreeSimulation(strategy, answers, opts = {}) {
-  const { maxDepth = 12, onProgress } = opts;
+  if (!strategy.isDeterministic) {
+    throw new Error(`runTreeSimulation requires a deterministic strategy; ${strategy.name} is not.`);
+  }
+
+  const { maxDepth = 32, onProgress } = opts;
   const distribution = {};
   const failures     = [];
   let resolved   = 0;

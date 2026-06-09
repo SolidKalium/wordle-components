@@ -16,6 +16,15 @@ export class Strategy {
   }
 
   /**
+   * True if the strategy always makes the same guess for a given
+   * (candidates, remainingWords) pair — i.e. safe for tree simulation.
+   * Defaults to false; deterministic subclasses override to true.
+   */
+  get isDeterministic() {
+    return false;
+  }
+
+  /**
    * Return up to k candidates ranked by the strategy's metric.
    *
    * @param {import('./game.mjs').Game} game
@@ -61,6 +70,8 @@ export class RandomStrategy extends Strategy {
  * if the list is sorted). Deterministic, so useful for reproducible tests.
  */
 export class FirstWordStrategy extends Strategy {
+  get isDeterministic() { return true; } // Note: only deterministic if the caller provides consistent word order
+
   rankGuesses(_game, candidates, _remainingWords, k = candidates.length) {
     return candidates.slice(0, k).map(word => ({ word, score: null }));
   }
@@ -76,6 +87,10 @@ export class FilteredStrategy extends Strategy {
     this.filters = filters;
   }
 
+  get isDeterministic() {
+    return this.base.isDeterministic;
+  }
+
   rankGuesses(game, candidates, remainingWords, k = candidates.length) {
     let narrowed = candidates;
     for (const f of this.filters) {
@@ -89,6 +104,8 @@ export class FilteredStrategy extends Strategy {
 
 /** Maximizes the number of partitions, minimizing average group size. */
 export class MaxGroupsStrategy extends Strategy {
+  get isDeterministic() { return true; }
+
   rankGuesses(_game, candidates, remainingWords, k = candidates.length) {
     const scored = candidates.map(word => ({
       word,
@@ -104,6 +121,8 @@ export class MaxGroupsStrategy extends Strategy {
  * remaining candidates after the guess (assuming a uniform answer distribution).
  */
 export class MinExpectedRemainingStrategy extends Strategy {
+  get isDeterministic() { return true; }
+
   rankGuesses(_game, candidates, remainingWords, k = candidates.length) {
     const scored = candidates.map(word => {
       let score = 0;
@@ -124,6 +143,8 @@ export class MinExpectedRemainingStrategy extends Strategy {
  * equivalent to minimizing Σ(n * lg(n)), where n is each partition group's size.
  */
 export class MaxEntropyStrategy extends Strategy {
+  get isDeterministic() { return true; }
+
   rankGuesses(_game, candidates, remainingWords, k = candidates.length) {
     const scored = candidates.map(word => {
       let score = 0;
@@ -140,6 +161,8 @@ export class MaxEntropyStrategy extends Strategy {
 
 /** Minimizes the largest group, optimizing for the worst case. */
 export class MinimaxStrategy extends Strategy {
+  get isDeterministic() { return true; }
+
   rankGuesses(_game, candidates, remainingWords, k = candidates.length) {
     const scored = candidates.map(word => {
       let score = 0;

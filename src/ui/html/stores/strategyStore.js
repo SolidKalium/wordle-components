@@ -7,6 +7,7 @@ export const STRATEGY_DISPLAY_NAMES = {
   maxEntropy:           'Max Entropy',
   minExpectedRemaining: 'Min Expected Remaining',
   minimax:              'Minimax',
+  firstWord:            'First Word',
 };
 
 export const createStrategyStore = (opts = {}) => {

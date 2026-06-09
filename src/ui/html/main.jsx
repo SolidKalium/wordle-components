@@ -13,6 +13,7 @@ const strategyStoreMaxGroups = createStrategyStore({ strategyName: 'maxGroups' }
 const strategyStoreMaxEntropy = createStrategyStore({ strategyName: 'maxEntropy' });
 const strategyStoreMinExpectedRemaining = createStrategyStore({ strategyName: 'minExpectedRemaining' });
 const strategyStoreMinimax = createStrategyStore({ strategyName: 'minimax' });
+const strategyStoreFirstWord = createStrategyStore({ strategyName: 'firstWord' });
 
 function App() {
   return (
@@ -29,6 +30,9 @@ function App() {
             <DistributionChart  defaultCollapsed={false} collapsible={false}/>
           </StrategyStoreContext.Provider>
           <StrategyStoreContext.Provider value={strategyStoreMinimax}>
+            <DistributionChart  defaultCollapsed={false} collapsible={false}/>
+          </StrategyStoreContext.Provider>
+          <StrategyStoreContext.Provider value={strategyStoreFirstWord}>
             <DistributionChart  defaultCollapsed={false} collapsible={false}/>
           </StrategyStoreContext.Provider>
         </div>

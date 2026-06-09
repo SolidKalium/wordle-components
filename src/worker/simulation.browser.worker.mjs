@@ -5,6 +5,7 @@ import {
   MaxEntropyStrategy,
   MinExpectedRemainingStrategy,
   MinimaxStrategy,
+  FirstWordStrategy,
 } from '../lib/strategy.mjs';
 
 // One instance per strategy — all are stateless so a single instance is safe
@@ -14,6 +15,7 @@ const STRATEGIES = {
   maxEntropy:           new MaxEntropyStrategy(),
   minExpectedRemaining: new MinExpectedRemainingStrategy(),
   minimax:              new MinimaxStrategy(),
+  firstWord:            new FirstWordStrategy(),
 };
 
 self.onmessage = ({ data }) => {
