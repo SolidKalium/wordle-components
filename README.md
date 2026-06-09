@@ -113,9 +113,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - Analysis HTML UI
-  - Strategy selector
-    - Add optional filter
-    - Additional variants? E.g. a popover from a settings icon.
   - Decision tree
     - Showing all the words would be hard. But we could show at least 2 turns. Words, options remaining (toggle somewhere for words or bits), expected moves, max moves, maybe a tiny bar chart
     - Then allow it to be navigated.
@@ -143,9 +140,12 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
   - Card
     - Highlight when channel active elsewhere? LATER
     - Consider additional colors? E.g. move the split colors of the current chart demo card into its own color scheme
+    - On bar hover, show representative words? Or all words?
+  - Strategy selector
+    - Additional variants? E.g. a popover from a settings icon.
   - Given every first word, how do the information theoretic approaches do on subsequent turns? Might go in a report page (or component) where finalized calculations and the code to make them are both stored?
 - Filters: tweak vowel anti-exploration? Maybe others? e.g. don't retry known bad letters
-  - The filters don't do anything, except the anti-vowel one...
+  - The letter and vowel exploration filters do nothing in hard mode because we are already limited to only words that match what we know, so after we filter out the remaining set, we fall back to the full one (or no letters matched yet and the filter is a no-op anyways). The word list being used (hard mode on/off, all or only possible answers) needs to be clearer in the UI.
 - Test suite: HTML ?
 - Rapid-play mode in HTML
 - Revisit the three worker classes and how they relate?

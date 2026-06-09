@@ -204,8 +204,7 @@ export class KeyboardFilter extends Filter {
 
 /**
  * Preset filters that require no constructor arguments — suitable for simple
- * UI toggles. Argument-requiring filters (MustContainFilter, ScrabbleFilter,
- * KeyboardFilter) are exported as classes only.
+ * UI toggles.
  */
 export const EXPLORATION_FILTERS = [
   new LetterExplorationFilter(),

@@ -21,7 +21,7 @@ const strategyStoreExplore = createStrategyStore({ strategyId: 'maxGroups' });
 function App() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 16, padding: 24 }}>
-      <Card title="Strategy Distributions" collapsible>
+      <Card title="Strategy Distributions (hard mode, answers only)" collapsible>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, auto)', gap: 1, background: '#2c2c2e' }}>
           <StrategyStoreContext.Provider value={strategyStoreMaxGroups}>
             <DistributionChart defaultCollapsed={false} collapsible={false}/>
@@ -43,7 +43,7 @@ function App() {
           </StrategyStoreContext.Provider>
         </div>
       </Card>
-      <Card title="Strategy Explorer" collapsible>
+      <Card title="Strategy Explorer (hard mode, answers only)" collapsible>
         <StrategyStoreContext.Provider value={strategyStoreExplore}>
           <StrategySelector />
           <DistributionChart />
