@@ -136,9 +136,10 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - Explanation: When three letters are green, or there are otherwise "few" options without the word list being considered (e.g. 200-400 "words"), show all the possible inputs that fit the rules. This is more like "I can't think of any words that work with these 3 letters, so just show me the brute force options so I can read through them."
     - This might let the user select some of them to put in a "options to consider bar"? Enhancement, not initial feature.
     - These could be dynamically generated in order, or allow pinning specific letters, enabling larger spaces to be explored via brute force without wasting memory.
-  - Bar chart with how many words need each number of moves, with expected moves overall also shown.
+  - Distribution Chart
     - How to handle the toggle? Allow it to be passed to the component. Let the creator decide whether it's even user facing. Maybe redesign it to be more hidden.
     - Determine how the average is calculated.- Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.
+    - Add descriptions for strategies?
   - Card: Highlight when channel active elsewhere? LATER
   - Given every first word, how do the information theoretic approaches do on subsequent turns?
 - Test suite: HTML ?
@@ -243,6 +244,7 @@ For hard mode specifically: how often does the optimal guess (by any single-step
 Things considered but skipped for now
 
 - Word lengths other than 5
+- i18n
 - Allow selecting words from the larger valid word list
 - Filters ("strategy subvariants") currently are designed to be hard, prepass filters with self-disable rules. That makes the logic clear and legible, with the input surface solely using integers. Filters can also be applied post-strategy.
   - Slightly more complex logical rules are possible but generally out of scope.

@@ -1,14 +1,13 @@
 import { createContext, useContext } from 'react';
 import { createStore, useStore } from 'zustand';
+import { STRATEGIES } from '../../../lib/strategy.mjs';
 import { SimulationWorker } from '../workers/SimulationWorker.mjs';
 
-export const STRATEGY_DISPLAY_NAMES = {
-  maxGroups:            'Max Groups',
-  maxEntropy:           'Max Entropy',
-  minExpectedRemaining: 'Min Expected Remaining',
-  minimax:              'Minimax',
-  firstWord:            'First Word',
-};
+export { STRATEGIES };
+
+export const STRATEGY_DISPLAY_NAMES = Object.fromEntries(
+  STRATEGIES.map(s => [s.id, s.displayName])
+);
 
 export const createStrategyStore = (opts = {}) => {
   const worker = new SimulationWorker();

@@ -54,6 +54,9 @@ export class Strategy {
  * Not a good strategy, but a useful baseline and smoke test.
  */
 export class RandomStrategy extends Strategy {
+  get id() { return 'random'; }
+  get displayName() { return 'Random'; }
+
   rankGuesses(_game, candidates, _remainingWords, k = candidates.length) {
     const result = candidates.slice();
     const limit = Math.min(k, result.length);
@@ -70,6 +73,8 @@ export class RandomStrategy extends Strategy {
  * if the list is sorted). Deterministic, so useful for reproducible tests.
  */
 export class FirstWordStrategy extends Strategy {
+  get id() { return 'firstWord'; }
+  get displayName() { return 'First Word'; }
   get isDeterministic() { return true; } // Note: only deterministic if the caller provides consistent word order
 
   rankGuesses(_game, candidates, _remainingWords, k = candidates.length) {
@@ -104,6 +109,8 @@ export class FilteredStrategy extends Strategy {
 
 /** Maximizes the number of partitions, minimizing average group size. */
 export class MaxGroupsStrategy extends Strategy {
+  get id() { return 'maxGroups'; }
+  get displayName() { return 'Max Groups'; }
   get isDeterministic() { return true; }
 
   rankGuesses(_game, candidates, remainingWords, k = candidates.length) {
@@ -121,6 +128,8 @@ export class MaxGroupsStrategy extends Strategy {
  * remaining candidates after the guess (assuming a uniform answer distribution).
  */
 export class MinExpectedRemainingStrategy extends Strategy {
+  get id() { return 'minExpectedRemaining'; }
+  get displayName() { return 'Min Expected Remaining'; }
   get isDeterministic() { return true; }
 
   rankGuesses(_game, candidates, remainingWords, k = candidates.length) {
@@ -143,6 +152,8 @@ export class MinExpectedRemainingStrategy extends Strategy {
  * equivalent to minimizing Σ(n * lg(n)), where n is each partition group's size.
  */
 export class MaxEntropyStrategy extends Strategy {
+  get id() { return 'maxEntropy'; }
+  get displayName() { return 'Max Entropy'; }
   get isDeterministic() { return true; }
 
   rankGuesses(_game, candidates, remainingWords, k = candidates.length) {
@@ -161,6 +172,8 @@ export class MaxEntropyStrategy extends Strategy {
 
 /** Minimizes the largest group, optimizing for the worst case. */
 export class MinimaxStrategy extends Strategy {
+  get id() { return 'minimax'; }
+  get displayName() { return 'Minimax'; }
   get isDeterministic() { return true; }
 
   rankGuesses(_game, candidates, remainingWords, k = candidates.length) {
@@ -175,3 +188,16 @@ export class MinimaxStrategy extends Strategy {
     return scored.slice(0, k);
   }
 }
+
+/**
+ * Canonical ordered list of strategies available for analysis and simulation.
+ * Each entry is a shared, stateless instance — safe to reuse across calls.
+ * RandomStrategy is excluded; it is non-deterministic and unsuitable for tree simulation.
+ */
+export const STRATEGIES = [
+  new MaxGroupsStrategy(),
+  new MaxEntropyStrategy(),
+  new MinExpectedRemainingStrategy(),
+  new MinimaxStrategy(),
+  new FirstWordStrategy(),
+];

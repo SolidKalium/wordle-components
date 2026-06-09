@@ -1,26 +1,16 @@
 import { runTreeSimulation } from '../lib/analysis.mjs';
 import { ANSWERS } from '../lib/words.gen.mjs';
-import {
-  MaxGroupsStrategy,
-  MaxEntropyStrategy,
-  MinExpectedRemainingStrategy,
-  MinimaxStrategy,
-  FirstWordStrategy,
-} from '../lib/strategy.mjs';
+import { STRATEGIES } from '../lib/strategy.mjs';
 
-// One instance per strategy — all are stateless so a single instance is safe
-// to reuse across tree nodes.
-const STRATEGIES = {
-  maxGroups:            new MaxGroupsStrategy(),
-  maxEntropy:           new MaxEntropyStrategy(),
-  minExpectedRemaining: new MinExpectedRemainingStrategy(),
-  minimax:              new MinimaxStrategy(),
-  firstWord:            new FirstWordStrategy(),
-};
+const strategyMap = Object.fromEntries(
+  STRATEGIES.filter(s => s.isDeterministic).map(s => [s.id, s])
+);
+
+const defaultStrategy = STRATEGIES.find(s => s.isDeterministic);
 
 self.onmessage = ({ data }) => {
-  const { strategyName = 'maxGroups', reqId } = data;
-  const strategy = STRATEGIES[strategyName] ?? STRATEGIES.maxGroups;
+  const { strategyName, reqId } = data;
+  const strategy = strategyMap[strategyName] ?? defaultStrategy;
 
   const summary = runTreeSimulation(strategy, ANSWERS, {
     onProgress: (i, total) => self.postMessage({ type: 'progress', i, total, reqId }),
