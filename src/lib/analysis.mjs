@@ -140,72 +140,108 @@ export function formatSummary(summary, strategyName = 'Strategy') {
 }
 
 /**
- * Run a strategy as a tree traversal rather than per-word simulation.
- *
- * For deterministic, stateless strategies this produces the same distribution
- * as runSimulation + summarize but is dramatically more efficient: each unique
- * remaining-word set is evaluated exactly once. When using the answer list as
- * candidates, node count = |answers| (each word is guessed exactly once at the
- * depth where it becomes the strategy's top pick for its branch).
+ * @typedef {object} TreeNode
+ * @property {string}   guess        - Word guessed at this node.
+ * @property {number}   depth        - Depth in the tree (root = 1).
+ * @property {number}   size         - Words remaining when this node is entered.
+ * @property {number}   solvedCount  - Words solved directly here (all-green pattern).
+ * @property {number}   totalSolved  - Words solved in this subtree (including children).
+ * @property {number}   totalTurns   - Sum of solve-depths across all solved words in subtree.
+ * @property {number}   meanTurns    - Mean total turns (from root) for words in subtree.
+ * @property {number}   maxTurns     - Worst-case total turns for any word in subtree.
+ * @property {TreeGroup[]} groups    - Non-green child groups, sorted largest-first.
+ */
+
+/**
+ * @typedef {object} TreeGroup
+ * @property {string}   pattern  - 5-char result string (G/Y/_).
+ * @property {number}   size     - Number of words in this group.
+ * @property {TreeNode} child    - Subtree for this group.
+ */
+
+/**
+ * Build a decision tree for a strategy and simultaneously compute simulation
+ * statistics. One traversal produces both the tree structure and the summary.
  *
  * @param {import('./strategy.mjs').Strategy} strategy
- *   A single, stateless strategy instance — NOT a factory.
- * @param {string[]} answers - Words to simulate against.
+ * @param {string[]} answers
  * @param {object}  [opts]
+ * @param {boolean} [opts.allowNonDeterministic]
  * @param {number}  [opts.maxDepth]
  * @param {(resolved: number, total: number) => void} [opts.onProgress]
- * @returns {SimulationSummary}
+ * @returns {{ tree: TreeNode, summary: SimulationSummary }}
  */
-export function runTreeSimulation(strategy, answers, opts = {}) {
+export function buildDecisionTree(strategy, answers, opts = {}) {
   if (!strategy.isDeterministic && !opts.allowNonDeterministic) {
-    throw new Error(`runTreeSimulation requires a deterministic strategy; ${strategy.name} is not. Pass allowNonDeterministic: true to run anyway (result is a single stochastic path, not a Monte Carlo average).`);
+    throw new Error(`buildDecisionTree requires a deterministic strategy; ${strategy.name} is not. Pass allowNonDeterministic: true to run anyway (result is a single stochastic path).`);
   }
 
   const { maxDepth = 32, onProgress } = opts;
-  const singlePath = !strategy.isDeterministic;
+  const singlePath   = !strategy.isDeterministic;
   const distribution = {};
   const failures     = [];
-  let resolved   = 0;
-  let totalTurns = 0;
+  let resolved = 0;
 
-  // guessHistory is an array of { word } objects so filtered strategies
-  // (e.g. ExplorationFilter) can inspect prior guesses via the mock game arg.
-  function traverse(remaining, depth, guessHistory) {
-    if (remaining.length === 0) return;
-
-    const mockGame   = { guesses: guessHistory };
-    const guess      = strategy.chooseGuess(mockGame, remaining, remaining);
-    const partitions = partitionByGuess(guess, remaining);
+  function buildNode(remaining, depth, guessHistory) {
+    const mockGame    = { guesses: guessHistory };
+    const guess       = strategy.chooseGuess(mockGame, remaining, remaining);
+    const partitions  = partitionByGuess(guess, remaining);
     const nextHistory = [...guessHistory, { word: guess }];
+
+    let solvedCount = 0;
+    let totalSolved = 0;
+    let totalTurns  = 0;
+    let maxTurns    = 0;
+    const groups    = [];
 
     for (const [pattern, group] of partitions) {
       if (pattern === ALL_GREEN_STR) {
+        solvedCount  = group.length;
+        totalSolved += group.length;
+        totalTurns  += depth * group.length;
+        maxTurns     = Math.max(maxTurns, depth);
         distribution[depth] = (distribution[depth] ?? 0) + group.length;
-        resolved   += group.length;
-        totalTurns += depth * group.length;
+        resolved += group.length;
         onProgress?.(resolved + failures.length, answers.length);
       } else if (depth >= maxDepth) {
         for (const w of group) failures.push({ answer: w, guesses: [] });
         onProgress?.(resolved + failures.length, answers.length);
       } else {
-        traverse(group, depth + 1, nextHistory);
+        const child  = buildNode(group, depth + 1, nextHistory);
+        totalSolved += child.totalSolved;
+        totalTurns  += child.totalTurns;
+        maxTurns     = Math.max(maxTurns, child.maxTurns);
+        groups.push({ pattern, size: group.length, child });
       }
     }
+
+    groups.sort((a, b) => b.size - a.size);
+
+    return {
+      guess,
+      depth,
+      size: remaining.length,
+      solvedCount,
+      totalSolved,
+      totalTurns,
+      meanTurns: totalSolved > 0 ? totalTurns / totalSolved : NaN,
+      maxTurns,
+      groups,
+    };
   }
 
-  traverse(answers, 1, []);
+  const tree = buildNode(answers, 1, []);
 
-  const mean = resolved > 0 ? totalTurns / resolved : NaN;
   const sortedTurns = Object.entries(distribution)
     .flatMap(([t, n]) => Array(n).fill(Number(t)))
     .sort((a, b) => a - b);
 
-  return {
+  const summary = {
     total:       answers.length,
     solvedCount: resolved,
     failedCount: failures.length,
     solveRate:   resolved / answers.length,
-    meanSolved:  mean,
+    meanSolved:  resolved > 0 ? tree.totalTurns / resolved : NaN,
     median: sortedTurns[Math.floor(sortedTurns.length / 2)] ?? NaN,
     min:    sortedTurns[0] ?? NaN,
     max:    sortedTurns[sortedTurns.length - 1] ?? NaN,
@@ -213,4 +249,6 @@ export function runTreeSimulation(strategy, answers, opts = {}) {
     failures,
     singlePath,
   };
+
+  return { tree, summary };
 }

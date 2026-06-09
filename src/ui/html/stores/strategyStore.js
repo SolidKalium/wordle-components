@@ -21,6 +21,7 @@ export const createStrategyStore = (opts = {}) => {
     filterId:           opts.filterId   ?? null,
     filters:            [],
     simulationSummary:  null,
+    treeRoot:           null,
     simulationPending:  false,
     simulationProgress: null,
 
@@ -31,19 +32,20 @@ export const createStrategyStore = (opts = {}) => {
       const isDeterministic = strategyById.get(strategyId)?.isDeterministic ?? false;
 
       if (isDeterministic && cache.has(cacheKey)) {
-        set({ simulationSummary: cache.get(cacheKey), simulationPending: false, simulationProgress: null });
+        const cached = cache.get(cacheKey);
+        set({ simulationSummary: cached.summary, treeRoot: cached.tree, simulationPending: false, simulationProgress: null });
         return;
       }
 
-      set({ simulationSummary: null, simulationPending: true, simulationProgress: null });
+      set({ simulationSummary: null, treeRoot: null, simulationPending: true, simulationProgress: null });
       try {
-        const summary = await worker.compute(
+        const { summary, tree } = await worker.compute(
           { strategyId, filterId },
           (i, total) => { if (id === reqId) set({ simulationProgress: { i, total } }); },
         );
         if (id === reqId) {
-          if (isDeterministic) cache.set(cacheKey, summary);
-          set({ simulationSummary: summary, simulationPending: false, simulationProgress: null });
+          if (isDeterministic) cache.set(cacheKey, { summary, tree });
+          set({ simulationSummary: summary, treeRoot: tree, simulationPending: false, simulationProgress: null });
         }
       } catch {
         if (id === reqId) set({ simulationPending: false, simulationProgress: null });

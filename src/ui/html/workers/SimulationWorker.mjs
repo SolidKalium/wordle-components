@@ -22,7 +22,7 @@ export class SimulationWorker {
       if (data.type === 'progress') {
         this._onProgress?.(data.i, data.total);
       } else if (data.type === 'done') {
-        this._resolve?.(data.summary);
+        this._resolve?.({ summary: data.summary, tree: data.tree });
         this._resolve = this._reject = this._onProgress = null;
       }
     };
@@ -34,9 +34,9 @@ export class SimulationWorker {
   }
 
   /**
-   * @param {{ strategyName: string }} params
+   * @param {{ strategyId: string, filterId: string | null }} params
    * @param {(i: number, total: number) => void} [onProgress]
-   * @returns {Promise<import('../../lib/analysis.mjs').SimulationSummary>}
+   * @returns {Promise<{ summary: import('../../../lib/analysis.mjs').SimulationSummary, tree: import('../../../lib/analysis.mjs').TreeNode }>}
    */
   compute(params, onProgress) {
     const reqId = ++this._reqId;

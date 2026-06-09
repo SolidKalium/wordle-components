@@ -1,0 +1,112 @@
+.navigator {
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  min-height: 360px;
+}
+
+.status {
+  padding: 24px 16px;
+  font-size: 12px;
+  color: #555;
+}
+
+.column {
+  flex-shrink: 0;
+  width: 210px;
+  border-right: 1px solid #2c2c2e;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.column:last-child {
+  border-right: none;
+}
+
+.columnHeader {
+  padding: 8px 12px 7px;
+  border-bottom: 1px solid #2c2c2e;
+  background: #18181a;
+  flex-shrink: 0;
+}
+
+.guess {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #d7dadc;
+}
+
+.stats {
+  display: block;
+  font-size: 10px;
+  color: #555;
+  margin-top: 2px;
+  letter-spacing: 0.03em;
+}
+
+.groupList {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.groupRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #1e1e1f;
+  min-height: 28px;
+}
+
+.groupRow:hover {
+  background: #26262a;
+}
+
+.selected {
+  background: #23282a;
+  border-left: 2px solid #538d4e;
+  padding-left: 8px;
+}
+
+.selected:hover {
+  background: #28302c;
+}
+
+.groupSize {
+  font-size: 11px;
+  color: #818384;
+  min-width: 26px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.nextGuess {
+  font-size: 11px;
+  color: #555;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.solvedRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  min-height: 28px;
+  border-bottom: 1px solid #1e1e1f;
+  opacity: 0.5;
+}
+
+.nextGuessLabel {
+  font-size: 10px;
+  color: #538d4e;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}

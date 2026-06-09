@@ -114,8 +114,11 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 ## TODO
 - Analysis HTML UI
   - Decision tree
-    - Showing all the words would be hard. But we could show at least 2 turns. Words, options remaining (toggle somewhere for words or bits), expected moves, max moves, maybe a tiny bar chart
-    - Then allow it to be navigated.
+    - Show max moves?
+    - Show tiny bar chart?
+    - Add arg/toggle for words vs bits?
+    - Add max height to columns
+    - Alternate tree views? Collapsible tree or treemap? But will struggle on turn 1 with 120-140 groups.
     - Once game board is added, make it re-anchor when a game exists and a move is made
       - Also: optionally track the partial input for the game and use that instead of the best move for the current game state
   - Game board
@@ -143,6 +146,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - On bar hover, show representative words? Or all words?
   - Strategy selector
     - Additional variants? E.g. a popover from a settings icon.
+    - Idea: could have a popover settings for whole card, then one for each component. The card can specify whether something is a default or locked. Then the individual components don't offer that setting. Combine with a +component design so a user can add/remove components and compare how they want.
   - Given every first word, how do the information theoretic approaches do on subsequent turns? Might go in a report page (or component) where finalized calculations and the code to make them are both stored?
 - Filters: tweak vowel anti-exploration? Maybe others? e.g. don't retry known bad letters
   - The letter and vowel exploration filters do nothing in hard mode because we are already limited to only words that match what we know, so after we filter out the remaining set, we fall back to the full one (or no letters matched yet and the filter is a no-op anyways). The word list being used (hard mode on/off, all or only possible answers) needs to be clearer in the UI.

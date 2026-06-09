@@ -7,6 +7,7 @@ import { Card } from './components/Card.jsx';
 import { CliTerminal } from './components/CliTerminal.jsx';
 import { DistributionChart } from './components/DistributionChart.jsx';
 import { StrategySelector } from './components/StrategySelector.jsx';
+import { TreeNavigator } from './components/TreeNavigator.jsx';
 import './page.css';
 
 const gameStore = createGameStore({ wordList: WORDS, answers: ANSWERS });
@@ -21,7 +22,7 @@ const strategyStoreExplore = createStrategyStore({ strategyId: 'maxGroups' });
 function App() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 16, padding: 24 }}>
-      <Card title="Strategy Distributions (hard mode, answers only)" collapsible>
+      <Card title="Strategy Distributions (hard mode, answers only)" collapsible defaultCollapsed>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, auto)', gap: 1, background: '#2c2c2e' }}>
           <StrategyStoreContext.Provider value={strategyStoreMaxGroups}>
             <DistributionChart defaultCollapsed={false} collapsible={false}/>
@@ -43,13 +44,17 @@ function App() {
           </StrategyStoreContext.Provider>
         </div>
       </Card>
-      <Card title="Strategy Explorer (hard mode, answers only)" collapsible>
-        <StrategyStoreContext.Provider value={strategyStoreExplore}>
+      <StrategyStoreContext.Provider value={strategyStoreExplore}>
+        <Card title="Strategy Explorer (hard mode, answers only)" collapsible defaultCollapsed>
           <StrategySelector />
           <DistributionChart />
-        </StrategyStoreContext.Provider>
-      </Card>
-      <Card title="Terminal" variant="dark">
+        </Card>
+        <Card title="Decision Tree (hard mode, answers only)" collapsible>
+          <StrategySelector showFilters={false} />
+          <TreeNavigator />
+        </Card>
+      </StrategyStoreContext.Provider>
+      <Card title="Terminal" variant="dark" collapsible defaultCollapsed>
         <CliTerminal autoFocus />
       </Card>
     </div>

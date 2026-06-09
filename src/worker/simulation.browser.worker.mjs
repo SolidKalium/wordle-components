@@ -1,4 +1,4 @@
-import { runTreeSimulation } from '../lib/analysis.mjs';
+import { buildDecisionTree } from '../lib/analysis.mjs';
 import { ANSWERS } from '../lib/words.gen.mjs';
 import { STRATEGIES, FilteredStrategy } from '../lib/strategy.mjs';
 import { EXPLORATION_FILTERS } from '../lib/filter.mjs';
@@ -13,10 +13,10 @@ self.onmessage = ({ data }) => {
   const filter = filterId ? filterMap[filterId] : null;
   const strategy = filter ? new FilteredStrategy(base, [filter]) : base;
 
-  const summary = runTreeSimulation(strategy, ANSWERS, {
+  const { summary, tree } = buildDecisionTree(strategy, ANSWERS, {
     allowNonDeterministic: !strategy.isDeterministic,
     onProgress: (i, total) => self.postMessage({ type: 'progress', i, total, reqId }),
   });
 
-  self.postMessage({ type: 'done', summary, reqId });
+  self.postMessage({ type: 'done', summary, tree, reqId });
 };

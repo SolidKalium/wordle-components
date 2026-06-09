@@ -1,0 +1,16 @@
+.tiles {
+  display: inline-flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.tile {
+  width:  var(--tile-size, 12px);
+  height: var(--tile-size, 12px);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.green  { background: #538d4e; }
+.yellow { background: #b59f3b; }
+.grey   { background: #3a3a3c; }
