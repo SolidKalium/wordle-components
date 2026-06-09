@@ -33,6 +33,19 @@
   min-height: 28px;
 }
 
+.headerCollapsible {
+  cursor: pointer;
+  user-select: none;
+}
+
+.headerCollapsible:hover .title {
+  color: #fff;
+}
+
+.headerCollapsible:hover .collapseBtn {
+  color: #fff;
+}
+
 .title {
   font-size: 11px;
   font-weight: 600;
@@ -43,18 +56,11 @@
 }
 
 .collapseBtn {
-  background: none;
-  border: none;
   color: var(--text);
-  cursor: pointer;
   font-size: 14px;
   padding: 0 2px;
   margin-left: 16px;
   line-height: 1;
-}
-
-.collapseBtn:hover {
-  color: #fff;
 }
 
 .body {

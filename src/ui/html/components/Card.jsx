@@ -20,12 +20,15 @@ export function Card({ title, children, variant = 'default', collapsible = false
       style={collapsed && savedWidth ? { width: savedWidth } : undefined}
     >
       {title && (
-        <div className={styles.header}>
+        <div
+          className={`${styles.header} ${collapsible ? styles.headerCollapsible : ''}`}
+          onClick={collapsible ? toggle : undefined}
+        >
           <span className={styles.title}>{title}</span>
           {collapsible && (
-            <button className={styles.collapseBtn} onClick={toggle}>
+            <span className={styles.collapseBtn}>
               <span style={{ display: 'inline-block', transition: 'transform 0.15s', transform: collapsed ? 'rotate(180deg)' : 'none' }}>▾</span>
-            </button>
+            </span>
           )}
         </div>
       )}

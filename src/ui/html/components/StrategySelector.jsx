@@ -12,34 +12,38 @@ export function StrategySelector({ showFilters = true }) {
     <div className={styles.selector}>
       <div className={styles.row}>
         <span className={styles.rowLabel}>Strategy</span>
-        {STRATEGIES.map(s => (
-          <button
-            key={s.id}
-            className={`${styles.option} ${s.id === strategyId ? styles.active : ''}`}
-            onClick={() => setStrategy(s.id)}
-          >
-            {s.displayName}
-          </button>
-        ))}
+        <div className={styles.buttons}>
+          {STRATEGIES.map(s => (
+            <button
+              key={s.id}
+              className={`${styles.option} ${s.id === strategyId ? styles.active : ''}`}
+              onClick={() => setStrategy(s.id)}
+            >
+              {s.displayName}
+            </button>
+          ))}
+        </div>
       </div>
       {showFilters && (
         <div className={styles.row}>
           <span className={styles.rowLabel}>Filter</span>
-          <button
-            className={`${styles.option} ${filterId === null ? styles.active : ''}`}
-            onClick={() => setFilter(null)}
-          >
-            None
-          </button>
-          {EXPLORATION_FILTERS.map(f => (
+          <div className={styles.buttons}>
             <button
-              key={f.id}
-              className={`${styles.option} ${f.id === filterId ? styles.active : ''}`}
-              onClick={() => setFilter(f.id)}
+              className={`${styles.option} ${filterId === null ? styles.active : ''}`}
+              onClick={() => setFilter(null)}
             >
-              {f.displayName}
+              None
             </button>
-          ))}
+            {EXPLORATION_FILTERS.map(f => (
+              <button
+                key={f.id}
+                className={`${styles.option} ${f.id === filterId ? styles.active : ''}`}
+                onClick={() => setFilter(f.id)}
+              >
+                {f.displayName}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
