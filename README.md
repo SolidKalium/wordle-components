@@ -144,6 +144,8 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - Highlight when channel active elsewhere? LATER
     - Consider additional colors? E.g. move the split colors of the current chart demo card into its own color scheme
   - Given every first word, how do the information theoretic approaches do on subsequent turns? Might go in a report page (or component) where finalized calculations and the code to make them are both stored?
+- Filters: tweak vowel anti-exploration? Maybe others? e.g. don't retry known bad letters
+  - The filters don't do anything, except the anti-vowel one...
 - Test suite: HTML ?
 - Rapid-play mode in HTML
 - Revisit the three worker classes and how they relate?

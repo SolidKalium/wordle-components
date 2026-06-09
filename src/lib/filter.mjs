@@ -5,6 +5,30 @@ export class Filter {
     return this.constructor.name;
   }
 
+  get id() {
+    return this.constructor.name;
+  }
+
+  get displayName() {
+    return this.id;
+  }
+
+  /**
+   * Describes what constructor arguments this filter requires, or null if it
+   * can be instantiated with no arguments. Used by UIs to determine whether
+   * a filter can be offered as a simple toggle vs. needing a configuration step.
+   *
+   * @returns {Record<string, string> | null}
+   */
+  get parameters() {
+    return null;
+  }
+
+  /** Derived: true if the filter needs constructor arguments to be useful. */
+  get requiresInput() {
+    return this.parameters !== null;
+  }
+
   isActive(_game, _remainingWords) {
     return true;
   }
@@ -37,7 +61,7 @@ export class Filter {
  * Base for filters that deactivate once exploration is no longer useful:
  * past a turn limit, too few words remain, or too few untried letters are left.
  */
-class ExplorationFilter extends Filter {
+export class ExplorationFilter extends Filter {
   constructor({ maxTurn = 4, minRemaining = 10, minUnknownLetters = 2 } = {}) {
     super();
     this.maxTurn = maxTurn;
@@ -59,7 +83,10 @@ class ExplorationFilter extends Filter {
 }
 
 /** Keeps only words whose every letter is unexplored, maximising new information. */
-class LetterExplorationFilter extends ExplorationFilter {
+export class LetterExplorationFilter extends ExplorationFilter {
+  get id() { return 'letterExploration'; }
+  get displayName() { return 'Letter Exploration'; }
+
   accepts(word, game) {
     const explored = this._exploredLetters(game);
     return [...word].every(ch => !explored.has(ch));
@@ -72,7 +99,10 @@ const VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
  * Within exploration candidates, avoids introducing new vowels so that
  * exploration guesses focus on consonants (21 options vs 5 vowels).
  */
-class AntiVowelExplorationFilter extends ExplorationFilter {
+export class AntiVowelExplorationFilter extends ExplorationFilter {
+  get id() { return 'antiVowelExploration'; }
+  get displayName() { return 'Anti-Vowel Exploration'; }
+
   accepts(word, game) {
     const explored = this._exploredLetters(game);
     return [...word].every(ch => !VOWELS.has(ch) || explored.has(ch));
@@ -83,7 +113,10 @@ class AntiVowelExplorationFilter extends ExplorationFilter {
  * Within exploration candidates, prefers introducing new vowels to rule out
  * more of the vowel space alongside consonant placement.
  */
-class VowelExplorationFilter extends ExplorationFilter {
+export class VowelExplorationFilter extends ExplorationFilter {
+  get id() { return 'vowelExploration'; }
+  get displayName() { return 'Vowel Exploration'; }
+
   accepts(word, game) {
     const explored = this._exploredLetters(game);
     return [...word].every(ch => !VOWELS.has(ch) || !explored.has(ch));
@@ -92,6 +125,10 @@ class VowelExplorationFilter extends ExplorationFilter {
 
 /** Keeps only words that contain all required letters (multiset: duplicates count). */
 export class MustContainFilter extends Filter {
+  get id() { return 'mustContain'; }
+  get displayName() { return 'Must Contain'; }
+  get parameters() { return { letters: 'Letters the guess must contain (multiset)' }; }
+
   /** @param {string | string[]} letters */
   constructor(letters) {
     super();
@@ -122,6 +159,10 @@ export class MustContainFilter extends Filter {
  * used at most as many times as it appears in the rack).
  */
 export class ScrabbleFilter extends Filter {
+  get id() { return 'scrabble'; }
+  get displayName() { return 'Scrabble'; }
+  get parameters() { return { rack: 'Available letter rack (multiset)' }; }
+
   /** @param {string | string[]} rack */
   constructor(rack) {
     super();
@@ -146,6 +187,10 @@ export class ScrabbleFilter extends Filter {
  * (each letter may appear any number of times).
  */
 export class KeyboardFilter extends Filter {
+  get id() { return 'keyboard'; }
+  get displayName() { return 'Keyboard'; }
+  get parameters() { return { keys: 'Allowed letters (set)' }; }
+
   /** @param {string | string[]} keys */
   constructor(keys) {
     super();
@@ -156,3 +201,14 @@ export class KeyboardFilter extends Filter {
     return [...word].every(ch => this.allowed.has(ch));
   }
 }
+
+/**
+ * Preset filters that require no constructor arguments — suitable for simple
+ * UI toggles. Argument-requiring filters (MustContainFilter, ScrabbleFilter,
+ * KeyboardFilter) are exported as classes only.
+ */
+export const EXPLORATION_FILTERS = [
+  new LetterExplorationFilter(),
+  new VowelExplorationFilter(),
+  new AntiVowelExplorationFilter(),
+];

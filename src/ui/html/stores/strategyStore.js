@@ -13,11 +13,12 @@ const strategyById = new Map(STRATEGIES.map(s => [s.id, s]));
 
 export const createStrategyStore = (opts = {}) => {
   const worker = new SimulationWorker();
-  const cache  = new Map(); // strategyId → SimulationSummary, deterministic strategies only
+  const cache  = new Map(); // `${strategyId}:${filterId}` → SimulationSummary
   let reqId = 0;
 
   const store = createStore((set, get) => ({
     strategyId:         opts.strategyId ?? 'maxGroups',
+    filterId:           opts.filterId   ?? null,
     filters:            [],
     simulationSummary:  null,
     simulationPending:  false,
@@ -25,22 +26,23 @@ export const createStrategyStore = (opts = {}) => {
 
     runSimulation: async () => {
       const id  = ++reqId;
-      const sid = get().strategyId;
-      const isDeterministic = strategyById.get(sid)?.isDeterministic ?? false;
+      const { strategyId, filterId } = get();
+      const cacheKey = `${strategyId}:${filterId ?? ''}`;
+      const isDeterministic = strategyById.get(strategyId)?.isDeterministic ?? false;
 
-      if (isDeterministic && cache.has(sid)) {
-        set({ simulationSummary: cache.get(sid), simulationPending: false, simulationProgress: null });
+      if (isDeterministic && cache.has(cacheKey)) {
+        set({ simulationSummary: cache.get(cacheKey), simulationPending: false, simulationProgress: null });
         return;
       }
 
       set({ simulationSummary: null, simulationPending: true, simulationProgress: null });
       try {
         const summary = await worker.compute(
-          { strategyId: sid },
+          { strategyId, filterId },
           (i, total) => { if (id === reqId) set({ simulationProgress: { i, total } }); },
         );
         if (id === reqId) {
-          if (isDeterministic) cache.set(sid, summary);
+          if (isDeterministic) cache.set(cacheKey, summary);
           set({ simulationSummary: summary, simulationPending: false, simulationProgress: null });
         }
       } catch {
@@ -50,6 +52,11 @@ export const createStrategyStore = (opts = {}) => {
 
     setStrategy: (id) => {
       set({ strategyId: id });
+      get().runSimulation();
+    },
+
+    setFilter: (id) => {
+      set({ filterId: id });
       get().runSimulation();
     },
 

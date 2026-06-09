@@ -168,11 +168,15 @@ export function runTreeSimulation(strategy, answers, opts = {}) {
   let resolved   = 0;
   let totalTurns = 0;
 
-  function traverse(remaining, depth) {
+  // guessHistory is an array of { word } objects so filtered strategies
+  // (e.g. ExplorationFilter) can inspect prior guesses via the mock game arg.
+  function traverse(remaining, depth, guessHistory) {
     if (remaining.length === 0) return;
 
-    const guess      = strategy.chooseGuess(null, remaining, remaining);
+    const mockGame   = { guesses: guessHistory };
+    const guess      = strategy.chooseGuess(mockGame, remaining, remaining);
     const partitions = partitionByGuess(guess, remaining);
+    const nextHistory = [...guessHistory, { word: guess }];
 
     for (const [pattern, group] of partitions) {
       if (pattern === ALL_GREEN_STR) {
@@ -184,12 +188,12 @@ export function runTreeSimulation(strategy, answers, opts = {}) {
         for (const w of group) failures.push({ answer: w, guesses: [] });
         onProgress?.(resolved + failures.length, answers.length);
       } else {
-        traverse(group, depth + 1);
+        traverse(group, depth + 1, nextHistory);
       }
     }
   }
 
-  traverse(answers, 1);
+  traverse(answers, 1, []);
 
   const mean = resolved > 0 ? totalTurns / resolved : NaN;
   const sortedTurns = Object.entries(distribution)
