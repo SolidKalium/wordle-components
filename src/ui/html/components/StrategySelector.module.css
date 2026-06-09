@@ -1,0 +1,29 @@
+.selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #2c2c2e;
+}
+
+.option {
+  padding: 4px 10px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  background: none;
+  border: 1px solid #2c2c2e;
+  border-radius: 3px;
+  color: #818384;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.option:hover {
+  color: #b0b0b1;
+  border-color: #b0b0b1;
+}
+
+.active {
+  color: #538d4e;
+  border-color: #538d4e;
+}

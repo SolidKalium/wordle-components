@@ -114,8 +114,8 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 ## TODO
 - Analysis HTML UI
   - Strategy selector
-    - Then add optional filters
-    - There might be multiple versions of this for different contexts. Full card vs menu. Just do full card for now.
+    - Add optional filter
+    - Additional variants? E.g. a popover from a settings icon.
   - Decision tree
     - Showing all the words would be hard. But we could show at least 2 turns. Words, options remaining (toggle somewhere for words or bits), expected moves, max moves, maybe a tiny bar chart
     - Then allow it to be navigated.
@@ -140,8 +140,10 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - How to handle the toggle? Allow it to be passed to the component. Let the creator decide whether it's even user facing. Maybe redesign it to be more hidden.
     - Determine how the average is calculated.- Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.
     - Add descriptions for strategies?
-  - Card: Highlight when channel active elsewhere? LATER
-  - Given every first word, how do the information theoretic approaches do on subsequent turns?
+  - Card
+    - Highlight when channel active elsewhere? LATER
+    - Consider additional colors? E.g. move the split colors of the current chart demo card into its own color scheme
+  - Given every first word, how do the information theoretic approaches do on subsequent turns? Might go in a report page (or component) where finalized calculations and the code to make them are both stored?
 - Test suite: HTML ?
 - Rapid-play mode in HTML
 - Revisit the three worker classes and how they relate?

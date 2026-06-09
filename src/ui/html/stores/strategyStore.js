@@ -9,8 +9,11 @@ export const STRATEGY_DISPLAY_NAMES = Object.fromEntries(
   STRATEGIES.map(s => [s.id, s.displayName])
 );
 
+const strategyById = new Map(STRATEGIES.map(s => [s.id, s]));
+
 export const createStrategyStore = (opts = {}) => {
   const worker = new SimulationWorker();
+  const cache  = new Map(); // strategyId → SimulationSummary, deterministic strategies only
   let reqId = 0;
 
   const store = createStore((set, get) => ({
@@ -21,14 +24,25 @@ export const createStrategyStore = (opts = {}) => {
     simulationProgress: null,
 
     runSimulation: async () => {
-      const id = ++reqId;
+      const id  = ++reqId;
+      const sid = get().strategyId;
+      const isDeterministic = strategyById.get(sid)?.isDeterministic ?? false;
+
+      if (isDeterministic && cache.has(sid)) {
+        set({ simulationSummary: cache.get(sid), simulationPending: false, simulationProgress: null });
+        return;
+      }
+
       set({ simulationSummary: null, simulationPending: true, simulationProgress: null });
       try {
         const summary = await worker.compute(
-          { strategyId: get().strategyId },
+          { strategyId: sid },
           (i, total) => { if (id === reqId) set({ simulationProgress: { i, total } }); },
         );
-        if (id === reqId) set({ simulationSummary: summary, simulationPending: false, simulationProgress: null });
+        if (id === reqId) {
+          if (isDeterministic) cache.set(sid, summary);
+          set({ simulationSummary: summary, simulationPending: false, simulationProgress: null });
+        }
       } catch {
         if (id === reqId) set({ simulationPending: false, simulationProgress: null });
       }

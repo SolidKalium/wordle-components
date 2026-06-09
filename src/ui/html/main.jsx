@@ -6,6 +6,7 @@ import { StrategyStoreContext, createStrategyStore } from './stores/strategyStor
 import { Card } from './components/Card.jsx';
 import { CliTerminal } from './components/CliTerminal.jsx';
 import { DistributionChart } from './components/DistributionChart.jsx';
+import { StrategySelector } from './components/StrategySelector.jsx';
 import './page.css';
 
 const gameStore = createGameStore({ wordList: WORDS, answers: ANSWERS });
@@ -14,7 +15,8 @@ const strategyStoreMaxEntropy = createStrategyStore({ strategyId: 'maxEntropy' }
 const strategyStoreMinExpectedRemaining = createStrategyStore({ strategyId: 'minExpectedRemaining' });
 const strategyStoreMinimax = createStrategyStore({ strategyId: 'minimax' });
 const strategyStoreFirstWord = createStrategyStore({ strategyId: 'firstWord' });
-const strategyStoreRandom = createStrategyStore({ strategyId: 'random' });
+const strategyStoreRandom  = createStrategyStore({ strategyId: 'random' });
+const strategyStoreExplore = createStrategyStore({ strategyId: 'maxGroups' });
 
 function App() {
   return (
@@ -40,6 +42,12 @@ function App() {
             <DistributionChart  defaultCollapsed={false} collapsible={false}/>
           </StrategyStoreContext.Provider>
         </div>
+      </Card>
+      <Card title="Strategy Explorer" collapsible>
+        <StrategyStoreContext.Provider value={strategyStoreExplore}>
+          <StrategySelector />
+          <DistributionChart />
+        </StrategyStoreContext.Provider>
       </Card>
       <Card title="Terminal" variant="dark">
         <CliTerminal autoFocus />
