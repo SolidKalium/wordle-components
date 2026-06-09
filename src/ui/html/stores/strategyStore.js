@@ -14,7 +14,7 @@ export const createStrategyStore = (opts = {}) => {
   let reqId = 0;
 
   const store = createStore((set, get) => ({
-    strategyName:       opts.strategyName ?? 'maxGroups',
+    strategyId:         opts.strategyId ?? 'maxGroups',
     filters:            [],
     simulationSummary:  null,
     simulationPending:  false,
@@ -25,7 +25,7 @@ export const createStrategyStore = (opts = {}) => {
       set({ simulationSummary: null, simulationPending: true, simulationProgress: null });
       try {
         const summary = await worker.compute(
-          { strategyName: get().strategyName },
+          { strategyId: get().strategyId },
           (i, total) => { if (id === reqId) set({ simulationProgress: { i, total } }); },
         );
         if (id === reqId) set({ simulationSummary: summary, simulationPending: false, simulationProgress: null });
@@ -34,8 +34,8 @@ export const createStrategyStore = (opts = {}) => {
       }
     },
 
-    setStrategy: (name) => {
-      set({ strategyName: name });
+    setStrategy: (id) => {
+      set({ strategyId: id });
       get().runSimulation();
     },
 

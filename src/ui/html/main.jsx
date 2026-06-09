@@ -9,11 +9,12 @@ import { DistributionChart } from './components/DistributionChart.jsx';
 import './page.css';
 
 const gameStore = createGameStore({ wordList: WORDS, answers: ANSWERS });
-const strategyStoreMaxGroups = createStrategyStore({ strategyName: 'maxGroups' });
-const strategyStoreMaxEntropy = createStrategyStore({ strategyName: 'maxEntropy' });
-const strategyStoreMinExpectedRemaining = createStrategyStore({ strategyName: 'minExpectedRemaining' });
-const strategyStoreMinimax = createStrategyStore({ strategyName: 'minimax' });
-const strategyStoreFirstWord = createStrategyStore({ strategyName: 'firstWord' });
+const strategyStoreMaxGroups = createStrategyStore({ strategyId: 'maxGroups' });
+const strategyStoreMaxEntropy = createStrategyStore({ strategyId: 'maxEntropy' });
+const strategyStoreMinExpectedRemaining = createStrategyStore({ strategyId: 'minExpectedRemaining' });
+const strategyStoreMinimax = createStrategyStore({ strategyId: 'minimax' });
+const strategyStoreFirstWord = createStrategyStore({ strategyId: 'firstWord' });
+const strategyStoreRandom = createStrategyStore({ strategyId: 'random' });
 
 function App() {
   return (
@@ -33,6 +34,9 @@ function App() {
             <DistributionChart  defaultCollapsed={false} collapsible={false}/>
           </StrategyStoreContext.Provider>
           <StrategyStoreContext.Provider value={strategyStoreFirstWord}>
+            <DistributionChart  defaultCollapsed={false} collapsible={false}/>
+          </StrategyStoreContext.Provider>
+          <StrategyStoreContext.Provider value={strategyStoreRandom}>
             <DistributionChart  defaultCollapsed={false} collapsible={false}/>
           </StrategyStoreContext.Provider>
         </div>

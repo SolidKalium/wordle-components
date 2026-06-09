@@ -103,6 +103,8 @@ export function summarize(results) {
  * @property {number} max
  * @property {Record<number, number>} distribution
  * @property {{ answer: string, guesses: string[] }[]} failures
+ * @property {boolean} [singlePath] - True when a non-deterministic strategy was run via tree sim
+ *   (one random path, not a Monte Carlo average). Absent or false for deterministic strategies.
  */
 
 /**
@@ -155,11 +157,12 @@ export function formatSummary(summary, strategyName = 'Strategy') {
  * @returns {SimulationSummary}
  */
 export function runTreeSimulation(strategy, answers, opts = {}) {
-  if (!strategy.isDeterministic) {
-    throw new Error(`runTreeSimulation requires a deterministic strategy; ${strategy.name} is not.`);
+  if (!strategy.isDeterministic && !opts.allowNonDeterministic) {
+    throw new Error(`runTreeSimulation requires a deterministic strategy; ${strategy.name} is not. Pass allowNonDeterministic: true to run anyway (result is a single stochastic path, not a Monte Carlo average).`);
   }
 
   const { maxDepth = 32, onProgress } = opts;
+  const singlePath = !strategy.isDeterministic;
   const distribution = {};
   const failures     = [];
   let resolved   = 0;
@@ -204,5 +207,6 @@ export function runTreeSimulation(strategy, answers, opts = {}) {
     max:    sortedTurns[sortedTurns.length - 1] ?? NaN,
     distribution,
     failures,
+    singlePath,
   };
 }

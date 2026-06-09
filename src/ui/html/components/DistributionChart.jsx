@@ -31,10 +31,10 @@ export function DistributionChart({ defaultCollapsed = false, collapsible = true
   const summary  = useStrategyStore(s => s.simulationSummary);
   const pending  = useStrategyStore(s => s.simulationPending);
   const progress = useStrategyStore(s => s.simulationProgress);
-  const name     = useStrategyStore(s => s.strategyName);
+  const strategyId = useStrategyStore(s => s.strategyId);
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
-  const label = STRATEGY_DISPLAY_NAMES[name] ?? name;
+  const label = STRATEGY_DISPLAY_NAMES[strategyId] ?? strategyId;
 
   if (pending && !summary) {
     const pct = progress ? Math.round(progress.i / progress.total * 100) : null;
@@ -50,7 +50,7 @@ export function DistributionChart({ defaultCollapsed = false, collapsible = true
 
   if (!summary) return null;
 
-  const { distribution, meanSolved } = summary;
+  const { distribution, meanSolved, singlePath } = summary;
   const { buckets, hasOverflow } = buildBuckets(distribution, collapsed);
   const maxCount = Math.max(...buckets.map(b => b.count), 1);
 
@@ -72,7 +72,7 @@ export function DistributionChart({ defaultCollapsed = false, collapsible = true
         ))}
       </div>
       <div className={styles.footer}>
-        <span className={styles.stat}>Mean: {meanSolved.toFixed(2)}</span>
+        <span className={styles.stat}>Mean: {meanSolved.toFixed(2)}{singlePath ? <span className={styles.stat_note}> (single run w/ memoized tree)</span> : ''}</span>
         {collapsible && hasOverflow && (
           <button className={styles.toggle} onClick={() => setCollapsed(c => !c)}>
             {collapsed ? 'expand' : 'collapse'}

@@ -83,6 +83,10 @@
   letter-spacing: 0.03em;
 }
 
+.stat_note {
+  color: #888;
+}
+
 .toggle {
   font-size: 11px;
   color: #b0b3b5;

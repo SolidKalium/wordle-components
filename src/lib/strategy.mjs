@@ -192,7 +192,6 @@ export class MinimaxStrategy extends Strategy {
 /**
  * Canonical ordered list of strategies available for analysis and simulation.
  * Each entry is a shared, stateless instance — safe to reuse across calls.
- * RandomStrategy is excluded; it is non-deterministic and unsuitable for tree simulation.
  */
 export const STRATEGIES = [
   new MaxGroupsStrategy(),
@@ -200,4 +199,5 @@ export const STRATEGIES = [
   new MinExpectedRemainingStrategy(),
   new MinimaxStrategy(),
   new FirstWordStrategy(),
+  new RandomStrategy(),
 ];
