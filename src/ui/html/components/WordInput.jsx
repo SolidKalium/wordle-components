@@ -56,9 +56,16 @@ export function WordInput({ showPool = true }) {
         if (buffer.every(c => c !== null)) submit(buffer);
         return;
 
+      case 'Escape':
+        containerRef.current?.blur();
+        return;
+
       case 'Tab': {
-        e.preventDefault();
+        if (e.shiftKey) break; // let Shift-Tab propagate for backwards navigation
         const next = buffer.map((c, i) => c ?? constraints.known[i] ?? null);
+        const wouldChange = next.some((c, i) => c !== buffer[i]);
+        if (!wouldChange) break; // nothing to autofill — let Tab move focus normally
+        e.preventDefault();
         const firstEmpty = next.findIndex(c => c === null);
         setBuffer(next);
         setCursor(firstEmpty === -1 ? MAX_CURSOR : firstEmpty);
