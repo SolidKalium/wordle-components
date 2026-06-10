@@ -122,12 +122,11 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - Once game board is added, make it re-anchor when a game exists and a move is made
       - Also: optionally track the partial input for the game and use that instead of the best move for the current game state
   - Game board
-    - Separately: word entry (user's keyboard)
-      - Grade input when constraints known. Support arrow keys
-    - Separately: select word from a short list of options
+    - DONE Separately: word entry (user's keyboard)
+    - DONE Separately: select word from a short list of options
     - Separately: visualize constraints
+      - How? A word has up to 5 letters. Could just show one row per letter found with green/yellow per square. Then a list of gray letters. Or could show per slot: The letter known or else the letters it excludes. Still a separate list of gray letters.
     - Separately: word entry (virtual keyboard) (LATER)
-    - Test set up: game board + one or multiple inputs, etc
     - Test set up: constraints (instead of game board) + input
   - Hard mode toggle
   - Other analysis components? E.g. compare across strategies

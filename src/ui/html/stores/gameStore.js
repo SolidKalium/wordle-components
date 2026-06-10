@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react';
 import { createStore, useStore } from 'zustand';
 import { Game } from '../../../lib/game.mjs';
+import { ConstraintState } from '../../../lib/constraints.mjs';
 
 function pickRandom(arr, rng = Math.random) {
   return arr[Math.floor(rng() * arr.length)];
@@ -16,9 +17,17 @@ export const createGameStore = (opts = {}) => {
     answer:   opts.answer   ?? (answerPool.length > 0 ? pickRandom(answerPool) : null),
   });
 
+  // Rebuild constraints as a fresh object each snapshot so Zustand detects
+  // the change via reference equality (game.constraints is mutated in place).
+  const freshConstraints = () => {
+    const c = new ConstraintState();
+    for (const { word, pattern } of game.guesses) c.update(word, pattern);
+    return c;
+  };
+
   const snapshot = () => ({
     guesses:        [...game.guesses],
-    constraints:    game.constraints,
+    constraints:    freshConstraints(),
     isOver:         game.isOver,
     solved:         game.solved,
     remaining:      game.remaining,

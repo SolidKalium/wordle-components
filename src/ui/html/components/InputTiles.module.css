@@ -1,0 +1,57 @@
+.tiles {
+  display: inline-flex;
+  gap: var(--tile-gap, 4px);
+  flex-shrink: 0;
+}
+
+.tile {
+  box-sizing: border-box;
+  width:  var(--tile-size, 48px);
+  height: var(--tile-size, 48px);
+  border-radius: 3px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--tile-font, 20px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  user-select: none;
+  transition: background 0.1s;
+}
+
+/* Filled tiles — colored background, white text */
+.green      { background: #538d4e; color: #fff; }
+.grey       { background: #3a3a3c; color: #fff; }
+.yellowTile { background: #b59f3b; color: #fff; }
+
+/* Typed but uncertain — dark bg, dimmed white text */
+.candidate {
+  background: transparent;
+  border: 2px solid #555;
+  color: #b0b3b5;
+}
+
+/* Known to be in the word, position unknown — blank bg, yellow text */
+.yellowFg {
+  background: transparent;
+  border: 2px solid #3a3a3c;
+  color: #b59f3b;
+}
+
+/* Empty slot */
+.empty {
+  background: transparent;
+  border: 2px solid #3a3a3c;
+  color: transparent;
+}
+
+/* Cursor highlight — replaces border with bright outline */
+.cursor {
+  outline: 2px solid #818384;
+  outline-offset: -1px;
+}
+
+.empty.cursor {
+  outline-color: #b0b3b5;
+}

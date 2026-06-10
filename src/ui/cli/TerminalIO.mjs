@@ -1,4 +1,5 @@
 import { GREEN, YELLOW, GREY } from '../../lib/core.mjs';
+import { computePendingSlots } from '../../lib/pendingWord.mjs';
 
 // ANSI escape sequences for Wordle tile colours.
 // Each entry covers background + text colour; follow with a letter then RESET.
@@ -69,109 +70,6 @@ export class TerminalIO {
   }
 
   /**
-   * Compute the styled slot data and pool for a partially-typed word.
-   *
-   * This is a pure computation (no ANSI, no platform specifics) so it can be
-   * consumed by both CLI renderers (_slotsToAnsi / _poolToAnsi) and future
-   * HTML/React renderers without modification.
-   *
-   * @param {string|(string|null)[]} word
-   *   Letters typed so far.  Either a plain string (0–5 chars, positions beyond
-   *   word.length are empty) or a 5-element array where null means "empty slot".
-   * @param {import('../../lib/constraints.mjs').ConstraintState} constraints
-   * @param {number} [cursor=-1]  Slot index (0–4) for cursor highlight; -1 = none.
-   * @returns {{
-   *   slots: Array<{kind: string, letter: string|null, atCursor: boolean}>,
-   *   pool:  Array<{kind: 'green-unplaced'|'yellow-unplaced', letter: string}>
-   * }}
-   */
-  _computePending(word, constraints, cursor = -1) {
-    // Pre-compute confirmed positions per letter — used in both the
-    // fully-placed check (Pass 1) and the yellow-fg pool (Pass 2).
-    const knownCount = new Map();
-    for (const L of constraints.known) {
-      if (L) knownCount.set(L, (knownCount.get(L) ?? 0) + 1);
-    }
-
-    // Pass 1: assign high-priority colours per position.
-    const slots = [];
-    for (let i = 0; i < 5; i++) {
-      const letter = word[i] ?? null; // works for both string and (string|null)[] input
-      if (!letter) { slots.push({ kind: 'empty', letter: null }); continue; }
-      if (constraints.known[i] === letter) { slots.push({ kind: 'green', letter }); continue; }
-
-      // Grey if every copy of this letter is already at a confirmed position
-      // (covers fully-eliminated letters and letters whose copies are all
-      // accounted for by greens, e.g. the second O in BOOTH after the first went green).
-      if (constraints.isExhausted(letter)) {
-        slots.push({ kind: 'grey', letter }); continue;
-      }
-
-      if (constraints.excluded[i].has(letter)) { slots.push({ kind: 'yellow-tile', letter }); continue; }
-      slots.push({ kind: 'candidate', letter });
-    }
-
-    // Pass 2: assign yellow-fg within pool (left-to-right through candidates).
-    // Pool = minCounts[L] − knownCount[L]; yellow-tile slots don't consume pool.
-    const yellowFgUsed = new Map();
-    for (const s of slots) {
-      if (s.kind !== 'candidate') continue;
-      const L = s.letter;
-      const pool = Math.max(0,
-        (constraints.minCounts.get(L) ?? 0) -
-        (knownCount.get(L)            ?? 0)
-      );
-      const used = yellowFgUsed.get(L) ?? 0;
-      s.kind = used < pool ? 'yellow-fg' : 'default';
-      if (s.kind === 'yellow-fg') yellowFgUsed.set(L, used + 1);
-    }
-
-    // Pass 3: yellow-tile → grey when the pool for this letter is exhausted.
-    // Covers two cases:
-    //   • pool > 0 but yellow-fg placed elsewhere already used all copies
-    //   • pool = 0 because _normalize() promoted the letter to a known position
-    for (const s of slots) {
-      if (s.kind !== 'yellow-tile') continue;
-      const L = s.letter;
-      const pool = Math.max(0,
-        (constraints.minCounts.get(L) ?? 0) -
-        (knownCount.get(L)            ?? 0)
-      );
-      if ((yellowFgUsed.get(L) ?? 0) >= pool) {
-        s.kind = 'grey';
-      }
-    }
-
-    // Attach cursor flag.
-    const slotsWithCursor = slots.map((s, i) => ({
-      ...s,
-      atCursor: cursor >= 0 && cursor < 5 && i === cursor,
-    }));
-
-    // Build pool (structured, renderer-agnostic).
-    // Greens in position order, then yellow-fg remainders alphabetically.
-    const pool = [];
-    for (let i = 0; i < 5; i++) {
-      const L = constraints.known[i];
-      if (L && slots[i].kind !== 'green') {
-        pool.push({ kind: 'green-unplaced', letter: L });
-      }
-    }
-    const yellowRemaining = [];
-    for (const [L, total] of constraints.minCounts) {
-      const poolSize = Math.max(0, total - (knownCount.get(L) ?? 0));
-      const remaining = poolSize - (yellowFgUsed.get(L) ?? 0);
-      for (let i = 0; i < remaining; i++) yellowRemaining.push(L);
-    }
-    yellowRemaining.sort();
-    for (const L of yellowRemaining) {
-      pool.push({ kind: 'yellow-unplaced', letter: L });
-    }
-
-    return { slots: slotsWithCursor, pool };
-  }
-
-  /**
    * Convert a slots array (from _computePending) to an ANSI tile-row string.
    * Tile format: LETTER + space + RESET for parseTileRow compatibility.
    *
@@ -222,7 +120,7 @@ export class TerminalIO {
    * @returns {string}  ANSI-styled string (no leading \r, no trailing \n).
    */
   _pendingTileRow(word, constraints, cursor = -1) {
-    const { slots } = this._computePending(word, constraints, cursor);
+    const { slots } = computePendingSlots(word, constraints, cursor);
     return this._slotsToAnsi(slots);
   }
 
@@ -235,7 +133,7 @@ export class TerminalIO {
    * @param {number} [cursor=-1]  Cursor position (0–4); -1 means no cursor.
    */
   _renderPendingLine(prompt, word, constraints, cursor = -1) {
-    const { slots, pool } = this._computePending(word, constraints, cursor);
+    const { slots, pool } = computePendingSlots(word, constraints, cursor);
     const tileRow = this._slotsToAnsi(slots);
     const poolStr = this._poolToAnsi(pool);
     const suffix  = poolStr ? '     ' + poolStr : '';

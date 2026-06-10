@@ -52,7 +52,7 @@ function App() {
           <StrategySelector />
           <DistributionChart />
         </Card>
-        <Card title="Decision Tree (hard mode, answers only)" collapsible>
+        <Card title="Decision Tree (hard mode, answers only)" collapsible defaultCollapsed>
           <StrategySelector showFilters={false} />
           <TreeNavigator />
         </Card>
