@@ -2,22 +2,30 @@ import { createContext, useContext } from 'react';
 import { createStore, useStore } from 'zustand';
 import { Game } from '../../../lib/game.mjs';
 
+function pickRandom(arr, rng = Math.random) {
+  return arr[Math.floor(rng() * arr.length)];
+}
+
 export const createGameStore = (opts = {}) => {
+  const wordList   = opts.wordList  ?? [];
+  const answerPool = opts.answers   ?? wordList;
+
   let game = new Game({
-    wordList:  opts.wordList  ?? [],
-    hardMode:  opts.hardMode  ?? false,
-    answer:    opts.answer    ?? null,
+    wordList,
+    hardMode: opts.hardMode ?? false,
+    answer:   opts.answer   ?? (answerPool.length > 0 ? pickRandom(answerPool) : null),
   });
 
   const snapshot = () => ({
-    guesses:     [...game.guesses],
-    constraints: game.constraints,
-    isOver:      game.isOver,
-    solved:      game.solved,
-    remaining:   game.remaining,
-    hardMode:    game.hardMode,
-    wordList:    game.wordList,
-    answer:      game.answer,
+    guesses:        [...game.guesses],
+    constraints:    game.constraints,
+    isOver:         game.isOver,
+    solved:         game.solved,
+    remaining:      game.remaining,
+    remainingWords: answerPool.filter(w => game.constraints.matches(w)),
+    hardMode:       game.hardMode,
+    wordList:       game.wordList,
+    answer:         game.answer,
   });
 
   return createStore((set) => ({
@@ -37,6 +45,15 @@ export const createGameStore = (opts = {}) => {
 
     replace: (newGame) => {
       game = newGame;
+      set(snapshot());
+    },
+
+    newGame: () => {
+      game = new Game({
+        wordList,
+        hardMode: game.hardMode,
+        answer:   answerPool.length > 0 ? pickRandom(answerPool) : null,
+      });
       set(snapshot());
     },
 

@@ -1,16 +1,30 @@
 .tiles {
   display: inline-flex;
-  gap: 2px;
+  gap: var(--tile-gap, 2px);
   flex-shrink: 0;
 }
 
 .tile {
+  box-sizing: border-box;
   width:  var(--tile-size, 12px);
   height: var(--tile-size, 12px);
   border-radius: 2px;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--tile-font, 0px);
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.02em;
+  user-select: none;
 }
 
 .green  { background: #538d4e; }
 .yellow { background: #b59f3b; }
 .grey   { background: #3a3a3c; }
+.placeholder {
+  background: transparent;
+  border: 2px solid #3a3a3c;
+  color: transparent;
+}

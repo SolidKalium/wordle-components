@@ -6,8 +6,11 @@ import { StrategyStoreContext, createStrategyStore } from './stores/strategyStor
 import { Card } from './components/Card.jsx';
 import { CliTerminal } from './components/CliTerminal.jsx';
 import { DistributionChart } from './components/DistributionChart.jsx';
+import { GameBoard } from './components/GameBoard.jsx';
 import { StrategySelector } from './components/StrategySelector.jsx';
+import { SuggestionPicker } from './components/SuggestionPicker.jsx';
 import { TreeNavigator } from './components/TreeNavigator.jsx';
+import { WordInput } from './components/WordInput.jsx';
 import './page.css';
 
 const gameStore = createGameStore({ wordList: WORDS, answers: ANSWERS });
@@ -54,6 +57,14 @@ function App() {
           <TreeNavigator />
         </Card>
       </StrategyStoreContext.Provider>
+      <Card title="Game" collapsible>
+        {/* fixed width keeps centered content stable as suggestions load/change */}
+        <div style={{ width: 'calc(5 * 48px + 4 * 4px + 2 * 16px)' }}>
+          <GameBoard />
+          <WordInput />
+          <SuggestionPicker />
+        </div>
+      </Card>
       <Card title="Terminal" variant="dark" collapsible defaultCollapsed>
         <CliTerminal autoFocus />
       </Card>
