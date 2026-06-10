@@ -46,12 +46,22 @@
   color: transparent;
 }
 
-/* Cursor highlight — replaces border with bright outline */
+/* Cursor highlight — static when unfocused */
 .cursor {
-  outline: 2px solid #818384;
+  outline: 2px solid #555;
   outline-offset: -1px;
 }
 
-.empty.cursor {
-  outline-color: #b0b3b5;
+/* Pulse animation when the input has keyboard focus */
+.cursorActive {
+  animation: cursorPulse 1.5s ease-in-out infinite;
+}
+
+.empty.cursorActive {
+  animation: cursorPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes cursorPulse {
+  0%, 100% { outline-color: #9a9da0; }
+  50%       { outline-color: rgba(176, 179, 181, 0.12); }
 }

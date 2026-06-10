@@ -11,7 +11,7 @@ const KIND_CLASS = {
 };
 
 /** Renders a pre-graded in-progress word as a row of 5 tiles. */
-export function InputTiles({ slots, tileSize = 48 }) {
+export function InputTiles({ slots, tileSize = 48, focused = false }) {
   const gap      = tileSize <= 16 ? 2 : 4;
   const fontSize = Math.round(tileSize * 0.42);
   return (
@@ -30,6 +30,7 @@ export function InputTiles({ slots, tileSize = 48 }) {
             styles.tile,
             KIND_CLASS[kind] ?? styles.candidate,
             atCursor ? styles.cursor : '',
+            atCursor && focused ? styles.cursorActive : '',
           ].join(' ')}
         >
           {letter?.toUpperCase() ?? ''}

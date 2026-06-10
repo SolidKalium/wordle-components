@@ -11,6 +11,7 @@ const ERROR_TEXT = {
 };
 
 const EMPTY_BUFFER = [null, null, null, null, null];
+const MAX_CURSOR = 4; // cursor stays on a tile (never off the right edge)
 
 export function WordInput({ showPool = true }) {
   const makeMove    = useGameStore(s => s.makeMove);
@@ -19,11 +20,12 @@ export function WordInput({ showPool = true }) {
   const answer      = useGameStore(s => s.answer);
   const containerRef = useRef(null);
 
-  const [buffer, setBuffer] = useState([...EMPTY_BUFFER]);
-  const [cursor, setCursor] = useState(0);
-  const [error,  setError]  = useState('');
+  const [buffer,   setBuffer]   = useState([...EMPTY_BUFFER]);
+  const [cursor,   setCursor]   = useState(0);
+  const [error,    setError]    = useState('');
+  const [focused,  setFocused]  = useState(false);
 
-  // Reset when a new game starts (answer changes)
+  // Reset and refocus when a new game starts
   useEffect(() => {
     setBuffer([...EMPTY_BUFFER]);
     setCursor(0);
@@ -59,7 +61,7 @@ export function WordInput({ showPool = true }) {
         const next = buffer.map((c, i) => c ?? constraints.known[i] ?? null);
         const firstEmpty = next.findIndex(c => c === null);
         setBuffer(next);
-        setCursor(firstEmpty === -1 ? 5 : firstEmpty);
+        setCursor(firstEmpty === -1 ? MAX_CURSOR : firstEmpty);
         return;
       }
 
@@ -69,7 +71,7 @@ export function WordInput({ showPool = true }) {
           const next = [...buffer];
           next[cursor - 1] = null;
           setBuffer(next);
-          setCursor(cursor - 1);
+          setCursor(c => c - 1);
           setError('');
         }
         return;
@@ -81,16 +83,16 @@ export function WordInput({ showPool = true }) {
 
       case 'ArrowRight':
         e.preventDefault();
-        setCursor(c => Math.min(5, c + 1));
+        setCursor(c => Math.min(MAX_CURSOR, c + 1));
         return;
 
       default:
-        if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && cursor < 5) {
+        if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && cursor <= MAX_CURSOR) {
           e.preventDefault();
           const next = [...buffer];
           next[cursor] = e.key.toLowerCase();
           setBuffer(next);
-          setCursor(c => Math.min(5, c + 1));
+          setCursor(c => Math.min(MAX_CURSOR, c + 1));
           setError('');
         }
     }
@@ -103,10 +105,12 @@ export function WordInput({ showPool = true }) {
       ref={containerRef}
       className={styles.wrapper}
       tabIndex={0}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
       onKeyDown={handleKeyDown}
       onClick={() => containerRef.current?.focus()}
     >
-      <InputTiles slots={slots} />
+      <InputTiles slots={slots} focused={focused} />
       {showPool && pool.length > 0 && (
         <div className={styles.pool}>
           {pool.map(({ kind, letter }, i) => (
