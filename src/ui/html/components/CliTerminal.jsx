@@ -82,7 +82,21 @@ export function CliTerminal({ autoFocus = false }) {
     const fitAddon = new FitAddon();
     terminal.loadAddon(fitAddon);
     terminal.open(containerRef.current);
-    fitAddon.fit();
+
+    // ResizeObserver re-fits whenever the container gains real dimensions.
+    // rAF fires BEFORE ResizeObserver each frame, so a rAF-cleared flag would
+    // always be clear by the time the observer fires — useless. Instead the flag
+    // is self-resetting: the first callback is an external resize (fit it), the
+    // second is the container change caused by fit() itself (clear flag, skip).
+    let fitting = false;
+    const ro = new ResizeObserver(() => {
+      if (fitting) { fitting = false; return; }
+      if (!(containerRef.current?.offsetWidth > 0)) return;
+      fitting = true;
+      fitAddon.fit();
+    });
+    ro.observe(containerRef.current);
+
     if (autoFocus) terminal.focus();
 
     const io        = new XtermTerminal(terminal);
@@ -144,6 +158,7 @@ export function CliTerminal({ autoFocus = false }) {
 
     return () => {
       running = false;
+      ro.disconnect();
       suggester.terminate();
       terminal.dispose();
     };

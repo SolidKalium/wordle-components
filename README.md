@@ -140,7 +140,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - Test set up: constraints (instead of game board) + input
     - Separately: input constraints
       - This might require some reworking of the game. One "hack" that might even be useful would be to reconstruct possible guesses given the current state. Effectively: filter the list of words to ones that comply with all constraints without implying knowledge beyond the constraints should be known, then do a best effort to pick words that enforce the remaining constraints, until all constraints are matched and no extra ones are introduced.
-  - Fix bug: when terminal is in an intitially collapsed card on page load, then uncollapse the card, the terminal text is too wide until you click into the terminal.
   - Hard mode toggle
   - Other analysis components? E.g. compare across strategies
   - Pre-built composite components (LATER)
