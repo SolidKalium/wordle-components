@@ -118,6 +118,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - Show tiny bar chart?
     - Add arg/toggle for words vs bits?
     - Add max height to columns
+    - Allow choosing a different word for comparison?
     - Alternate tree views? Collapsible tree or treemap? But will struggle on turn 1 with 120-140 groups.
     - Once game board is added, make it re-anchor when a game exists and a move is made
       - Also: optionally track the partial input for the game and use that instead of the best move for the current game state
@@ -125,9 +126,21 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - DONE Separately: word entry (user's keyboard)
     - DONE Separately: select word from a short list of options
     - Separately: visualize constraints
-      - How? A word has up to 5 letters. Could just show one row per letter found with green/yellow per square. Then a list of gray letters. Or could show per slot: The letter known or else the letters it excludes. Still a separate list of gray letters.
-    - Separately: word entry (virtual keyboard) (LATER)
+      - A word has up to 5 letters. Could just show one row per letter found with green/yellow per square. Then a list of gray letters.
+        - If built, make it possible to switch between col major and row major views.
+      - Or could show per slot: The letter known or else the letters it excludes. Still a separate list of gray letters.
+      - Per-position possibility sets: may need to avoid moving the letters. Maybe two or three columns per position, with a dividing line to keep positions separate?
+        - At three columns, could use a rotated keyboard layout.
+        - Or use a single through-line for each letter, with it effectively dropping out if it doesn't go there. Could combine with the letter frequency idea, varying width and/or color intensity based on remaining word compatibility. Color itself could reflect yellow vs green vs untested. To make the lines denser, can use two columns for the letter labels, with the bars reaching in between the letters of the second col to reach the first (think witch's stairs). Show a double letter label when a letter has two yellows. (Recall: 3 yellows is impossible for five letter words)
+          - Hover or tap to highlight a row. Tap ought to also support dragging across them to highlight whichever is currently under the tap? Sounds a bit complicated. See if it looks good first.
+      - Letter frequency over remaining words. Bar or sparkline? Better choice may just be normalizing the counts and using color intensity within a set range for the letters that have non-zero instances. Then another color or visual style for technically possible but incompatible with remaining words. And technically impossible letters (known gray tile or yellow tile) are just missing.
+      - Something venn-like or a bit amorphous/fluid?
+      - Ideally does know when a letter appears multiple times or has both a green and a yellow (or two!) remaining.
+    - Separately: word entry (virtual keyboard)
     - Test set up: constraints (instead of game board) + input
+    - Separately: input constraints
+      - This might require some reworking of the game. One "hack" that might even be useful would be to reconstruct possible guesses given the current state. Effectively: filter the list of words to ones that comply with all constraints without implying knowledge beyond the constraints should be known, then do a best effort to pick words that enforce the remaining constraints, until all constraints are matched and no extra ones are introduced.
+  - Fix bug: when terminal is in an intitially collapsed card on page load, then uncollapse the card, the terminal text is too wide until you click into the terminal.
   - Hard mode toggle
   - Other analysis components? E.g. compare across strategies
   - Pre-built composite components (LATER)
@@ -141,7 +154,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - Add descriptions for strategies?
   - Card
     - Highlight when channel active elsewhere? LATER
-    - Consider additional colors? E.g. move the split colors of the current chart demo card into its own color scheme
+    - Consider additional themes? E.g. move the distinct header/content colors of the current chart demo card into its own color scheme
     - On bar hover, show representative words? Or all words?
   - Strategy selector
     - Additional variants? E.g. a popover from a settings icon.
@@ -150,16 +163,17 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 - Filters: tweak vowel anti-exploration? Maybe others? e.g. don't retry known bad letters
   - The letter and vowel exploration filters do nothing in hard mode because we are already limited to only words that match what we know, so after we filter out the remaining set, we fall back to the full one (or no letters matched yet and the filter is a no-op anyways). The word list being used (hard mode on/off, all or only possible answers) needs to be clearer in the UI.
 - Test suite: HTML ?
-- Rapid-play mode in HTML
 - Revisit the three worker classes and how they relate?
 - CLI: analysis? Delay until after HTML UI
 - Cache precomputed rankings for first-turn guesses?
   - Probably create a script that knows the best first move on a few dimensions at once: all-guesses vs valid answers, hard mode on/off (won't matter for information-theoretic first turns, only exhaustive search), strategy, maybe certain filters. Assumes unchanged answer-word list. Probably include a hash of the list to validate the list and computed values match. Maybe warn somewhere in a build script if the computations are stale.
   - Might also cache related statistics for that first move? But if only needing stats for one guess, it shouldn't be too bad to recompute.
   - For some strategies, like the exhaustive ones or allowing all valid guesses, caching the second turn might also be useful.
+  - May also want some kind of pool of first words of varying quality? A cache of some kind will help with the suggestions.
 - Claude Skill
 - Test suite: Claude Skill ?
-- Strategies: full-depth calculation (min avg or minimax depth), mixed strategy nash equilibrium ?
+- Strategy: full-depth calculation (min avg or minimax depth)
+- Strategy: mixed strategy nash equilibrium ?
 
 ## Hypotheses and Analysis Topics
 This was initially generated by LLM summary of a discussion.
