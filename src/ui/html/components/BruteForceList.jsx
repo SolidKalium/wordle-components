@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Virtuoso } from 'react-virtuoso';
 import { BruteForceGenerator } from '../../../lib/bruteForce.mjs';
 import { useConstraintStore } from '../stores/constraintStore.js';
 import styles from './BruteForceList.module.css';
@@ -10,83 +11,94 @@ function formatApprox(n) {
   return `${n}`;
 }
 
+function toRows(flat, n) {
+  const rows = [];
+  for (let i = 0; i < flat.length; i += n) rows.push(flat.slice(i, i + n));
+  return rows;
+}
+
+// Defined at module scope so Virtuoso never remounts the scroller on re-render.
+const VirtuosoScroller = React.forwardRef(({ style, ...props }, ref) => (
+  <div
+    ref={ref}
+    style={{ ...style, overflowX: 'hidden' }}
+    className={styles.scroller}
+    {...props}
+  />
+));
+VirtuosoScroller.displayName = 'VirtuosoScroller';
+
+const NoOptions = () => <span className={styles.empty}>no options</span>;
+
+const INITIAL_ROWS = 16;
+const CHUNK_ROWS   = 24;
+
+// Rendered width of one word: 5 monospace chars at 13px + 0.08em letter-spacing ≈ 44px.
+const WORD_PX = 44;
+const GAP_PX  = 16;
+// 36 = left-padding(20) + right-padding(16)
+const PANEL_PADDING_PX = 36;
+const SCROLLBAR_GUTTER_PX = 12;
+
 export function BruteForceList({ wordsPerLine = 3 }) {
   const constraints = useConstraintStore(s => s.constraints);
 
-  const [items,     setItems]     = useState([]);
+  const [rows,      setRows]      = useState([]);
   const [approx,    setApprox]    = useState(0);
   const [exhausted, setExhausted] = useState(false);
 
-  const genRef       = useRef(null);
-  const nextRef      = useRef(null);
-  const loadingRef   = useRef(false);
-  const containerRef = useRef(null);
-
-  // 3 rows per chunk, as a natural preload unit.
-  const chunkSize = useRef(3 * wordsPerLine);
-  chunkSize.current = 3 * wordsPerLine;
+  const genRef  = useRef(null);
+  const nextRef = useRef(null);
 
   const loadChunk = useCallback(() => {
-    if (loadingRef.current || !genRef.current || nextRef.current === null) return;
-    loadingRef.current = true;
-    const { items: chunk, nextCombo } = genRef.current.getPage(nextRef.current, chunkSize.current);
+    if (!genRef.current || nextRef.current === null) return;
+    const { items, nextCombo } = genRef.current.getPage(
+      nextRef.current,
+      CHUNK_ROWS * wordsPerLine,
+    );
     nextRef.current = nextCombo;
     if (nextCombo === null) setExhausted(true);
-    setItems(prev => [...prev, ...chunk]);
-  }, []); // stable — reads only refs
+    if (items.length > 0) setRows(prev => [...prev, ...toRows(items, wordsPerLine)]);
+  }, [wordsPerLine]);
 
-  // After each items commit: clear the loading gate, then keep filling until
-  // the container actually overflows. This handles the case where the initial
-  // batch doesn't create any scrollable range (no onScroll ever fires).
-  useEffect(() => {
-    loadingRef.current = false;
-    const el = containerRef.current;
-    if (el && !exhausted && el.scrollHeight <= el.clientHeight + 1) {
-      loadChunk();
-    }
-  }, [items, exhausted, loadChunk]);
-
-  // Rebuild generator on constraint change.
   useEffect(() => {
     const gen = new BruteForceGenerator(constraints);
-    genRef.current     = gen;
-    nextRef.current    = gen.first();
-    loadingRef.current = false;
+    genRef.current  = gen;
+    nextRef.current = gen.first();
     setApprox(gen.approxTotal());
 
     if (nextRef.current === null) {
-      setItems([]);
+      setRows([]);
       setExhausted(true);
       return;
     }
 
     setExhausted(false);
-    const { items: chunk, nextCombo } = gen.getPage(nextRef.current, chunkSize.current);
+    const { items, nextCombo } = gen.getPage(nextRef.current, INITIAL_ROWS * wordsPerLine);
     nextRef.current = nextCombo;
-    setItems(chunk);
-    if (containerRef.current) containerRef.current.scrollTop = 0;
-  }, [constraints]); // eslint-disable-line react-hooks/exhaustive-deps
+    setRows(toRows(items, wordsPerLine));
+  }, [constraints, wordsPerLine]);
 
-  // Preload when within ~3 rows of the bottom.
-  const handleScroll = () => {
-    const el = containerRef.current;
-    if (!el || exhausted) return;
-    const rowHeight = el.scrollHeight / Math.max(1, items.length / wordsPerLine);
-    if (el.scrollHeight - el.scrollTop - el.clientHeight < rowHeight * 3) {
-      loadChunk();
-    }
-  };
+  const panelMinWidth =
+    wordsPerLine * WORD_PX + (wordsPerLine - 1) * GAP_PX + SCROLLBAR_GUTTER_PX;
 
   return (
-    <div className={styles.panel}>
-      <div className={styles.scroll} ref={containerRef} onScroll={handleScroll}>
-        <div className={styles.grid} style={{ '--cols': wordsPerLine }}>
-          {items.map((w, i) => <span key={i} className={styles.word}>{w}</span>)}
-          {exhausted && items.length === 0 && (
-            <span className={styles.empty}>no options</span>
-          )}
-        </div>
-      </div>
+    <div className={styles.panel} style={{ minWidth: panelMinWidth }}>
+      <Virtuoso
+        style={{ height: 220 }}
+        data={rows}
+        itemContent={(_, row) => (
+          <div className={styles.row}>
+            {row.map((w, j) => <span key={j} className={styles.word}>{w}</span>)}
+          </div>
+        )}
+        endReached={exhausted ? undefined : loadChunk}
+        increaseViewportBy={{ top: 0, bottom: 300 }}
+        components={{
+          Scroller: VirtuosoScroller,
+          EmptyPlaceholder: exhausted ? NoOptions : undefined,
+        }}
+      />
       <span className={styles.count}>{formatApprox(approx)} options</span>
     </div>
   );
