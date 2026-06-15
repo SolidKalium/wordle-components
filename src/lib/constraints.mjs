@@ -183,6 +183,40 @@ export class ConstraintState {
   }
 
   /**
+   * Build a ConstraintState from the four rows of the constraint editor UI.
+   *
+   * @param {Object} opts
+   * @param {(string|null)[]} opts.green    - Confirmed letter at each position, or null.
+   * @param {string[][]}      opts.yellow   - Letters excluded from each position (per-slot).
+   * @param {string[]}        opts.unplaced - Letters known to be in the word but unplaced
+   *                                          (duplicates encode minimum count, e.g. ['a','a']).
+   * @param {string[]}        opts.gray     - Letters with no additional copies beyond
+   *                                          what green + unplaced already account for.
+   * @returns {ConstraintState}
+   */
+  static fromEditor({ green, yellow, unplaced, gray }) {
+    const c = new ConstraintState();
+
+    for (let i = 0; i < WORD_LENGTH; i++) {
+      if (green[i]) c.known[i] = green[i];
+      for (const ch of yellow[i]) c.excluded[i].add(ch);
+    }
+
+    for (const ch of unplaced) {
+      c.minCounts.set(ch, (c.minCounts.get(ch) ?? 0) + 1);
+    }
+
+    for (const ch of gray) {
+      const knownCount   = c.known.filter(k => k === ch).length;
+      const unplacedCount = c.minCounts.get(ch) ?? 0;
+      c.maxCounts.set(ch, knownCount + unplacedCount);
+    }
+
+    c._normalize();
+    return c;
+  }
+
+  /**
    * Create a deep copy of this state.
    */
   clone() {

@@ -3,8 +3,10 @@ import { createRoot } from 'react-dom/client';
 import { ANSWERS, WORDS } from '../../lib/words.gen.mjs';
 import { GameStoreContext, createGameStore } from './stores/gameStore.js';
 import { StrategyStoreContext, createStrategyStore } from './stores/strategyStore.js';
+import { ConstraintStoreContext, createConstraintStore } from './stores/constraintStore.js';
 import { Card } from './components/Card.jsx';
 import { CliTerminal } from './components/CliTerminal.jsx';
+import { ConstraintEditor } from './components/ConstraintEditor.jsx';
 import { DistributionChart } from './components/DistributionChart.jsx';
 import { GameBoard } from './components/GameBoard.jsx';
 import { StrategySelector } from './components/StrategySelector.jsx';
@@ -13,7 +15,8 @@ import { TreeNavigator } from './components/TreeNavigator.jsx';
 import { WordInput } from './components/WordInput.jsx';
 import './page.css';
 
-const gameStore = createGameStore({ wordList: WORDS, answers: ANSWERS });
+const gameStore       = createGameStore({ wordList: WORDS, answers: ANSWERS });
+const constraintStore = createConstraintStore();
 const strategyStoreMaxGroups = createStrategyStore({ strategyId: 'maxGroups' });
 const strategyStoreMaxEntropy = createStrategyStore({ strategyId: 'maxEntropy' });
 const strategyStoreMinExpectedRemaining = createStrategyStore({ strategyId: 'minExpectedRemaining' });
@@ -65,6 +68,11 @@ function App() {
           <SuggestionPicker />
         </div>
       </Card>
+      <ConstraintStoreContext.Provider value={constraintStore}>
+        <Card title="Constraint Explorer" collapsible defaultCollapsed>
+          <ConstraintEditor />
+        </Card>
+      </ConstraintStoreContext.Provider>
       <Card title="Terminal" variant="dark" collapsible defaultCollapsed>
         <CliTerminal autoFocus />
       </Card>

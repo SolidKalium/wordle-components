@@ -138,8 +138,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
       - Ideally does know when a letter appears multiple times or has both a green and a yellow (or two!) remaining.
     - Separately: word entry (virtual keyboard)
     - Test set up: constraints (instead of game board) + input
-    - Separately: input constraints
-      - This might require some reworking of the game. One "hack" that might even be useful would be to reconstruct possible guesses given the current state. Effectively: filter the list of words to ones that comply with all constraints without implying knowledge beyond the constraints should be known, then do a best effort to pick words that enforce the remaining constraints, until all constraints are matched and no extra ones are introduced.
+    - DONE Separately: input constraints
   - Hard mode toggle
   - Other analysis components? E.g. compare across strategies
   - Pre-built composite components (LATER)
@@ -246,6 +245,7 @@ For hard mode specifically: how often does the optimal guess (by any single-step
 - Strategies
   - What if we didn't restrict the word at all and any sequence of letters were allowed?
     - Mainly postponed because we don't want to check 26^5 (10^7) options. If we can reduce the set of letters we might want to check on the first turn to 16 options, then that's only 10^6, which is still a lot of brute force... But with some thought, this might have a better approach. But letter frequency and place frequency could make this complicated. And we don't necessarily want the most frequent letters, but letters and positions that split as many groups as possible. Which might point towards just trying all the vowels on the first move, since most words will have 2 or 3 of them. Which might imply that we'd want to place each vowel where it is most common in words with only one distinct vowel, but effects on other paths might overwhelm that... So I'm now leaning towards an incremental search algorithm that explores variants of a strategy. E.g. swap two letters, replace a letter, while tracking options discarded. Might need to prove convex properties to trust that, but it might just do ok. And some varied starting choices converging to the same result could provide a sanity check in lieu of a proof.
+- Back out guesses from constraints? Filter the list of words to ones that comply with all constraints without implying knowledge beyond the constraints should be known, then do a best effort to pick words that enforce the remaining constraints, until all constraints are matched and no extra ones are introduced.
 
 ## Other Topics
 - I'm curious about what might bias a human against quickly finding a word.
