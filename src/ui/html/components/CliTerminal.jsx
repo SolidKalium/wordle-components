@@ -70,9 +70,13 @@ function parseArgs(argv) {
  */
 export function CliTerminal({ autoFocus = false }) {
   const containerRef = useRef(null);
+  const wrapperRef = useRef(null);
 
   useEffect(() => {
     const terminal = new Terminal({
+      // scrollback: 0, // This prevents the scrollbar width from messing up the fit add-on, which otherwise creates a feedback loop of shrinking. Ideally, we'd use a different fix and the call to fit would be idempotent.
+      // scrollbar: {showScrollbar: false}, // NOTE: this was added after 6.0.0, so it isn't available in a stable release.
+      // overviewRuler: {width: 0, showBottomBorder: false, showTopBorder: false}, // NOTE: Available when xterm.js launched 6.0.0. But these aren't working...
       convertEol: true,
       cursorBlink: true,
       fontFamily: '"Cascadia Code", "Fira Code", "Courier New", monospace',
@@ -88,12 +92,30 @@ export function CliTerminal({ autoFocus = false }) {
     // always be clear by the time the observer fires — useless. Instead the flag
     // is self-resetting: the first callback is an external resize (fit it), the
     // second is the container change caused by fit() itself (clear flag, skip).
-    let fitting = false;
+
+    // NOTE: the `fitting` var isn't needed when the fit addon is idempotent. It is idempotent when there's no scrollback. Hopefully a future version makes it idempotent when there is scrollback. When it isn't idempotent, the `fitting` var limits the shrink to once per card open/close cycle.
+    // NOTE: the fit add on currently proposes 2 fewer columns than it should when a scrollbar is possible. If you set scrollback: 0 on the terminal, then fitAddon.fit() becomes idempotent and the +2 should be removed.
+
+    // let fitting = false;
+    const getFitDetails = function() {
+      const wrapperWidth = wrapperRef.current?.clientWidth;
+      const terminalWidth = containerRef.current?.clientWidth;
+      const proposed = fitAddon.proposeDimensions();
+      const current = { cols: terminal.cols, rows: terminal.rows};
+      return { wrapperWidth, terminalWidth, proposed, current };
+    };
     const ro = new ResizeObserver(() => {
-      if (fitting) { fitting = false; return; }
+      console.log('fit entered')
+      // if (fitting) { fitting = false; return; }
       if (!(containerRef.current?.offsetWidth > 0)) return;
-      fitting = true;
-      fitAddon.fit();
+      const proposed = fitAddon.proposeDimensions();
+      console.log('before', getFitDetails());
+      // if (proposed && proposed.cols === terminal.cols && proposed.rows === terminal.rows) return;
+      console.log('fit run')
+      // fitting = true;
+      // fitAddon.fit();
+      terminal.resize(proposed.cols + 2, proposed.rows); // This is needed for the update to be idempotent...
+      console.log('after', getFitDetails());
     });
     ro.observe(containerRef.current);
 
@@ -164,5 +186,9 @@ export function CliTerminal({ autoFocus = false }) {
     };
   }, []);
 
-  return <div className={styles.terminal} ref={containerRef} />;
+  return (
+    <div className={styles.wrapper} ref={wrapperRef}>
+      <div className={styles.terminal} ref={containerRef} />
+    </div>
+  );
 }

@@ -1,15 +1,16 @@
-.terminal {
+/* Visual container — provides padding and background.
+   xterm never measures this element, so its padding doesn't feed into
+   FitAddon's column calculation and causes no drift on collapse/uncollapse. */
+.wrapper {
   --bg: #000;
-
-  height: 400px;
-}
-
-/* addon-fit reads .xterm's computed padding when calculating cols/rows, so
-   padding here is correctly accounted for. background covers the padding area. */
-.terminal :global(.xterm) {
   padding: 6px 10px;
   background: var(--bg);
-  box-sizing: border-box;
+}
+
+/* The element passed to terminal.open() and observed by FitAddon.
+   No padding here — FitAddon reads this element's width directly. */
+.terminal {
+  height: 400px;
 }
 
 /* xterm sets this inline from the theme option; !important guards against
