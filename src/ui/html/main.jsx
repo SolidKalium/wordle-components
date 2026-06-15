@@ -6,6 +6,7 @@ import { StrategyStoreContext, createStrategyStore } from './stores/strategyStor
 import { ConstraintStoreContext, createConstraintStore } from './stores/constraintStore.js';
 import { Card } from './components/Card.jsx';
 import { CliTerminal } from './components/CliTerminal.jsx';
+import { BruteForceList } from './components/BruteForceList.jsx';
 import { ConstraintEditor } from './components/ConstraintEditor.jsx';
 import { DistributionChart } from './components/DistributionChart.jsx';
 import { GameBoard } from './components/GameBoard.jsx';
@@ -70,7 +71,10 @@ function App() {
       </Card>
       <ConstraintStoreContext.Provider value={constraintStore}>
         <Card title="Constraint Explorer" collapsible defaultCollapsed>
-          <ConstraintEditor />
+          <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+            <BruteForceList />
+            <ConstraintEditor />
+          </div>
         </Card>
       </ConstraintStoreContext.Provider>
       <Card title="Terminal" variant="dark" collapsible defaultCollapsed>

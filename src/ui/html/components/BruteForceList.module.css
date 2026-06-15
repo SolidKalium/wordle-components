@@ -1,0 +1,64 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 16px 16px 20px;
+  border-right: 1px solid #2c2c2e;
+  flex-shrink: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.word {
+  font-family: ui-monospace, "SF Mono", "Fira Code", "Cascadia Code", "Courier New", monospace;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  color: #b0b3b5;
+  line-height: 1.75;
+  user-select: text;
+}
+
+/* Empty padding slots — preserve column height when page isn't full */
+.pad {
+  display: block;
+  line-height: 1.75;
+  font-size: 14px;
+}
+
+.nav {
+  display: flex;
+  gap: 6px;
+}
+
+.btn {
+  background: transparent;
+  border: 1px solid #3a3a3c;
+  border-radius: 3px;
+  color: #818384;
+  font-size: 13px;
+  padding: 3px 9px;
+  cursor: pointer;
+  transition: border-color 0.1s, color 0.1s;
+  line-height: 1;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: #818384;
+  color: #b0b3b5;
+}
+
+.btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.count {
+  font-size: 11px;
+  color: #555;
+  user-select: none;
+}
