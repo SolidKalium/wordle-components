@@ -1,63 +1,91 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { BruteForceGenerator } from '../../../lib/bruteForce.mjs';
 import { useConstraintStore } from '../stores/constraintStore.js';
 import styles from './BruteForceList.module.css';
 
-const PAGE_SIZE = 8;
-
 function formatApprox(n) {
   if (n >= 1_000_000) return `~${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`;
-  if (n >= 1_000)     return `~${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}k`;
+  if (n >= 10_000)    return `~${Math.round(n / 1_000)}k`;
+  if (n >= 1_000)     return `~${(n / 1_000).toFixed(1)}k`;
   return `${n}`;
 }
 
-function makeInitialState(constraints) {
-  const gen   = new BruteForceGenerator(constraints);
-  const first = gen.first();
-  const { items, nextCombo } = gen.getPage(first, PAGE_SIZE);
-  return { gen, pageStack: [first], items, nextCombo };
-}
-
-export function BruteForceList() {
+export function BruteForceList({ wordsPerLine = 3 }) {
   const constraints = useConstraintStore(s => s.constraints);
 
-  const [state, setState] = useState(() => makeInitialState(constraints));
-  const { gen, pageStack, items, nextCombo } = state;
+  const [items,     setItems]     = useState([]);
+  const [approx,    setApprox]    = useState(0);
+  const [exhausted, setExhausted] = useState(false);
 
-  // Rebuild when constraints change.
+  const genRef       = useRef(null);
+  const nextRef      = useRef(null);
+  const loadingRef   = useRef(false);
+  const containerRef = useRef(null);
+
+  // 3 rows per chunk, as a natural preload unit.
+  const chunkSize = useRef(3 * wordsPerLine);
+  chunkSize.current = 3 * wordsPerLine;
+
+  const loadChunk = useCallback(() => {
+    if (loadingRef.current || !genRef.current || nextRef.current === null) return;
+    loadingRef.current = true;
+    const { items: chunk, nextCombo } = genRef.current.getPage(nextRef.current, chunkSize.current);
+    nextRef.current = nextCombo;
+    if (nextCombo === null) setExhausted(true);
+    setItems(prev => [...prev, ...chunk]);
+  }, []); // stable — reads only refs
+
+  // After each items commit: clear the loading gate, then keep filling until
+  // the container actually overflows. This handles the case where the initial
+  // batch doesn't create any scrollable range (no onScroll ever fires).
   useEffect(() => {
-    setState(makeInitialState(constraints));
-  }, [constraints]);
+    loadingRef.current = false;
+    const el = containerRef.current;
+    if (el && !exhausted && el.scrollHeight <= el.clientHeight + 1) {
+      loadChunk();
+    }
+  }, [items, exhausted, loadChunk]);
 
-  const goNext = () => {
-    if (!nextCombo) return;
-    const { items: newItems, nextCombo: newNext } = gen.getPage(nextCombo, PAGE_SIZE);
-    setState(s => ({ ...s, pageStack: [...s.pageStack, nextCombo], items: newItems, nextCombo: newNext }));
+  // Rebuild generator on constraint change.
+  useEffect(() => {
+    const gen = new BruteForceGenerator(constraints);
+    genRef.current     = gen;
+    nextRef.current    = gen.first();
+    loadingRef.current = false;
+    setApprox(gen.approxTotal());
+
+    if (nextRef.current === null) {
+      setItems([]);
+      setExhausted(true);
+      return;
+    }
+
+    setExhausted(false);
+    const { items: chunk, nextCombo } = gen.getPage(nextRef.current, chunkSize.current);
+    nextRef.current = nextCombo;
+    setItems(chunk);
+    if (containerRef.current) containerRef.current.scrollTop = 0;
+  }, [constraints]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Preload when within ~3 rows of the bottom.
+  const handleScroll = () => {
+    const el = containerRef.current;
+    if (!el || exhausted) return;
+    const rowHeight = el.scrollHeight / Math.max(1, items.length / wordsPerLine);
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < rowHeight * 3) {
+      loadChunk();
+    }
   };
-
-  const goPrev = () => {
-    if (pageStack.length <= 1) return;
-    const newStack = pageStack.slice(0, -1);
-    const prevStart = newStack[newStack.length - 1];
-    const { items: newItems, nextCombo: newNext } = gen.getPage(prevStart, PAGE_SIZE);
-    setState(s => ({ ...s, pageStack: newStack, items: newItems, nextCombo: newNext }));
-  };
-
-  const approx  = gen.approxTotal();
-  const isFirst = pageStack.length <= 1;
-  const isLast  = !nextCombo;
 
   return (
     <div className={styles.panel}>
-      <div className={styles.list}>
-        {items.map((w, i) => <span key={i} className={styles.word}>{w}</span>)}
-        {Array.from({ length: PAGE_SIZE - items.length }, (_, i) => (
-          <span key={`pad-${i}`} className={styles.pad} />
-        ))}
-      </div>
-      <div className={styles.nav}>
-        <button className={styles.btn} onClick={goPrev} disabled={isFirst}>←</button>
-        <button className={styles.btn} onClick={goNext} disabled={isLast}>→</button>
+      <div className={styles.scroll} ref={containerRef} onScroll={handleScroll}>
+        <div className={styles.grid} style={{ '--cols': wordsPerLine }}>
+          {items.map((w, i) => <span key={i} className={styles.word}>{w}</span>)}
+          {exhausted && items.length === 0 && (
+            <span className={styles.empty}>no options</span>
+          )}
+        </div>
       </div>
       <span className={styles.count}>{formatApprox(approx)} options</span>
     </div>
