@@ -93,8 +93,8 @@ export function CliTerminal({ autoFocus = false }) {
       if (fitting) { fitting = false; return; }
       if (!(containerRef.current?.offsetWidth > 0)) return;
       const proposed = fitAddon.proposeDimensions();
+      if (!proposed) return;
       fitting = true;
-      // fitAddon.fit();
       terminal.resize(proposed.cols + 2, proposed.rows);
     });
     ro.observe(containerRef.current);
