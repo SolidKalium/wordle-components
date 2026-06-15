@@ -143,14 +143,12 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
   - Other analysis components? E.g. compare across strategies
   - Pre-built composite components (LATER)
   - Brute force options list
-    - Explanation: When three letters are green, or there are otherwise "few" options without the word list being considered (e.g. 200-400 "words"), show all the possible inputs that fit the rules. This is more like "I can't think of any words that work with these 3 letters, so just show me the brute force options so I can read through them."
-    - This might let the user select some of them to put in a "options to consider bar"? Enhancement, not initial feature.
-    - These could be dynamically generated in order, or allow pinning specific letters, enabling larger spaces to be explored via brute force without wasting memory.
+    - Explanation: Shows all possible inputs that fit the constraints. Roughly: "I can't think of any words that work with these 3 letters, so just show me the brute force options so I can read through them and hopefully see a real word or two."
     - Work with normal game boards
     - Maintain rough scroll position on constraint update
     - "Not at" needs better navigation. Currently no visible cursor within a square and can't go between squares. Maybe make arrows move between squares, and require backspace to edit within a square?
     - Improve count estimate?
-    - Show a scrollbar that can be dragged usefully
+    - Scrollbar position should at least roughly track location in the overall scrolling and it should be possible to drag it to the new area.
   - Distribution Chart
     - How to handle the toggle? Allow it to be passed to the component. Let the creator decide whether it's even user facing. Maybe redesign it to be more hidden.
     - Determine how the average is calculated.- Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.

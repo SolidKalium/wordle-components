@@ -79,6 +79,7 @@
   text-transform: uppercase;
   color: #555;
   cursor: text;
+  caret-color: #818384;
 }
 
 .yellowFilled {
@@ -191,6 +192,10 @@
   font-weight: 600;
   color: #b0b3b5;
   letter-spacing: 0.05em;
+}
+
+.suggWordStale {
+  opacity: 0.35;
 }
 
 .loading {
