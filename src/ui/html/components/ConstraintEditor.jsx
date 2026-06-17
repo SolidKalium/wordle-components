@@ -227,13 +227,15 @@ function Suggestions() {
   );
 }
 
-export function ConstraintEditor() {
+export function ConstraintEditor({ defaultShowSuggestions = true, showSuggestionsToggle = false }) {
   const unplaced    = useConstraintStore(s => s.unplaced);
   const gray        = useConstraintStore(s => s.gray);
   const remaining   = useConstraintStore(s => s.remainingWords.length);
   const setUnplaced = useConstraintStore(s => s.setUnplaced);
   const setGray     = useConstraintStore(s => s.setGray);
   const clear       = useConstraintStore(s => s.clear);
+
+  const [showSuggestions, setShowSuggestions] = useState(defaultShowSuggestions);
 
   const greenRef    = useRef(null);
   const yellowRef   = useRef(null);
@@ -298,9 +300,14 @@ export function ConstraintEditor() {
       <div className={styles.below}>
         <div className={styles.footer}>
           <span className={styles.remaining}>{remaining.toLocaleString()} {remaining === 1 ? 'word' : 'words'} remaining</span>
+          {showSuggestionsToggle && (
+            <button className={styles.clearBtn} onClick={() => setShowSuggestions(s => !s)}>
+              {showSuggestions ? 'Hide suggestions' : 'Suggestions'}
+            </button>
+          )}
           <button className={styles.clearBtn} onClick={clear}>Clear</button>
         </div>
-        <Suggestions />
+        {showSuggestions && <Suggestions />}
       </div>
 
     </div>

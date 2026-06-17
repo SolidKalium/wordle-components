@@ -141,7 +141,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
       - Something venn-like or a bit amorphous/fluid?
       - Ideally does know when a letter appears multiple times or has both a green and a yellow (or two!) remaining.
     - Separately: word entry (virtual keyboard)
-      - Maybe use dots in the corner of the key? E.g. 1 green per green, 1 yellow per yellow, and grey for "no more than that"
+      - Maybe use dots in the corner of the key? E.g. 1 green per green, 1 yellow per yellow, and grey for "no more than that". Main question is the primary bg color and any outline.
       - Should it lock to the bottom of the screen? By default or optionally? Useful on mobile, not otherwise. So probably optionally on narrow screens. It would be too tall to lock on short screens. If it doesn't know the page size well enough, then don't do this. Maybe that means it needs to be set up programatically by passing a reference to the screen?
     - Test set up: constraints (instead of game board) + input
     - DONE Separately: input constraints

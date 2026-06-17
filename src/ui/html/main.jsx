@@ -72,7 +72,7 @@ function App() {
       <ConstraintStoreContext.Provider value={constraintStore}>
         <Card title="Constraint Explorer" collapsible>
           <div style={{ display: 'flex', alignItems: 'stretch' }}>
-            <ConstraintEditor />
+            <ConstraintEditor showSuggestionsToggle defaultShowSuggestions={false} />
             <div style={{ width: 1, background: '#2c2c2e', flexShrink: 0 }} />
             <BruteForceList wordsPerLine={5} />
           </div>
