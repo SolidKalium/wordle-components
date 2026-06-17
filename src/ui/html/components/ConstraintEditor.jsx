@@ -24,15 +24,33 @@ const GreenRow = forwardRef(function GreenRow({ onUp, onDown }, ref) {
           className={`${styles.tile} ${styles.greenTile} ${letter ? styles.greenFilled : ''}`}
           value={letter?.toUpperCase() ?? ''}
           maxLength={2}
+          onFocus={e => { const len = e.target.value.length; e.target.setSelectionRange(len, len); }}
           onChange={e => {
+            // Handles paste / mobile IME only — regular typing goes through onKeyDown.
             const ch = e.target.value.replace(/[^a-zA-Z]/g, '').slice(-1).toLowerCase() || null;
             setGreen(i, ch);
-            if (ch && i < 4) refs.current[i + 1]?.focus();
           }}
           onKeyDown={e => {
-            if (e.key === 'Backspace' && !letter && i > 0) {
-              setGreen(i - 1, null);
-              refs.current[i - 1]?.focus();
+            if (/^[a-zA-Z]$/.test(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey) {
+              e.preventDefault();
+              setGreen(i, e.key.toLowerCase());
+              if (i < 4) refs.current[i + 1]?.focus();
+              return;
+            }
+            if (e.key === 'Backspace') {
+              e.preventDefault();
+              if (letter) {
+                setGreen(i, null);
+              } else if (i > 0) {
+                setGreen(i - 1, null);
+                refs.current[i - 1]?.focus();
+              }
+              return;
+            }
+            if (e.key === 'Delete') {
+              e.preventDefault();
+              if (letter) setGreen(i, null);
+              return;
             }
             if (e.key === 'ArrowLeft'  && i > 0) refs.current[i - 1]?.focus();
             if (e.key === 'ArrowRight' && i < 4) refs.current[i + 1]?.focus();
