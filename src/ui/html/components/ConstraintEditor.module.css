@@ -198,6 +198,13 @@
   opacity: 0.35;
 }
 
+.suggWordNonAnswer {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a4d4f;
+  letter-spacing: 0.05em;
+}
+
 .loading {
   font-size: 13px;
   color: #3a3a3c;

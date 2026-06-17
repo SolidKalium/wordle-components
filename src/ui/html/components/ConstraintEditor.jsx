@@ -1,5 +1,7 @@
-import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
-import { ANSWERS } from '../../../lib/words.gen.mjs';
+import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { ANSWERS, WORDS } from '../../../lib/words.gen.mjs';
+
+const ANSWERS_SET = new Set(ANSWERS);
 import { useConstraintStore } from '../stores/constraintStore.js';
 import { BrowserSuggestionWorker } from '../workers/BrowserSuggestionWorker.mjs';
 import styles from './ConstraintEditor.module.css';
@@ -34,6 +36,7 @@ const GreenRow = forwardRef(function GreenRow({ onUp, onDown }, ref) {
             }
             if (e.key === 'ArrowLeft'  && i > 0) refs.current[i - 1]?.focus();
             if (e.key === 'ArrowRight' && i < 4) refs.current[i + 1]?.focus();
+            if (e.key === ' ')         { e.preventDefault(); if (i < 4) refs.current[i + 1]?.focus(); }
             if (e.key === 'ArrowUp')   { e.preventDefault(); onUp?.(i); }
             if (e.key === 'ArrowDown') { e.preventDefault(); onDown?.(i); }
           }}
@@ -124,6 +127,14 @@ const YellowRow = forwardRef(function YellowRow({ onUp, onDown }, ref) {
               el?.focus();
               if (el) { const len = el.value.length; el.setSelectionRange(len, len); }
             }
+            if (e.key === ' ') {
+              e.preventDefault();
+              if (i < 4) {
+                const el = refs.current[i + 1];
+                el?.focus();
+                if (el) { const len = el.value.length; el.setSelectionRange(len, len); }
+              }
+            }
             if (e.key === 'ArrowUp')   { e.preventDefault(); onUp?.(i); }
             if (e.key === 'ArrowDown') { e.preventDefault(); onDown?.(i); }
           }}
@@ -133,8 +144,14 @@ const YellowRow = forwardRef(function YellowRow({ onUp, onDown }, ref) {
   );
 });
 
+// Threshold below which we also show non-answer valid guesses matching constraints.
+const NON_ANSWER_THRESHOLD = 8;
+// Max total suggestions displayed (matches the worker's internal cap).
+const SUGGESTION_CAP = 6;
+
 function Suggestions() {
   const remainingWords = useConstraintStore(s => s.remainingWords);
+  const constraints    = useConstraintStore(s => s.constraints);
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading]         = useState(false);
   const workerRef = useRef(null);
@@ -144,6 +161,11 @@ function Suggestions() {
     workerRef.current = new BrowserSuggestionWorker();
     return () => { workerRef.current?.terminate(); workerRef.current = null; };
   }, []);
+
+  const nonAnswerMatches = useMemo(() => {
+    if (remainingWords.length === 0 || remainingWords.length > NON_ANSWER_THRESHOLD) return [];
+    return WORDS.filter(w => !ANSWERS_SET.has(w) && constraints.matches(w));
+  }, [remainingWords, constraints]);
 
   useEffect(() => {
     if (!workerRef.current || remainingWords.length === 0 || remainingWords.length === ANSWERS.length) {
@@ -179,6 +201,9 @@ function Suggestions() {
               <span key={w} className={`${styles.suggWord} ${loading ? styles.suggWordStale : ''}`}>{w}</span>
             ))
         }
+        {nonAnswerMatches.slice(0, Math.max(0, SUGGESTION_CAP - suggestions.length)).map(w => (
+          <span key={w} className={styles.suggWordNonAnswer}>{w}</span>
+        ))}
       </div>
     </div>
   );
@@ -254,7 +279,7 @@ export function ConstraintEditor() {
 
       <div className={styles.below}>
         <div className={styles.footer}>
-          <span className={styles.remaining}>{remaining.toLocaleString()} words remaining</span>
+          <span className={styles.remaining}>{remaining.toLocaleString()} {remaining === 1 ? 'word' : 'words'} remaining</span>
           <button className={styles.clearBtn} onClick={clear}>Clear</button>
         </div>
         <Suggestions />

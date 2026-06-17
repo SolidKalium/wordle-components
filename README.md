@@ -146,12 +146,11 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - Explanation: Shows all possible inputs that fit the constraints. Roughly: "I can't think of any words that work with these 3 letters, so just show me the brute force options so I can read through them and hopefully see a real word or two."
     - Work with normal game boards
     - Maintain rough scroll position on constraint update
-    - "Not at" needs better navigation. Currently no visible cursor within a square and can't go between squares. Maybe make arrows move between squares, and require backspace to edit within a square?
     - Improve count estimate?
     - Scrollbar position should at least roughly track location in the overall scrolling and it should be possible to drag it to the new area.
   - Distribution Chart
-    - How to handle the toggle? Allow it to be passed to the component. Let the creator decide whether it's even user facing. Maybe redesign it to be more hidden.
-    - Determine how the average is calculated.- Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.
+    - Determine how the average is calculated. (does it include words past 6 guesses? Coerce them to 6 or 7?)
+  - Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.
     - Add descriptions for strategies?
   - Card
     - Highlight when channel active elsewhere? LATER
