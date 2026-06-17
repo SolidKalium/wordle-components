@@ -113,6 +113,10 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - Analysis HTML UI
+  - Constraint input:
+    - make it work as output in addition to input
+    - let it hide the suggestions? Programmatic only, or programmatic and user? I'm thinking default hide, with optional user toggle to show.
+    - info hints that explain what the card is doing
   - Decision tree
     - Show max moves?
     - Show tiny bar chart?
@@ -137,6 +141,8 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
       - Something venn-like or a bit amorphous/fluid?
       - Ideally does know when a letter appears multiple times or has both a green and a yellow (or two!) remaining.
     - Separately: word entry (virtual keyboard)
+      - Maybe use dots in the corner of the key? E.g. 1 green per green, 1 yellow per yellow, and grey for "no more than that"
+      - Should it lock to the bottom of the screen? By default or optionally? Useful on mobile, not otherwise. So probably optionally on narrow screens. It would be too tall to lock on short screens. If it doesn't know the page size well enough, then don't do this. Maybe that means it needs to be set up programatically by passing a reference to the screen?
     - Test set up: constraints (instead of game board) + input
     - DONE Separately: input constraints
   - Hard mode toggle
@@ -149,7 +155,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - Improve count estimate?
     - Scrollbar position should at least roughly track location in the overall scrolling and it should be possible to drag it to the new area.
   - Distribution Chart
-    - Determine how the average is calculated. (does it include words past 6 guesses? Coerce them to 6 or 7?)
+    - Determine how the average is calculated, document. (does it include words past 6 guesses? Coerce them to 6 or 7?)
   - Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.
     - Add descriptions for strategies?
   - Card
@@ -160,6 +166,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - Additional variants? E.g. a popover from a settings icon.
     - Idea: could have a popover settings for whole card, then one for each component. The card can specify whether something is a default or locked. Then the individual components don't offer that setting. Combine with a +component design so a user can add/remove components and compare how they want.
   - Given every first word, how do the information theoretic approaches do on subsequent turns? Might go in a report page (or component) where finalized calculations and the code to make them are both stored?
+    - This is effectively looking at each strategy's resilience to first-turn perterbation. Perhaps there's a comparable property for looking at global expected entropy or similar on before turn 3 or 4?
 - Filters: tweak vowel anti-exploration? Maybe others? e.g. don't retry known bad letters
   - The letter and vowel exploration filters do nothing in hard mode because we are already limited to only words that match what we know, so after we filter out the remaining set, we fall back to the full one (or no letters matched yet and the filter is a no-op anyways). The word list being used (hard mode on/off, all or only possible answers) needs to be clearer in the UI.
 - Test suite: HTML ?
