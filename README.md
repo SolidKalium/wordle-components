@@ -113,8 +113,14 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - Analysis HTML UI
-  - Constraint input:
-    - make it work as output in addition to input
+  - Constraint editor:
+    - make it work as output in addition to input?
+      - Or just make a variant: known and not-at in one row. Unplaced on a second row (see pips idea for keyboard). And a third row for exhausted letters.
+    - Consider putting the 4 yellow letters in a 2x2 grid instead of one row? Always or only when there are 4 letters? What about when there are 1,2,3 letters?
+    - Consider auto-populating "not at" letters into unplaced? Limit unplaced to 5 letters? Not clear how much we want to auto-complete things vs allow temporarily inconsistent options.
+      - Have a normalize button? It might only show up when it would do something.
+    - Adjust the label for the Gray row? "Exhausted"?
+  - Refactor the Constraint Editor suggestions and the suggestion picker. Source differs. Clickable-ness differs. Source is the same. Fallback to all guess words differs. Blank state differs. But largely the same shape. And the editor shouldn't really have it hardcoded into it.
   - Decision tree
     - Show max moves?
     - Show tiny bar chart?
@@ -125,11 +131,10 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - Once game board is added, make it re-anchor when a game exists and a move is made
       - Also: optionally track the partial input for the game and use that instead of the best move for the current game state
   - Game board
-    - DONE Separately: word entry (user's keyboard)
-    - DONE Separately: select word from a short list of options
     - Separately: visualize constraints
       - A word has up to 5 letters. Could just show one row per letter found with green/yellow per square. Then a list of gray letters.
         - If built, make it possible to switch between col major and row major views.
+        - Not really liking this.
       - Or could show per slot: The letter known or else the letters it excludes. Still a separate list of gray letters.
       - Per-position possibility sets: may need to avoid moving the letters. Maybe two or three columns per position, with a dividing line to keep positions separate?
         - At three columns, could use a rotated keyboard layout.
@@ -142,7 +147,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
       - Maybe use dots in the corner of the key? E.g. 1 green per green, 1 yellow per yellow, and grey for "no more than that". Main question is the primary bg color and any outline.
       - Should it lock to the bottom of the screen? By default or optionally? Useful on mobile, not otherwise. So probably optionally on narrow screens. It would be too tall to lock on short screens. If it doesn't know the page size well enough, then don't do this. Maybe that means it needs to be set up programatically by passing a reference to the screen?
     - Test set up: constraints (instead of game board) + input
-    - DONE Separately: input constraints
   - Hard mode toggle
   - Other analysis components? E.g. compare across strategies
   - Pre-built composite components (LATER)
