@@ -115,8 +115,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 - Analysis HTML UI
   - Constraint input:
     - make it work as output in addition to input
-    - let it hide the suggestions? Programmatic only, or programmatic and user? I'm thinking default hide, with optional user toggle to show.
-    - info hints that explain what the card is doing
   - Decision tree
     - Show max moves?
     - Show tiny bar chart?

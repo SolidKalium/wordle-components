@@ -5,6 +5,7 @@ const ANSWERS_SET = new Set(ANSWERS);
 import { useConstraintStore } from '../stores/constraintStore.js';
 import { BrowserSuggestionWorker } from '../workers/BrowserSuggestionWorker.mjs';
 import styles from './ConstraintEditor.module.css';
+import { HintText } from './Tooltip.jsx';
 
 const GreenRow = forwardRef(function GreenRow({ onUp, onDown }, ref) {
   const green    = useConstraintStore(s => s.green);
@@ -211,7 +212,11 @@ function Suggestions() {
 
   return (
     <div className={styles.suggestions}>
-      <span className={styles.suggLabel}>Suggestions</span>
+      <span className={styles.suggLabel}>
+        <HintText tip="A sample of possible guesses that meet the constraints. If there aren't enough words in the answer list, additional words from the list of valid guesses are shown in gray.">
+          Suggestions
+        </HintText>
+      </span>
       <div className={styles.suggWords}>
         {loading && suggestions.length === 0
           ? <span className={styles.loading}>…</span>
@@ -259,7 +264,7 @@ export function ConstraintEditor({ defaultShowSuggestions = true, showSuggestion
         {[1, 2, 3, 4, 5].map(n => <span key={n} className={styles.posNum}>{n}</span>)}
       </div>
 
-      <span className={styles.label}>Green</span>
+      <span className={styles.label}>Known</span>
       <GreenRow
         ref={greenRef}
         onDown={col => focusRow(1, col)}
@@ -285,7 +290,15 @@ export function ConstraintEditor({ defaultShowSuggestions = true, showSuggestion
         }}
       />
 
-      <span className={styles.label}>Gray</span>
+      <span className={styles.label}>
+        <HintText tip={
+          <>
+            Letters where we know the maximum number of copies. This does not override
+            any <span style={{ color: '#538d4e' }}>known</span> or{' '}
+            <span style={{ color: '#b59f3b' }}>unplaced</span> letters.
+          </>
+        }>Gray</HintText>
+      </span>
       <input
         ref={grayRef}
         className={styles.textInput}

@@ -1,0 +1,23 @@
+.hintText {
+  display: inline-block;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: default;
+}
+
+.tip {
+  background: #1a1a1b;
+  border: 1px solid #3a3a3c;
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 400;
+  color: #b0b3b5;
+  white-space: normal;
+  max-width: 240px;
+  min-width: 160px;
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-transform: none;
+  z-index: 100;
+}
