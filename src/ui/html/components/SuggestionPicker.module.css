@@ -41,6 +41,10 @@
   color: #538d4e;
 }
 
+.stale {
+  opacity: 0.35;
+}
+
 .loading {
   font-size: 12px;
   color: #3a3a3c;
