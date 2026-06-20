@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useConstraintStore } from '../stores/constraintStore.js';
+import { useGameStore } from '../stores/gameStore.js';
 import styles from './ConstraintView.module.css';
 
 function Pips({ green = 0, yellow = 0 }) {
@@ -50,12 +51,8 @@ function UnplacedTile({ letter, greenPips, yellowPips, grayBar }) {
   );
 }
 
-export function ConstraintView() {
-  const green    = useConstraintStore(s => s.green);
-  const yellow   = useConstraintStore(s => s.yellow);
-  const unplaced = useConstraintStore(s => s.unplaced);
-  const gray     = useConstraintStore(s => s.gray);
-
+// Pure display component — accepts raw constraint arrays.
+export function ConstraintView({ green, yellow, unplaced, gray }) {
   const graySet     = useMemo(() => new Set(gray),     [gray]);
   const unplacedSet = useMemo(() => new Set(unplaced), [unplaced]);
 
@@ -106,4 +103,35 @@ export function ConstraintView() {
       )}
     </div>
   );
+}
+
+// Reads from the manual constraint store.
+export function ConstraintStoreView() {
+  const green    = useConstraintStore(s => s.green);
+  const yellow   = useConstraintStore(s => s.yellow);
+  const unplaced = useConstraintStore(s => s.unplaced);
+  const gray     = useConstraintStore(s => s.gray);
+  return <ConstraintView green={green} yellow={yellow} unplaced={unplaced} gray={gray} />;
+}
+
+// Derives display data from the game store's ConstraintState.
+// yellow[i] = letters excluded from that position that are still known to be in the word.
+// unplaced  = one entry per unplaced copy of each letter (minCounts minus placed greens).
+// gray      = eliminated letters (max count = 0).
+export function GameConstraintView() {
+  const cs = useGameStore(s => s.constraints);
+
+  const { green, yellow, unplaced, gray } = useMemo(() => {
+    const green   = cs.known;
+    const yellow  = cs.excluded.map(excl => [...excl].filter(l => !cs.eliminated.has(l)));
+    const unplaced = [];
+    for (const [letter, min] of cs.minCounts) {
+      const placed = cs.known.filter(k => k === letter).length;
+      for (let i = 0; i < min - placed; i++) unplaced.push(letter);
+    }
+    const gray = [...cs.eliminated];
+    return { green, yellow, unplaced, gray };
+  }, [cs]);
+
+  return <ConstraintView green={green} yellow={yellow} unplaced={unplaced} gray={gray} />;
 }

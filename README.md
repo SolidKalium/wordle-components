@@ -113,15 +113,11 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - Analysis HTML UI
-  - Constraint output:
-    - Warn when inconsistent?
   - Brute force list: fix count. fix "1 options" plural
   - Constraint editor:
-    - Consider putting the 4 yellow letters in a 2x2 grid instead of one row? Always or only when there are 4 letters? What about when there are 1,2,3 letters?
     - Consider auto-populating "not at" letters into unplaced? Limit unplaced to 5 letters? Not clear how much we want to auto-complete things vs allow temporarily inconsistent options.
-      - Have a normalize button? It might only show up when it would do something.
-      - Warning when state is inconsistent?
-    - Adjust the label for the Gray row? "Exhausted"?
+      - Have a normalize button? It might only show up when it would do something. What would it even do though? At most it could remove a letter from not-at when all copies are green and it's also gray.
+      - Warning when state is inconsistent? Treat as soft constraints: Known + unplaced should be less than 5 total. All not at should be known or unplaced.
   - Decision tree
     - Show max moves?
     - Show tiny bar chart?
@@ -147,7 +143,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - Separately: word entry (virtual keyboard)
       - Maybe use dots in the corner of the key? E.g. 1 green per green, 1 yellow per yellow, and grey for "no more than that". Main question is the primary bg color and any outline.
       - Should it lock to the bottom of the screen? By default or optionally? Useful on mobile, not otherwise. So probably optionally on narrow screens. It would be too tall to lock on short screens. If it doesn't know the page size well enough, then don't do this. Maybe that means it needs to be set up programatically by passing a reference to the screen?
-    - Test set up: constraints (instead of game board) + input
   - Hard mode toggle
   - Other analysis components? E.g. compare across strategies
   - Pre-built composite components (LATER)
