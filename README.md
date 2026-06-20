@@ -114,11 +114,13 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 ## TODO
 - Analysis HTML UI
   - Constraint output:
-    - known and not-at in one row. Unplaced on a second row (see pips idea for keyboard). And a third row for exhausted letters.
+    - Warn when inconsistent?
+  - Brute force list: fix count. fix "1 options" plural
   - Constraint editor:
     - Consider putting the 4 yellow letters in a 2x2 grid instead of one row? Always or only when there are 4 letters? What about when there are 1,2,3 letters?
     - Consider auto-populating "not at" letters into unplaced? Limit unplaced to 5 letters? Not clear how much we want to auto-complete things vs allow temporarily inconsistent options.
       - Have a normalize button? It might only show up when it would do something.
+      - Warning when state is inconsistent?
     - Adjust the label for the Gray row? "Exhausted"?
   - Decision tree
     - Show max moves?

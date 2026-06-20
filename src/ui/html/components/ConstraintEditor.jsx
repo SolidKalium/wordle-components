@@ -245,8 +245,9 @@ export function ConstraintEditor({ defaultShowSuggestions = true, showSuggestion
         ref={unplacedRef}
         className={styles.textInput}
         placeholder="e.g. AAE (two A's + one E)"
+        maxLength={5}
         value={unplaced.join('').toUpperCase()}
-        onChange={e => setUnplaced([...e.target.value.replace(/[^a-zA-Z]/g, '').toLowerCase()])}
+        onChange={e => setUnplaced([...e.target.value.replace(/[^a-zA-Z]/g, '').toLowerCase()].slice(0, 5))}
         onKeyDown={e => {
           if (e.key === 'ArrowUp')   { e.preventDefault(); focusRow(1, 0); }
           if (e.key === 'ArrowDown') { e.preventDefault(); focusRow(3, 0); }

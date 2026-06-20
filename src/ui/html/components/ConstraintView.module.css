@@ -1,0 +1,121 @@
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 20px;
+  width: fit-content;
+}
+
+.slots {
+  display: flex;
+  gap: 4px;
+}
+
+/* ── Tiles ── */
+
+.tile {
+  box-sizing: border-box;
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  user-select: none;
+  overflow: hidden;
+}
+
+.tileEmpty {
+  border: 2px solid #3a3a3c;
+}
+
+.tileKnown {
+  background: #538d4e;
+}
+
+.tileNotAt {
+  border: 2px solid #b59f3b;
+}
+
+.tileUnplaced {
+  background: #b59f3b;
+}
+
+/* ── Labels ── */
+
+.bigLabel {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+.notAtLabel {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #b59f3b;
+  text-transform: uppercase;
+}
+
+/* ── Pips ── */
+
+.pipsLeft {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  display: flex;
+  gap: 2px;
+}
+
+.pipsRight {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 2px;
+}
+
+.pip {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.pipsLeft .pip  { background: #b4f5b0; }
+.pipsRight .pip { background: #ffe97a; }
+
+/* ── Gray bar ── */
+
+.grayBar {
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  right: 0;
+  height: 22px;
+  background: #c0c4c6;
+  clip-path: path('M0,0 Q24,18 48,0 L48,22 L0,22 Z');
+}
+
+.tileUnplaced .grayBar { background: #d0d2d6; }
+
+/* ── Gray letter row ── */
+
+.grayRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.grayLetter {
+  font-family: ui-monospace, "SF Mono", "Fira Code", "Cascadia Code", "Courier New", monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: #818384;
+  letter-spacing: 0.08em;
+}

@@ -8,6 +8,7 @@ import { Card } from './components/Card.jsx';
 import { CliTerminal } from './components/CliTerminal.jsx';
 import { BruteForceList } from './components/BruteForceList.jsx';
 import { ConstraintEditor } from './components/ConstraintEditor.jsx';
+import { ConstraintView } from './components/ConstraintView.jsx';
 import { DistributionChart } from './components/DistributionChart.jsx';
 import { GameBoard } from './components/GameBoard.jsx';
 import { StrategySelector } from './components/StrategySelector.jsx';
@@ -73,6 +74,8 @@ function App() {
         <Card title="Constraint Explorer" collapsible>
           <div style={{ display: 'flex', alignItems: 'stretch' }}>
             <ConstraintEditor showSuggestionsToggle defaultShowSuggestions={false} />
+            <div style={{ width: 1, background: '#2c2c2e', flexShrink: 0 }} />
+            <ConstraintView />
             <div style={{ width: 1, background: '#2c2c2e', flexShrink: 0 }} />
             <BruteForceList wordsPerLine={5} />
           </div>
