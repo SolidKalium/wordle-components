@@ -113,11 +113,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - Analysis HTML UI
-  - Brute force list: fix count. fix "1 options" plural
-  - Constraint editor:
-    - Consider auto-populating "not at" letters into unplaced? Limit unplaced to 5 letters? Not clear how much we want to auto-complete things vs allow temporarily inconsistent options.
-      - Have a normalize button? It might only show up when it would do something. What would it even do though? At most it could remove a letter from not-at when all copies are green and it's also gray.
-      - Warning when state is inconsistent? Treat as soft constraints: Known + unplaced should be less than 5 total. All not at should be known or unplaced.
+  - Brute force list: fix count. fix "1 options" plural. Fix use of words that don't use all copies of letters where at least one copy is already gree (e.g. known ab___, unplaced bcc. 5 letters known to be in the word, but it ignores the unplaced b).
   - Decision tree
     - Show max moves?
     - Show tiny bar chart?
@@ -156,6 +152,8 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - Determine how the average is calculated, document. (does it include words past 6 guesses? Coerce them to 6 or 7?)
   - Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.
     - Add descriptions for strategies?
+  - Constraint editor:
+    - Unify game constraints and independent constraints?
   - Card
     - Highlight when channel active elsewhere? LATER
     - Consider additional themes? E.g. move the distinct header/content colors of the current chart demo card into its own color scheme

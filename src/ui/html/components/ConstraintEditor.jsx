@@ -196,12 +196,18 @@ function Suggestions() {
 }
 
 export function ConstraintEditor({ defaultShowSuggestions = true, showSuggestionsToggle = false }) {
+  const green       = useConstraintStore(s => s.green);
+  const yellow      = useConstraintStore(s => s.yellow);
   const unplaced    = useConstraintStore(s => s.unplaced);
   const gray        = useConstraintStore(s => s.gray);
   const remaining   = useConstraintStore(s => s.remainingWords.length);
   const setUnplaced = useConstraintStore(s => s.setUnplaced);
   const setGray     = useConstraintStore(s => s.setGray);
   const clear       = useConstraintStore(s => s.clear);
+
+  const knownCount       = green.filter(Boolean).length;
+  const overcountWarning = knownCount + unplaced.length > 5;
+  const orphanNotAt      = [...new Set(yellow.flat())].filter(l => !green.includes(l) && !unplaced.includes(l));
 
   const [showSuggestions, setShowSuggestions] = useState(defaultShowSuggestions);
 
@@ -285,6 +291,24 @@ export function ConstraintEditor({ defaultShowSuggestions = true, showSuggestion
           <button className={styles.clearBtn} onClick={clear}>Clear</button>
         </div>
         {showSuggestions && <Suggestions />}
+        {(overcountWarning || orphanNotAt.length > 0) && (
+          <div className={styles.warnings}>
+            {overcountWarning && (
+              <p className={styles.warning}>
+                {knownCount + unplaced.length} confirmed letters — a word only has 5
+              </p>
+            )}
+            {orphanNotAt.map(l => {
+              const posCount  = yellow.filter(arr => arr.includes(l)).length;
+              const posPhrase = posCount === 1 ? 'one position' : 'some positions';
+              return (
+                <p key={l} className={styles.warning}>
+                  {l.toUpperCase()} is <em>not at</em> {posPhrase} but doesn't also have a <em>known</em> position or designation as <em>unplaced</em>
+                </p>
+              );
+            })}
+          </div>
+        )}
       </div>
 
     </div>
