@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import { BruteForceGenerator } from '../../../lib/bruteForce.mjs';
-import { useConstraintStore } from '../stores/constraintStore.js';
+import { useConstraints } from '../stores/useConstraints.js';
 import styles from './BruteForceList.module.css';
 
 function formatApprox(n) {
@@ -41,7 +41,7 @@ const PANEL_PADDING_PX = 36;
 const SCROLLBAR_GUTTER_PX = 12;
 
 export function BruteForceList({ wordsPerLine = 3 }) {
-  const constraints = useConstraintStore(s => s.constraints);
+  const constraints = useConstraints();
 
   const [rows,      setRows]      = useState([]);
   const [approx,    setApprox]    = useState(0);

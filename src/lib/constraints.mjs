@@ -120,6 +120,13 @@ export class ConstraintState {
   /**
    * Auto-promote: if a letter is excluded from all but one unknown position,
    * and minCounts requires it, lock it into the remaining slot.
+   *
+   * Auto-exhaust: if a present letter has no remaining open position left to
+   * occupy, no further copies of it can appear anywhere. Its effective max is
+   * exactly its known count, and the per-position exclusions that led to this
+   * conclusion become redundant — clearing them is what makes two raw inputs
+   * encoding the same knowledge (explicit max vs. excluded-everywhere) converge
+   * on the same normalized state.
    */
   _normalize() {
     for (const [letter, minCount] of this.minCounts) {
@@ -146,6 +153,28 @@ export class ConstraintState {
         for (const i of candidates) {
           this.known[i] = letter;
         }
+      }
+    }
+
+    const present = new Set(this.known.filter(Boolean));
+    for (const [letter, minCount] of this.minCounts) {
+      if (minCount > 0) present.add(letter);
+    }
+
+    for (const letter of present) {
+      if (this.maxCounts.has(letter)) continue;
+
+      let knownCount = 0;
+      let openPosition = false;
+      for (let i = 0; i < WORD_LENGTH; i++) {
+        if (this.known[i] === letter) knownCount++;
+        else if (this.known[i] === null && !this.excluded[i].has(letter)) openPosition = true;
+      }
+      if (openPosition) continue;
+
+      this.maxCounts.set(letter, knownCount);
+      for (let i = 0; i < WORD_LENGTH; i++) {
+        if (this.known[i] === null) this.excluded[i].delete(letter);
       }
     }
   }

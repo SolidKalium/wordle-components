@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
-import { useConstraintStore } from '../stores/constraintStore.js';
-import { useGameStore } from '../stores/gameStore.js';
+import { useConstraints } from '../stores/useConstraints.js';
 import styles from './ConstraintView.module.css';
 
 function Pips({ green = 0, yellow = 0 }) {
@@ -105,21 +104,13 @@ export function ConstraintView({ green, yellow, unplaced, gray }) {
   );
 }
 
-// Reads from the manual constraint store.
-export function ConstraintStoreView() {
-  const green    = useConstraintStore(s => s.green);
-  const yellow   = useConstraintStore(s => s.yellow);
-  const unplaced = useConstraintStore(s => s.unplaced);
-  const gray     = useConstraintStore(s => s.gray);
-  return <ConstraintView green={green} yellow={yellow} unplaced={unplaced} gray={gray} />;
-}
-
-// Derives display data from the game store's ConstraintState.
+// Connects to whichever constraint source is in context — a manual
+// constraint store if present, otherwise a game's accumulated constraints.
 // yellow[i] = letters excluded from that position that are still known to be in the word.
 // unplaced  = one entry per unplaced copy of each letter (minCounts minus placed greens).
 // gray      = eliminated letters (max count = 0).
-export function GameConstraintView() {
-  const cs = useGameStore(s => s.constraints);
+export function ConstraintsView() {
+  const cs = useConstraints();
 
   const { green, yellow, unplaced, gray } = useMemo(() => {
     const green   = cs.known;
