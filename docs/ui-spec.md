@@ -10,57 +10,37 @@ The Wordle engine has three UI contexts:
 
 The core Wordle library (game engine, strategies, analysis) has no UI awareness. All reactivity lives in a wrapper layer at the UI boundary.
 
+## Scope
+
+This doc is for aligning Claude and other informed editors on how the UI layer is put together — store roles, component tiers, the prepared page's shape. It isn't end-user API documentation: it doesn't enumerate every field or method a store exposes (read the store source for that), and it isn't a guide for someone consuming this as a library. Consumption-facing docs will likely live in a separate file once that surface stabilizes.
+
+Contexts 2 and 3 above (AI artifacts, library use) are the long-term goal but have no implementation yet — there's no composite layer and no artifact-generation entry point. Everything built so far serves context 1.
+
 ---
 
-## Reactive Stores (Channels)
+## Reactive Stores
 
-There are two named stores. Components subscribe to whichever stores they need (zero, one, or both).
+Stores are zustand stores provided via React context. The core library classes (`Game`, `Strategy`, `ConstraintState`, etc.) stay pure — no events, no subscriptions, no UI imports. Stores are the only place that wraps them for reactivity.
 
 ### GameStore
 
-Wraps a `Game` instance. Proxies its fields and methods. The `Game` inside is private — components never hold a direct reference to the underlying `Game` object.
-
-**Exposed state (read):**
-- `guesses` — array of `{ word, pattern }` (the move history)
-- `constraints` — the accumulated `ConstraintState`
-- `isOver`, `solved`, `remaining` — derived game status
-- `hardMode` — current hard mode setting
-- `wordList` — the active word list
-- `answer` — the answer (if in known mode, and if the game is over or the component has reveal permission)
-
-**Mutations (write, each notifies relevant subscribers):**
-- `makeMove(word, pattern?)` — delegates to `Game.makeMove`, notifies `guesses` and `constraints` subscribers
-- `undo()` — restores a snapshot, notifies `guesses` and `constraints` subscribers. Requires snapshot support in `Game` (store `ConstraintState.clone()` before each move, truncate guess history on undo).
-- `replace(newGame)` — swaps the underlying `Game` instance, notifies all subscribers (everything potentially changed)
-- `setHardMode(bool)` — notifies `hardMode` subscribers
-
-**Subscription model:**
-- Components subscribe by field name or field group
-- Only subscribers to changed fields re-render
-- In React, this maps to `useSyncExternalStore` with a selector, or a zustand-style store with slices
-- The store does not use a custom event system; it leverages React's existing selective subscription patterns
+Wraps a `Game` instance and re-derives a snapshot (including a fresh `ConstraintState`) on every move. Owns the single source of truth for an in-progress or completed game: guess history, derived constraints, remaining candidate words, and game status. Used wherever a card is playing or replaying an actual game (`GameBoard`, `WordInput`, `SuggestionPicker`).
 
 ### StrategyStore
 
-Wraps the current strategy configuration.
+Wraps strategy selection and simulation. Holds the chosen strategy/filter id and the results of running that strategy across the answer set — delegated to a background worker, with results cached per strategy+filter so repeat selections don't re-simulate. Each card that wants its own independent strategy comparison creates its own `StrategyStore` instance.
 
-**Exposed state (read):**
-- `strategy` — the active `Strategy` instance
-- `strategyName` — display name
-- `filters` — array of active `Filter` instances
-- `config` — strategy-specific parameters (if any)
+### ConstraintStore
 
-**Mutations (write):**
-- `setStrategy(name, config?)` — instantiate a new strategy, notifies `strategy` subscribers
-- `addFilter(filter)` / `removeFilter(index)` — modify filter list, notifies `filters` subscribers
-- `setConfig(params)` — update parameters, notifies `config` subscribers
+Holds the manual constraint editor's raw input (the editable `green`/`yellow`/`unplaced`/`gray` arrays a person types into) plus the derived `ConstraintState` and matching word list. Unlike `GameStore`, there's no underlying `Game` — this is for exploring a constraint set that didn't come from playing a game move-by-move. The raw arrays are private editor-buffer state; nothing outside the editor should read them directly.
+
+`useConstraints()` is the shared read path for anything that just wants the current constraints, regardless of source: it prefers a `ConstraintStore` from context, falling back to the `GameStore`'s constraints if no constraint store is present. `ConstraintsView` and `BruteForceList` both go through it, which is why they work unmodified in either the game cards or the Constraint Explorer card.
 
 ### Store Rules
 
-- Stores are the single source of truth. Components always read through the store, never cache the underlying object.
-- Any component can read or write any field on a store it subscribes to. There is no designated "owner" of a field. If two components both allow toggling hard mode, they both write `gameStore.setHardMode()` and both react to the change.
-- `replace()` exists on both stores for full-object swaps (new game, different strategy). All subscribers are notified.
-- The core library classes (`Game`, `Strategy`, `ConstraintState`, etc.) remain pure — no events, no subscriptions, no UI imports. The stores only exist in the UI import graph.
+- Stores are the single source of truth. Components read through the store, never cache the underlying object.
+- No designated "owner" of a field — any component with access to a store can read or write any field it exposes.
+- Prefer the derived `constraints` (a `ConstraintState`) over a store's raw input fields when consuming, not producing, constraint data. Raw fields are editor-internal.
 
 ---
 
@@ -68,89 +48,40 @@ Wraps the current strategy configuration.
 
 ### Tier 1: Primitive Components
 
-Single-responsibility. Declare which stores they subscribe to. Examples:
+Single-responsibility, each declaring which store(s) it subscribes to. Not exhaustive — illustrative of current shape:
 
 | Component | Reads | Writes | Purpose |
 | --- | --- | --- | --- |
-| `GameBoard` | game: guesses | game: makeMove | Renders the guess grid, accepts input |
-| `ConstraintDisplay` | game: constraints | — | Shows known/excluded/eliminated letters |
-| `RemainingWords` | game: constraints, wordList | — | Lists or counts words matching constraints |
-| `MoveScorer` | game: constraints, wordList; strategy: strategy, filters | — | Shows top-k moves with scores |
-| `PartitionPreview` | game: constraints, wordList | — | Shows partition groups for a candidate guess |
-| `DistributionChart` | (accepts results data as prop) | — | Bar chart of guesses-to-solve distribution |
-| `DecisionTreeView` | strategy: strategy; game: wordList | — | Navigable tree for deterministic strategies |
-| `StrategySelector` | strategy: strategyName | strategy: setStrategy | Dropdown or radio for strategy choice |
-| `FilterControls` | strategy: filters | strategy: addFilter, removeFilter | Toggle/configure filters |
-| `HardModeToggle` | game: hardMode | game: setHardMode | Single toggle |
-
-This list is not exhaustive. Components are added as needed. These might not all be built as described.
+| `GameBoard` | game: guesses, isOver, solved, answer | game: newGame | Renders guess history, starts a new game |
+| `WordInput` | game: isOver, constraints, answer | game: makeMove | Text entry for the next guess |
+| `SuggestionPicker` | game: remainingWords, isOver | game: makeMove | Suggests/plays a next move from remaining words |
+| `ConstraintsView` | useConstraints() (constraint store, else game) | — | Renders known/not-at/unplaced/gray letters |
+| `ConstraintEditor` | constraint store (raw fields + derived) | constraint store setters | Manual constraint entry UI |
+| `BruteForceList` | useConstraints() | — | Lists/paginates words matching current constraints |
+| `StrategySelector` | strategy: strategyId, filterId | strategy: setStrategy, setFilter | Strategy/filter choice |
+| `DistributionChart` | strategy: simulationSummary, simulationPending, simulationProgress | — | Bar chart of guesses-to-solve distribution |
+| `TreeNavigator` | strategy: treeRoot, simulationPending, simulationProgress | — | Navigable decision tree for deterministic strategies |
+| `CliTerminal` | (owns its own session, not store-backed) | — | Terminal-style play/inspect interface |
 
 ### Tier 2: Composite Components
 
-Pre-wired groups of primitives. Operate in two modes:
-
-- **Standalone mode:** composite creates its own internal stores. Used for AI artifacts and isolated demos.
-- **Shared mode:** composite accepts externally provided stores. Used on the prepared page where multiple composites share state.
-
-Mode selection: if stores are passed as props, use them (shared). Otherwise, create internal ones (standalone).
-
-**Composites:**
-
-**`GameExplorer`**
-Contains: `GameBoard` + `ConstraintDisplay` + `RemainingWords`
-Stores: game
-Use: play a game or enter an existing game state, see constraints and remaining words update live.
-
-**`StrategyCompare`**
-Contains: two `MoveScorer` instances + `DistributionChart` for each
-Stores: game (shared), two independent strategy stores (internal)
-Use: compare two strategies side by side on the same game state.
-
-**`DecisionTreeExplorer`**
-Contains: `StrategySelector` + `DecisionTreeView`
-Stores: game, strategy
-Use: pick a strategy and navigate its decision tree.
-
-**`MoveAnalyzer`**
-Contains: `MoveScorer` + `PartitionPreview`
-Stores: game, strategy
-Use: see top moves and drill into what a specific guess would do.
-
-Additional composites are defined as needed. The AI is given a catalog of available composites and uses them by name with optional initial configuration.
+Not built yet. The intent is pre-wired groups of primitives that can run standalone (own internal stores, for AI artifacts/demos) or shared (externally provided stores, for the prepared page). Today the prepared page wires Tier 1 components directly into `Card`s in `main.jsx` instead — there's no composite abstraction in between. Worth revisiting once enough cards share the same component groupings to justify naming them (candidates from the original draft: a game+constraints+suggestions bundle, a strategy-vs-strategy comparison, a strategy+tree explorer).
 
 ### Tier 3: Cards
 
-A card is a visual container. It wraps one component or composite and adds:
-
-- A header/title
-- Optional collapse toggle
-- Connection highlighting (see below)
-
-Cards do not introspect their contents beyond reading which stores the inner component subscribes to.
+`Card` is the visual container (title, optional collapse) — implemented and matches this role. Cards do not introspect their contents.
 
 ---
 
 ## Connection Highlighting
 
-When a user is interacting with a card (has focus):
-
-1. Determine which stores that card's component subscribes to.
-2. Find all other cards whose components subscribe to any of the same stores.
-3. Apply a subtle visual indicator (border color change, faint glow, etc.) to those cards.
-
-This is purely derived from store membership. No explicit wiring or configuration needed. Implementation is deferred until the basic component system works.
+Idea: while a card has focus, give a subtle visual cue to other cards that share a store with it, purely derived from store membership. Not implemented; low priority for now.
 
 ---
 
 ## Prepared Interactive Page Layout
 
-The prepared page creates stores at the top level and passes them to composites in shared mode. Suggested initial layout (adjustable):
-
-- **Top row:** `GameExplorer` (play or input a game state)
-- **Middle row:** `MoveAnalyzer` (top moves + partition drill-down) alongside `DecisionTreeExplorer`
-- **Bottom row:** `StrategyCompare` (side-by-side distributions) or a full simulation results panel
-
-Strategy and filter controls live in a sidebar, settings panel, or inline within composites depending on screen layout. Some settings may appear as a gear icon with a popover; the selected strategy name should always be visible.
+Current `main.jsx` cards, top to bottom: a strategy-distribution gallery (one chart per strategy, own store each), a Strategy Explorer (selector + chart), a Decision Tree explorer, two Game cards sharing one `GameStore` but rendering constraints differently (history view vs. constraint view), a Constraint Explorer (editor + viewer + brute-force list sharing one `ConstraintStore`), and a Terminal card. Layout is ad hoc rather than following a fixed top/middle/bottom plan — adjust freely as cards are added.
 
 ---
 

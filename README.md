@@ -113,7 +113,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - Analysis HTML UI
-  - Update UI docs. Mention constraint source precedence: constraintStore, then gameStore.constraint.
   - Brute force list: fix count
     - We should fix the brute force list's count being off. I believe it currently ignores not-at constraints while abiding green and gray tiles. I can't recall if it abides min and max counts for unplaced tiles.
     - The iteration of available words has no known defects; this is just the summary count that initially allowed to be a rough caculation.
