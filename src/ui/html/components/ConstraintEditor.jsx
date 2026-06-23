@@ -205,6 +205,9 @@ export function ConstraintEditor({ defaultShowSuggestions = true, showSuggestion
   const setGray     = useConstraintStore(s => s.setGray);
   const clear       = useConstraintStore(s => s.clear);
 
+  // Both checks are pure functions of the normalized ConstraintState (minCounts sum,
+  // and excluded-but-unrequired letters respectively) — could move to getters there
+  // if they are ever needed in additional places.
   const knownCount       = green.filter(Boolean).length;
   const overcountWarning = knownCount + unplaced.length > 5;
   const orphanNotAt      = [...new Set(yellow.flat())].filter(l => !green.includes(l) && !unplaced.includes(l));
