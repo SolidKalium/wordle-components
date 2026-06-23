@@ -20,12 +20,12 @@ const ALPHABET = 'abcdefghijklmnopqrstuvwxyz'.split('');
 export class BruteForceGenerator {
   /** @param {import('./constraints.mjs').ConstraintState} constraints */
   constructor(constraints) {
-    const elim = constraints.eliminated; // letters with maxCounts === 0
-
     // Valid letters at each position, sorted alphabetically.
     this.posLetters = Array.from({ length: 5 }, (_, i) => {
       if (constraints.known[i]) return [constraints.known[i]];
-      return ALPHABET.filter(ch => !elim.has(ch) && !constraints.excluded[i].has(ch));
+      // isExhausted, not eliminated: a present letter with no room for more
+      // copies must also be barred from every remaining open position.
+      return ALPHABET.filter(ch => !constraints.isExhausted(ch) && !constraints.excluded[i].has(ch));
     });
 
     // Fast letter-index lookup per position.

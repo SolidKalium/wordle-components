@@ -42,6 +42,15 @@ export class ConstraintState {
   }
 
   /**
+   * Letters with a known upper bound — the "Gray" set. Superset of `eliminated`:
+   * also includes present letters whose count is capped (e.g. exhausted ones),
+   * not just letters confirmed absent.
+   */
+  get gray() {
+    return new Set(this.maxCounts.keys());
+  }
+
+  /**
    * Returns true when every copy of `letter` is already at a confirmed position
    * (i.e. maxCounts is set and all copies are accounted for by `known`).
    * Distinct from `eliminated`: eliminated means the letter isn't in the word at
@@ -162,19 +171,28 @@ export class ConstraintState {
     }
 
     for (const letter of present) {
-      if (this.maxCounts.has(letter)) continue;
-
       let knownCount = 0;
-      let openPosition = false;
       for (let i = 0; i < WORD_LENGTH; i++) {
         if (this.known[i] === letter) knownCount++;
-        else if (this.known[i] === null && !this.excluded[i].has(letter)) openPosition = true;
       }
-      if (openPosition) continue;
 
-      this.maxCounts.set(letter, knownCount);
-      for (let i = 0; i < WORD_LENGTH; i++) {
-        if (this.known[i] === null) this.excluded[i].delete(letter);
+      if (!this.maxCounts.has(letter)) {
+        let openPosition = false;
+        for (let i = 0; i < WORD_LENGTH; i++) {
+          if (this.known[i] === letter) continue;
+          if (this.known[i] === null && !this.excluded[i].has(letter)) { openPosition = true; break; }
+        }
+        if (!openPosition) this.maxCounts.set(letter, knownCount);
+      }
+
+      // Once exhausted — whether via an explicit max (e.g. Gray) or the
+      // inference above — per-position exclusions for this letter are
+      // redundant; clearing them is what makes equivalent raw inputs converge.
+      const max = this.maxCounts.get(letter);
+      if (max !== undefined && max <= knownCount) {
+        for (let i = 0; i < WORD_LENGTH; i++) {
+          if (this.known[i] === null) this.excluded[i].delete(letter);
+        }
       }
     }
   }

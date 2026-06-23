@@ -108,7 +108,7 @@ export function ConstraintView({ green, yellow, unplaced, gray }) {
 // constraint store if present, otherwise a game's accumulated constraints.
 // yellow[i] = letters excluded from that position that are still known to be in the word.
 // unplaced  = one entry per unplaced copy of each letter (minCounts minus placed greens).
-// gray      = eliminated letters (max count = 0).
+// gray      = cs.gray — letters with a known max (eliminated or exhausted).
 export function ConstraintsView() {
   const cs = useConstraints();
 
@@ -120,7 +120,7 @@ export function ConstraintsView() {
       const placed = cs.known.filter(k => k === letter).length;
       for (let i = 0; i < min - placed; i++) unplaced.push(letter);
     }
-    const gray = [...cs.eliminated];
+    const gray = [...cs.gray];
     return { green, yellow, unplaced, gray };
   }, [cs]);
 
