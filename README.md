@@ -117,7 +117,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - We should fix the brute force list's count being off. I believe it currently ignores not-at constraints while abiding green and gray tiles. I can't recall if it abides min and max counts for unplaced tiles.
     - The iteration of available words has no known defects; this is just the summary count that initially allowed to be a rough caculation.
     - Earlier, I suggested that we could just use backtracking to iterate through the options. The last move has a finite set of letter options. And we could apply combinatorics to calculate the total options on just the last two spots.
-    - We could also keep optimized versions when some cases aren't present at all. such as no max-counts or no-not-at tiles remaining. Those cases could even be built into the recursion, with the final tile with a not-at rule being precalculated. We could even build an alternate representation where we reorder to put the tiles with not-at first and drop any known tiles completely.
+    - We could also keep optimized versions when some cases aren't present at all. such as no max-counts or no-not-at tiles remaining. Those cases could even be built into the recursion, with the final tile with a not-at rule being precalculated. We could even build an alternate representation where we reorder to put the tiles with not-at first and drop any known tiles completely. If the number of unplaced letters is equal to the number of remaining places, then the calculation is simplified.
   - Decision tree
     - Show max moves?
     - Show tiny bar chart?
@@ -147,17 +147,13 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
   - Other analysis components? E.g. compare across strategies
   - Pre-built composite components (LATER)
   - Brute force options list
-    - Explanation: Shows all possible inputs that fit the constraints. Roughly: "I can't think of any words that work with these 3 letters, so just show me the brute force options so I can read through them and hopefully see a real word or two."
-    - Work with normal game boards
     - Maintain rough scroll position on constraint update
-    - Improve count estimate?
     - Scrollbar position should at least roughly track location in the overall scrolling and it should be possible to drag it to the new area.
+    - When connected to a game, while the player is typing a guess: treats entered letters, other than ones that disagree with the constraints, as green. Or maybe treat all typed letters as green, even if they disagree with constraints? LATER
   - Distribution Chart
     - Determine how the average is calculated, document. (does it include words past 6 guesses? Coerce them to 6 or 7?)
   - Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.
     - Add descriptions for strategies?
-  - Constraint editor:
-    - Unify game constraints and independent constraints?
   - Card
     - Highlight when channel active elsewhere? LATER
     - Consider additional themes? E.g. move the distinct header/content colors of the current chart demo card into its own color scheme
