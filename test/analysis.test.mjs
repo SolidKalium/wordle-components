@@ -33,7 +33,7 @@ describe('summarize', () => {
     expect(summary.solvedCount).toBe(0);
     expect(summary.failedCount).toBe(2);
     expect(summary.solveRate).toBe(0);
-    expect(Number.isNaN(summary.mean)).toBe(true);
+    expect(Number.isNaN(summary.meanSolved)).toBe(true);
     expect(summary.failures).toHaveLength(2);
   });
 
@@ -53,7 +53,7 @@ describe('summarize', () => {
       solved('b', 'x', 'y', 'b'),    // 3 turns
       solved('c', 'x', 'y', 'z', 'c'), // 4 turns
     ]);
-    expect(summary.mean).toBeCloseTo((2 + 3 + 4) / 3);
+    expect(summary.meanSolved).toBeCloseTo((2 + 3 + 4) / 3);
   });
 
   it('computes min and max from solved games only', () => {

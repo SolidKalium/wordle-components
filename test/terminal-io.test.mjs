@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { GREEN, YELLOW, GREY } from '../src/lib/core.mjs';
 import { TerminalIO } from '../src/ui/cli/TerminalIO.mjs';
 import { ConstraintState } from '../src/lib/constraints.mjs';
+import { computePendingSlots } from '../src/lib/pendingWord.mjs';
 
 // Minimal concrete subclass for capturing output.
 class MemoryTerminal extends TerminalIO {
@@ -206,21 +207,19 @@ describe('_pendingTileRow — pending input colouring', () => {
   });
 });
 
-// _computePending returns pool as a structured array of {kind, letter} objects
+// computePendingSlots returns pool as a structured array of {kind, letter} objects
 // so both CLI (ANSI) and HTML renderers can consume the same computation.
-describe('_computePending pool', () => {
-  const t = new MemoryTerminal();
-
+describe('computePendingSlots pool', () => {
   it('empty pool when no constraints', () => {
     const cs = makeConstraints();
-    expect(t._computePending('', cs).pool).toEqual([]);
-    expect(t._computePending('crane', cs).pool).toEqual([]);
+    expect(computePendingSlots('', cs).pool).toEqual([]);
+    expect(computePendingSlots('crane', cs).pool).toEqual([]);
   });
 
   it('unplaced green letters appear in pool as green-unplaced', () => {
     // After SOUTH: O confirmed at pos 1, T at pos 3, H at pos 4.
     const cs = makeConstraints([['south', [GREY, GREEN, GREY, GREEN, GREEN]]]);
-    const { pool } = t._computePending('', cs);
+    const { pool } = computePendingSlots('', cs);
     expect(pool).toContainEqual({ kind: 'green-unplaced', letter: 'o' });
     expect(pool).toContainEqual({ kind: 'green-unplaced', letter: 't' });
     expect(pool).toContainEqual({ kind: 'green-unplaced', letter: 'h' });
@@ -228,7 +227,7 @@ describe('_computePending pool', () => {
 
   it('pool shrinks as player fills confirmed positions', () => {
     const cs = makeConstraints([['south', [GREY, GREEN, GREY, GREEN, GREEN]]]);
-    const { pool } = t._computePending('xo', cs); // O placed at pos 1
+    const { pool } = computePendingSlots('xo', cs); // O placed at pos 1
     expect(pool.some(p => p.letter === 'o')).toBe(false);
     expect(pool).toContainEqual({ kind: 'green-unplaced', letter: 't' });
     expect(pool).toContainEqual({ kind: 'green-unplaced', letter: 'h' });
@@ -236,27 +235,27 @@ describe('_computePending pool', () => {
 
   it('pool is empty when all confirmed positions are filled', () => {
     const cs = makeConstraints([['south', [GREY, GREEN, GREY, GREEN, GREEN]]]);
-    const { pool } = t._computePending('month', cs);
+    const { pool } = computePendingSlots('month', cs);
     expect(pool).toEqual([]);
   });
 
   it('yellow-fg pool letters appear as yellow-unplaced when not yet placed', () => {
     // C yellow at pos 0 → minCounts['c']=1, knownCount['c']=0. Pool=1.
     const cs = makeConstraints([['crane', [YELLOW, GREY, GREY, GREY, GREY]]]);
-    const { pool } = t._computePending('xxxxx', cs);
+    const { pool } = computePendingSlots('xxxxx', cs);
     expect(pool).toContainEqual({ kind: 'yellow-unplaced', letter: 'c' });
   });
 
   it('yellow-fg pool letter removed when placed as yellow-fg', () => {
     const cs = makeConstraints([['crane', [YELLOW, GREY, GREY, GREY, GREY]]]);
-    const { pool } = t._computePending('xcxxx', cs);
+    const { pool } = computePendingSlots('xcxxx', cs);
     expect(pool).toEqual([]);
   });
 
   it('yellow-tile does not consume pool — letter stays in pool', () => {
     // C at excluded pos 0 → yellow-tile, but pool must still show C.
     const cs = makeConstraints([['crane', [YELLOW, GREY, GREY, GREY, GREY]]]);
-    const { pool } = t._computePending('cxxxx', cs);
+    const { pool } = computePendingSlots('cxxxx', cs);
     expect(pool).toContainEqual({ kind: 'yellow-unplaced', letter: 'c' });
   });
 });
