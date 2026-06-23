@@ -113,7 +113,8 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - Analysis HTML UI
-  - Brute force list: fix count. fix "1 options" plural. Fix use of words that don't use all copies of letters where at least one copy is already gree (e.g. known ab___, unplaced bcc. 5 letters known to be in the word, but it ignores the unplaced b).
+  - Brute force list: fix count
+  - Constraint editor: fix non-normalization of values. The inputs and output were supposed to be separate, with the output being a normalized constraint. Maybe we need to distinguish a "game constraint" from a "raw constraint", at least in terms of input, but they should produce the same output. And that includes an example like __ate with t not in either of the first two spots causing the t to promoted to "gray" automatically and removed from "not at". But the constraint viewer doesn't show that normalization.
   - Decision tree
     - Show max moves?
     - Show tiny bar chart?

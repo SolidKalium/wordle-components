@@ -198,7 +198,10 @@ export class ConstraintState {
     const c = new ConstraintState();
 
     for (let i = 0; i < WORD_LENGTH; i++) {
-      if (green[i]) c.known[i] = green[i];
+      if (green[i]) {
+        c.known[i] = green[i];
+        c.minCounts.set(green[i], (c.minCounts.get(green[i]) ?? 0) + 1);
+      }
       for (const ch of yellow[i]) c.excluded[i].add(ch);
     }
 
@@ -207,9 +210,7 @@ export class ConstraintState {
     }
 
     for (const ch of gray) {
-      const knownCount   = c.known.filter(k => k === ch).length;
-      const unplacedCount = c.minCounts.get(ch) ?? 0;
-      c.maxCounts.set(ch, knownCount + unplacedCount);
+      c.maxCounts.set(ch, c.minCounts.get(ch) ?? 0);
     }
 
     c._normalize();

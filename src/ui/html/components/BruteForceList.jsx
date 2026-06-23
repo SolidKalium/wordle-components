@@ -99,7 +99,7 @@ export function BruteForceList({ wordsPerLine = 3 }) {
           EmptyPlaceholder: exhausted ? NoOptions : undefined,
         }}
       />
-      <span className={styles.count}>{formatApprox(approx)} options</span>
+      <span className={styles.count}>{formatApprox(approx)} {approx === 1 ? 'option' : 'options'}</span>
     </div>
   );
 }
