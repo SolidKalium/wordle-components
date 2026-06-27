@@ -4,10 +4,10 @@ import { BruteForceGenerator } from '../../../lib/bruteForce.mjs';
 import { useConstraints } from '../stores/useConstraints.js';
 import styles from './BruteForceList.module.css';
 
-function formatApprox(n) {
-  if (n >= 1_000_000) return `~${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`;
-  if (n >= 10_000)    return `~${Math.round(n / 1_000)}k`;
-  if (n >= 1_000)     return `~${(n / 1_000).toFixed(1)}k`;
+function formatCount(n) {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`;
+  if (n >= 10_000)    return `${Math.round(n / 1_000)}k`;
+  if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}k`;
   return `${n}`;
 }
 
@@ -44,7 +44,7 @@ export function BruteForceList({ wordsPerLine = 3 }) {
   const constraints = useConstraints();
 
   const [rows,      setRows]      = useState([]);
-  const [approx,    setApprox]    = useState(0);
+  const [total,     setTotal]     = useState(0);
   const [exhausted, setExhausted] = useState(false);
 
   const genRef  = useRef(null);
@@ -65,7 +65,7 @@ export function BruteForceList({ wordsPerLine = 3 }) {
     const gen = new BruteForceGenerator(constraints);
     genRef.current  = gen;
     nextRef.current = gen.first();
-    setApprox(gen.approxTotal());
+    setTotal(gen.exactTotal());
 
     if (nextRef.current === null) {
       setRows([]);
@@ -99,7 +99,7 @@ export function BruteForceList({ wordsPerLine = 3 }) {
           EmptyPlaceholder: exhausted ? NoOptions : undefined,
         }}
       />
-      <span className={styles.count}>{formatApprox(approx)} {approx === 1 ? 'option' : 'options'}</span>
+      <span className={styles.count}>{formatCount(total)} {total === 1 ? 'option' : 'options'}</span>
     </div>
   );
 }

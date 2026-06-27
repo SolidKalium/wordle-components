@@ -37,11 +37,97 @@ export class BruteForceGenerator {
 
     this.minCounts = constraints.minCounts;
     this.maxCounts = constraints.maxCounts;
+
+    // Letters whose running count must be tracked while walking positions — only
+    // letters with a positive minCount, since every other letter is "free": picking
+    // any one of them affects no constraint, so they're interchangeable for both
+    // counting and indexing. Bounded by 5 distinct letters (5 positions total).
+    this._trackedLetters = [...this.minCounts.keys()].filter(ch => this.minCounts.get(ch) > 0);
+    this._posTracked = this.posLetters.map(ls => ls.filter(ch => this._trackedLetters.includes(ch)));
+    this._posFreeCount = this.posLetters.map((ls, i) => ls.length - this._posTracked[i].length);
+
+    this._completionsMemo = new Map();
   }
 
-  /** Upper-bound estimate of the space size (Cartesian product before count filtering). */
-  approxTotal() {
-    return this.posLetters.reduce((p, ls) => p * ls.length, 1);
+  /** Exact count of valid combinations. */
+  exactTotal() {
+    return this._completions(0, new Map());
+  }
+
+  /**
+   * Returns the 0-indexed k-th valid combination in lexicographic order, or null
+   * if k is out of range. Built on the same completions-counting core as
+   * `exactTotal()` — counting and indexing are one function used two ways.
+   * @param {number} k
+   */
+  nth(k) {
+    if (k < 0) return null;
+    let remaining = k;
+    let counts = new Map();
+    let result = '';
+
+    for (let pos = 0; pos < 5; pos++) {
+      let chosen = false;
+
+      for (const ch of this.posLetters[pos]) {
+        const maxCh = this.maxCounts.get(ch);
+        const have  = counts.get(ch) ?? 0;
+        if (maxCh !== undefined && have + 1 > maxCh) continue;
+
+        const tracked    = this._trackedLetters.includes(ch);
+        const nextCounts = tracked ? _inc(counts, ch) : counts;
+        const blockSize  = this._completions(pos + 1, nextCounts);
+
+        if (remaining < blockSize) {
+          result += ch;
+          counts = nextCounts;
+          chosen = true;
+          break;
+        }
+        remaining -= blockSize;
+      }
+
+      if (!chosen) return null;
+    }
+
+    return result;
+  }
+
+  /**
+   * Number of valid ways to fill positions [pos..4], given the running count of
+   * each tracked letter placed in [0..pos-1]. Memoized — the state space is
+   * bounded by (tracked letters ≤ 5) × (counts 0..5 each) × (5 positions), so this
+   * stays small regardless of how open the board is: untracked letters at a
+   * position all lead to the same next state, so they're folded into one multiply
+   * (`_posFreeCount`) rather than branching per letter.
+   */
+  _completions(pos, counts) {
+    if (pos === 5) {
+      for (const ch of this._trackedLetters) {
+        if ((counts.get(ch) ?? 0) < this.minCounts.get(ch)) return 0;
+      }
+      return 1;
+    }
+
+    const key = pos + '|' + this._trackedLetters.map(ch => counts.get(ch) ?? 0).join(',');
+    const cached = this._completionsMemo.get(key);
+    if (cached !== undefined) return cached;
+
+    let total = 0;
+    for (const ch of this._posTracked[pos]) {
+      const maxCh = this.maxCounts.get(ch);
+      const have  = counts.get(ch) ?? 0;
+      if (maxCh !== undefined && have + 1 > maxCh) continue;
+      total += this._completions(pos + 1, _inc(counts, ch));
+    }
+
+    const freeCount = this._posFreeCount[pos];
+    if (freeCount > 0) {
+      total += freeCount * this._completions(pos + 1, counts);
+    }
+
+    this._completionsMemo.set(key, total);
+    return total;
   }
 
   /** Returns the first valid combination, or null if the space is empty. */

@@ -113,11 +113,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - Analysis HTML UI
-  - Brute force list: fix count
-    - We should fix the brute force list's count being off. I believe it currently ignores not-at constraints while abiding green and gray tiles. I can't recall if it abides min and max counts for unplaced tiles.
-    - The iteration of available words has no known defects; this is just the summary count that initially allowed to be a rough caculation.
-    - Earlier, I suggested that we could just use backtracking to iterate through the options. The last move has a finite set of letter options. And we could apply combinatorics to calculate the total options on just the last two spots.
-    - We could also keep optimized versions when some cases aren't present at all. such as no max-counts or no-not-at tiles remaining. Those cases could even be built into the recursion, with the final tile with a not-at rule being precalculated. We could even build an alternate representation where we reorder to put the tiles with not-at first and drop any known tiles completely. If the number of unplaced letters is equal to the number of remaining places, then the calculation is simplified.
   - Decision tree
     - Show max moves?
     - Show tiny bar chart?
