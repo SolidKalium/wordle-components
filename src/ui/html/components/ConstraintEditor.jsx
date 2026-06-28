@@ -205,12 +205,24 @@ export function ConstraintEditor({ defaultShowSuggestions = true, showSuggestion
   const setGray     = useConstraintStore(s => s.setGray);
   const clear       = useConstraintStore(s => s.clear);
 
-  // Both checks are pure functions of the normalized ConstraintState (minCounts sum,
-  // and excluded-but-unrequired letters respectively) — could move to getters there
-  // if they are ever needed in additional places.
+  // All checks are pure functions of the raw editor input (or the normalized
+  // ConstraintState) — could move to getters there if they are ever needed in
+  // additional places.
   const knownCount       = green.filter(Boolean).length;
   const overcountWarning = knownCount + unplaced.length > 5;
   const orphanNotAt      = [...new Set(yellow.flat())].filter(l => !green.includes(l) && !unplaced.includes(l));
+  const samePosConflicts = green
+    .map((g, i) => (g && yellow[i].includes(g)) ? i : null)
+    .filter(i => i !== null);
+
+  const unplacedCounts = unplaced.reduce((m, l) => m.set(l, (m.get(l) ?? 0) + 1), new Map());
+  const unplacedOverflow = [...unplacedCounts].map(([letter, count]) => ({
+    letter,
+    count,
+    // Open slots for this letter: positions not already known to be a (different) letter,
+    // and not excluded for this letter specifically.
+    available: green.filter((g, i) => !g && !yellow[i].includes(letter)).length,
+  })).filter(({ count, available }) => count > available);
 
   const [showSuggestions, setShowSuggestions] = useState(defaultShowSuggestions);
 
@@ -294,13 +306,23 @@ export function ConstraintEditor({ defaultShowSuggestions = true, showSuggestion
           <button className={styles.clearBtn} onClick={clear}>Clear</button>
         </div>
         {showSuggestions && <Suggestions />}
-        {(overcountWarning || orphanNotAt.length > 0) && (
+        {(overcountWarning || orphanNotAt.length > 0 || samePosConflicts.length > 0 || unplacedOverflow.length > 0) && (
           <div className={styles.warnings}>
             {overcountWarning && (
               <p className={styles.warning}>
                 {knownCount + unplaced.length} confirmed letters — a word only has 5
               </p>
             )}
+            {samePosConflicts.map(i => (
+              <p key={i} className={styles.warning}>
+                {green[i].toUpperCase()} is marked as both <em>known</em> and <em>not at</em> position {i + 1}
+              </p>
+            ))}
+            {unplacedOverflow.map(({ letter, count, available }) => (
+              <p key={letter} className={styles.warning}>
+                {letter.toUpperCase()} has {count} unplaced {count === 1 ? 'copy' : 'copies'} but only {available} position{available === 1 ? '' : 's'} where it can be placed
+              </p>
+            ))}
             {orphanNotAt.map(l => {
               const posCount  = yellow.filter(arr => arr.includes(l)).length;
               const posPhrase = posCount === 1 ? 'one position' : 'some positions';
