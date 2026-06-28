@@ -11,12 +11,6 @@ function formatCount(n) {
   return `${n}`;
 }
 
-function toRows(flat, n) {
-  const rows = [];
-  for (let i = 0; i < flat.length; i += n) rows.push(flat.slice(i, i + n));
-  return rows;
-}
-
 // Defined at module scope so Virtuoso never remounts the scroller on re-render.
 const VirtuosoScroller = React.forwardRef(({ style, ...props }, ref) => (
   <div
@@ -28,10 +22,7 @@ const VirtuosoScroller = React.forwardRef(({ style, ...props }, ref) => (
 ));
 VirtuosoScroller.displayName = 'VirtuosoScroller';
 
-const NoOptions = () => <span className={styles.empty}>no options</span>;
-
-const INITIAL_ROWS = 16;
-const CHUNK_ROWS   = 24;
+const NoOptions = () => <div className={styles.empty}>No options</div>;
 
 // Rendered width of one word: 5 monospace chars at 13px + 0.08em letter-spacing ≈ 44px.
 const WORD_PX = 44;
@@ -43,41 +34,40 @@ const SCROLLBAR_GUTTER_PX = 12;
 export function BruteForceList({ wordsPerLine = 3 }) {
   const constraints = useConstraints();
 
-  const [rows,      setRows]      = useState([]);
-  const [total,     setTotal]     = useState(0);
-  const [exhausted, setExhausted] = useState(false);
+  const [total, setTotal]       = useState(0);
+  const [revision, setRevision] = useState(0);
+  const genRef = useRef(null);
 
-  const genRef  = useRef(null);
-  const nextRef = useRef(null);
-
-  const loadChunk = useCallback(() => {
-    if (!genRef.current || nextRef.current === null) return;
-    const { items, nextCombo } = genRef.current.getPage(
-      nextRef.current,
-      CHUNK_ROWS * wordsPerLine,
-    );
-    nextRef.current = nextCombo;
-    if (nextCombo === null) setExhausted(true);
-    if (items.length > 0) setRows(prev => [...prev, ...toRows(items, wordsPerLine)]);
-  }, [wordsPerLine]);
-
+  // revision forces Virtuoso to remount (via key) on every constraints change,
+  // not just ones where the total happens to change — otherwise an edit that
+  // swaps which words match without changing the count wouldn't re-fetch
+  // already-rendered rows, and the scroll position wouldn't reset to a list
+  // that's actually unrelated to where the user had scrolled to before.
   useEffect(() => {
-    const gen = new BruteForceGenerator(constraints);
-    genRef.current  = gen;
-    nextRef.current = gen.first();
-    setTotal(gen.exactTotal());
+    genRef.current = new BruteForceGenerator(constraints);
+    setTotal(genRef.current.exactTotal());
+    setRevision(r => r + 1);
+  }, [constraints]);
 
-    if (nextRef.current === null) {
-      setRows([]);
-      setExhausted(true);
-      return;
-    }
+  const rowCount = Math.ceil(total / wordsPerLine);
 
-    setExhausted(false);
-    const { items, nextCombo } = gen.getPage(nextRef.current, INITIAL_ROWS * wordsPerLine);
-    nextRef.current = nextCombo;
-    setRows(toRows(items, wordsPerLine));
-  }, [constraints, wordsPerLine]);
+  // Rows are computed on demand via nth() rather than loaded incrementally —
+  // it's cheap regardless of index, so the scrollbar can be sized to the real
+  // total and jumping to any position (drag, page up/down) is just as fast as
+  // scrolling sequentially.
+  const itemContent = useCallback(rowIndex => {
+    const gen   = genRef.current;
+    const start = rowIndex * wordsPerLine;
+    const end   = Math.min(start + wordsPerLine, total);
+    const words = [];
+    for (let i = start; i < end; i++) words.push(gen.nth(i));
+
+    return (
+      <div className={styles.row}>
+        {words.map((w, j) => <span key={j} className={styles.word}>{w}</span>)}
+      </div>
+    );
+  }, [wordsPerLine, total]);
 
   const panelMinWidth =
     wordsPerLine * WORD_PX + (wordsPerLine - 1) * GAP_PX + SCROLLBAR_GUTTER_PX;
@@ -85,18 +75,14 @@ export function BruteForceList({ wordsPerLine = 3 }) {
   return (
     <div className={styles.panel} style={{ minWidth: panelMinWidth }}>
       <Virtuoso
+        key={revision}
         style={{ height: 220 }}
-        data={rows}
-        itemContent={(_, row) => (
-          <div className={styles.row}>
-            {row.map((w, j) => <span key={j} className={styles.word}>{w}</span>)}
-          </div>
-        )}
-        endReached={exhausted ? undefined : loadChunk}
+        totalCount={rowCount}
+        itemContent={itemContent}
         increaseViewportBy={{ top: 0, bottom: 300 }}
         components={{
           Scroller: VirtuosoScroller,
-          EmptyPlaceholder: exhausted ? NoOptions : undefined,
+          EmptyPlaceholder: rowCount === 0 ? NoOptions : undefined,
         }}
       />
       <span className={styles.count}>{formatCount(total)} {total === 1 ? 'option' : 'options'}</span>
