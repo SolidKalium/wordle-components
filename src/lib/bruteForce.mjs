@@ -94,6 +94,49 @@ export class BruteForceGenerator {
   }
 
   /**
+   * Returns the count of valid combinations strictly less than `word` in
+   * lexicographic order — the inverse of `nth()`. If `word` is itself a valid
+   * combination, this is its index (`nth(rankOf(word)) === word`). If not, it's
+   * the insertion point: the index of the next valid combination at or after it,
+   * which is exactly what's needed to re-anchor a scroll position on a word that
+   * stopped being valid after a constraint edit.
+   * @param {string} word
+   */
+  rankOf(word) {
+    let rank = 0;
+    let counts = new Map();
+
+    for (let pos = 0; pos < 5; pos++) {
+      const target  = word[pos];
+      let   matched = false;
+
+      for (const ch of this.posLetters[pos]) {
+        if (ch > target) break;
+
+        const maxCh     = this.maxCounts.get(ch);
+        const have      = counts.get(ch) ?? 0;
+        const placeable = maxCh === undefined || have + 1 <= maxCh;
+
+        if (ch === target) {
+          if (!placeable) return rank; // target can't continue here — rank is already final
+          counts  = this._trackedLetters.includes(ch) ? _inc(counts, ch) : counts;
+          matched = true;
+          break;
+        }
+
+        if (placeable) {
+          const nextCounts = this._trackedLetters.includes(ch) ? _inc(counts, ch) : counts;
+          rank += this._completions(pos + 1, nextCounts);
+        }
+      }
+
+      if (!matched) return rank; // target isn't a candidate at this position at all
+    }
+
+    return rank;
+  }
+
+  /**
    * Number of valid ways to fill positions [pos..4], given the running count of
    * each tracked letter placed in [0..pos-1]. Memoized — the state space is
    * bounded by (tracked letters ≤ 5) × (counts 0..5 each) × (5 positions), so this

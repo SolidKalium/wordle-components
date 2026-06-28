@@ -142,3 +142,43 @@ describe('BruteForceGenerator — nth', () => {
     }
   });
 });
+
+describe('BruteForceGenerator — rankOf', () => {
+  const cs = ConstraintState.fromEditor({
+    green: ['c', null, null, null, null],
+    yellow: [[], ['a'], [], ['e'], []],
+    unplaced: ['a', 'e'],
+    gray: ['t'],
+  });
+
+  it('is the exact inverse of nth() for every valid combination', () => {
+    const gen = new BruteForceGenerator(cs);
+    const total = gen.exactTotal();
+    for (let k = 0; k < total; k++) {
+      expect(gen.rankOf(gen.nth(k))).toBe(k);
+    }
+  });
+
+  it('returns total for a word sorting after every valid combination', () => {
+    const gen = new BruteForceGenerator(cs);
+    expect(gen.rankOf('czzzz')).toBe(gen.exactTotal());
+  });
+
+  it('returns 0 for a word sorting before every valid combination', () => {
+    const gen = new BruteForceGenerator(cs);
+    expect(gen.rankOf('caaaa')).toBe(0);
+  });
+
+  it('for an invalid word, returns the index of the next valid word at or after it', () => {
+    const gen = new BruteForceGenerator(cs);
+    const total = gen.exactTotal();
+    // 't' has a gray cap of 0, so any word containing 't' is invalid.
+    for (const word of ['cattt', 'czzzt', 'cbtae']) {
+      const rank = gen.rankOf(word);
+      const before = rank > 0 ? gen.nth(rank - 1) : null;
+      const at     = rank < total ? gen.nth(rank) : null;
+      expect(before === null || before < word).toBe(true);
+      expect(at === null || at >= word).toBe(true);
+    }
+  });
+});

@@ -142,9 +142,8 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
   - Other analysis components? E.g. compare across strategies
   - Pre-built composite components (LATER)
   - Brute force options list
-    - Maintain rough scroll position on constraint update
-    - Scrollbar position should at least roughly track location in the overall scrolling and it should be possible to drag it to the new area.
     - When connected to a game, while the player is typing a guess: treats entered letters, other than ones that disagree with the constraints, as green. Or maybe treat all typed letters as green, even if they disagree with constraints? LATER
+      - Should consider how the scroll position is preserved while the player types or deletes, and after committing a guess.
   - Distribution Chart
     - Determine how the average is calculated, document. (does it include words past 6 guesses? Coerce them to 6 or 7?)
   - Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.

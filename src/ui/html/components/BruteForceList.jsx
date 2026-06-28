@@ -31,23 +31,46 @@ const GAP_PX  = 16;
 const PANEL_PADDING_PX = 36;
 const SCROLLBAR_GUTTER_PX = 12;
 
+// Virtuoso reports its landing range via one or more rangeChanged calls while a
+// remount settles (an initial estimate, then a corrected one) — rangeChanged calls
+// in this window after a remount are our own repositioning settling, not a user
+// scroll, so they're ignored for anchor-tracking purposes.
+const ANCHOR_SETTLE_MS = 150;
+
 export function BruteForceList({ wordsPerLine = 3 }) {
   const constraints = useConstraints();
 
   const [total, setTotal]       = useState(0);
   const [revision, setRevision] = useState(0);
-  const genRef = useRef(null);
+  const genRef          = useRef(null);
+  const anchorWordRef    = useRef(null); // first word of the topmost visible row
+  const anchorRowRef     = useRef(0);    // row to scroll to on the next mount
+  const lastRemountAtRef = useRef(0);    // Date.now() of the most recent remount, for the settle window
 
   // revision forces Virtuoso to remount (via key) on every constraints change,
   // not just ones where the total happens to change — otherwise an edit that
   // swaps which words match without changing the count wouldn't re-fetch
-  // already-rendered rows, and the scroll position wouldn't reset to a list
-  // that's actually unrelated to where the user had scrolled to before.
+  // already-rendered rows.
+  //
+  // Before swapping in the new generator, re-rank the word that was previously
+  // topmost so the remount can start at wherever that word (or the next valid
+  // one after it, via rankOf's insertion-point behavior) ends up — otherwise
+  // every keystroke would fling a deep scroll position back to the top of a
+  // list that's mostly still the same.
   useEffect(() => {
-    genRef.current = new BruteForceGenerator(constraints);
-    setTotal(genRef.current.exactTotal());
+    const gen      = new BruteForceGenerator(constraints);
+    const newTotal = gen.exactTotal();
+    const rowCount = Math.ceil(newTotal / wordsPerLine);
+
+    anchorRowRef.current = anchorWordRef.current === null
+      ? 0
+      : Math.min(Math.floor(gen.rankOf(anchorWordRef.current) / wordsPerLine), Math.max(rowCount - 1, 0));
+
+    genRef.current = gen;
+    lastRemountAtRef.current = Date.now();
+    setTotal(newTotal);
     setRevision(r => r + 1);
-  }, [constraints]);
+  }, [constraints, wordsPerLine]);
 
   const rowCount = Math.ceil(total / wordsPerLine);
 
@@ -69,6 +92,20 @@ export function BruteForceList({ wordsPerLine = 3 }) {
     );
   }, [wordsPerLine, total]);
 
+  // Tracks the topmost visible row on every real scroll so the next constraints
+  // change has something current to re-anchor to. Calls within ANCHOR_SETTLE_MS
+  // of our own remount are our own repositioning settling, not a user scroll —
+  // otherwise that system-driven repositioning would overwrite the anchor, and
+  // e.g. typing a character then immediately deleting it would re-derive the
+  // scroll position from the narrowed list instead of restoring the original one.
+  const handleRangeChanged = useCallback(({ startIndex }) => {
+    if (Date.now() - lastRemountAtRef.current < ANCHOR_SETTLE_MS) return;
+    const gen = genRef.current;
+    if (!gen) return;
+    const w = gen.nth(startIndex * wordsPerLine);
+    if (w !== null) anchorWordRef.current = w;
+  }, [wordsPerLine]);
+
   const panelMinWidth =
     wordsPerLine * WORD_PX + (wordsPerLine - 1) * GAP_PX + SCROLLBAR_GUTTER_PX;
 
@@ -79,6 +116,8 @@ export function BruteForceList({ wordsPerLine = 3 }) {
         style={{ height: 220 }}
         totalCount={rowCount}
         itemContent={itemContent}
+        initialTopMostItemIndex={anchorRowRef.current}
+        rangeChanged={handleRangeChanged}
         increaseViewportBy={{ top: 0, bottom: 300 }}
         components={{
           Scroller: VirtuosoScroller,
