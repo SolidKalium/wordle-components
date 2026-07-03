@@ -1,2 +1,5 @@
 #!/usr/bin/env sh
+
+# Shortcut to enter the CLI interface
+
 exec node "$(dirname "$0")/src/ui/cli/play.mjs" "$@"

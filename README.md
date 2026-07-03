@@ -40,12 +40,12 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
   - See [ui-spec](docs/ui-spec.md)
   - Rough design:
     - Card: mostly dumb, any info is pulled from the one thing inside it.
-      - Can highlight itself when any other card with the same channel is active (LATER)
+      - Can highlight itself when any other card with the same game/strategy Store is active (LATER)
     - Component: inputs or outputs a bundle of things (e.g. a game, strategy, etc). Kinda vague... and doesn't deal with cases where the game is shared but the strategy isn't.
       - Either analysis or selector
     - Component layout: abstracts multiple components into a visible shape, able to be slotted into a card instead of a single component. But this way the card only has one thing inside it.
-    - Channels correlate to game or strategy stores
-      - Word list channel is LATER
+    - Components use Stores in ContextProviders to share state, such as a game or strategy
+      - Word list store is LATER
     - E.g. One card for either playing a game or entering an existing game state, then one card that just shows the current constraints in a different format, then one that allows exploring the full space of remaining 5 letter "words", then one that shows a decision tree for a particular algorithm. So one source of data can influence stats shown elsewhere.
   - Selector components for strategy
     - maybe one selector shows a minimal-ish set of options in an always-displayed config area, while another shows a gear icon with a popover? Or maybe some analyses work well for comparing two things and it's a mix of the two styles, with the selected feature for comparison always shown, and other settings a little more hidden
@@ -87,6 +87,7 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
 - Tool to identify likely first guess words of friends. Eg given the letterless info for the first line and the actual word of the day, find compatible words, especially given data for multiple days.
 - Perhaps enable transforming pictures of games into a set format? E.g. json, markdown, or a flexible html layout. Or enabling custom strategies to be exported in some way that lets them be verifiably consistent across sessions.
 - Check if a word is in the wordle list. Or possibly just find words that have a property via a filter.
+- Some features may need to degrade gracefully depending on settings. For instance anything in the UI that uses AI, since AI features in components might not be accessible.
 
 ## Strategies
 - Smallest average group size
@@ -112,6 +113,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 - Keyboard: accepted words must *only use* letters in the specified letter *set*
 
 ## TODO
+- Update README: separate card display and visual testing (index.html / main.jsx) from any analysis report or formal experiments. Clean up anything that can be cleaned up.
 - Analysis HTML UI
   - Decision tree
     - Show max moves?
@@ -145,12 +147,13 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - When connected to a game, while the player is typing a guess: treats entered letters, other than ones that disagree with the constraints, as green. Or maybe treat all typed letters as green, even if they disagree with constraints? LATER
       - Should consider how the scroll position is preserved while the player types or deletes, and after committing a guess.
     - The position preservation when the constraint input is updated is known to be imperfect. It's often off by one because the scroller reports a different top row than a user would expect. A couple attempts didn't work, so the can is being kicked.
+    - Add a search box when over a certain number of options? Maybe just scrolls to where that sequence would be? Or does it need to filter? Search and filter should be distinct modes and we may not need both.
   - Distribution Chart
-    - Determine how the average is calculated, document. (does it include words past 6 guesses? Coerce them to 6 or 7?)
+    - Determine how the average is calculated, document. (does it include words past 6 guesses? Coerce them to 6 or 7?) Document on the component itself, in the UI.
   - Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.
     - Add descriptions for strategies?
   - Card
-    - Highlight when channel active elsewhere? LATER
+    - Highlight when Store active elsewhere? LATER
     - Consider additional themes? E.g. move the distinct header/content colors of the current chart demo card into its own color scheme
     - On bar hover, show representative words? Or all words?
   - Strategy selector

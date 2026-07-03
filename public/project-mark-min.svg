@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Wordle Components mark">
+  <title>Wordle Components — minimal mark (≤32px)</title>
+  
+  <rect x="28" y="28" width="218" height="218" rx="16" fill="#ffffff"></rect>
+  <rect x="63.6727" y="162.7636" width="10.9" height="45.5818" rx="1.2196" fill="#3b5050"></rect>
+  <rect x="80.5182" y="125.1091" width="10.9" height="83.2364" rx="1.2196" fill="#3b5050"></rect>
+  <rect x="97.3636" y="99.3455" width="10.9" height="109" rx="1.2196" fill="#3b5050"></rect>
+  <rect x="114.2091" y="87.4545" width="10.9" height="120.8909" rx="1.2196" fill="#3b5050"></rect>
+  <rect x="131.0545" y="105.2909" width="10.9" height="103.0545" rx="1.2196" fill="#3b5050"></rect>
+  <rect x="147.9" y="127.0909" width="10.9" height="81.2545" rx="1.2196" fill="#3b5050"></rect>
+  <rect x="164.7455" y="154.8364" width="10.9" height="53.5091" rx="1.2196" fill="#3b5050"></rect>
+  <rect x="181.5909" y="176.6364" width="10.9" height="31.7091" rx="1.2196" fill="#3b5050"></rect>
+  <rect x="198.4364" y="191.5" width="10.9" height="16.8455" rx="1.2196" fill="#3b5050"></rect>
+  
+  <rect x="266" y="28" width="218" height="218" rx="16" fill="#a9bdb8"></rect>
+  
+  <rect x="28" y="266" width="218" height="218" rx="16" fill="#3b5050"></rect>
+  <path d="m 536.84774,253.3202 c -9.08919,-88.49989 -67.92967,-140.64307 -173.17279,-140.64307 c -96.15393,0 -171.73759,69.36478 -171.73759,180.82682 0,111.94041 68.88638,181.78356 182.74031,181.78356 90.89179,0 154.51605,-53.5783 164.56197,-142.5566 H 430.64787 c -4.3054,33.00808 -21.52704,58.36211 -57.88373,58.36211 -57.40533,0 -67.92961,-45.4459 -67.92961,-93.76204 0,-66.49452 23.91888,-100.45933 63.62421,-100.45933 35.39996,0 57.88373,20.57022 61.23236,56.44855 z" fill="#ffffff" transform="translate(30.13 291.66) scale(0.2923)"></path>
+  
+  <rect x="266" y="266" width="218" height="218" rx="16" fill="#ffffff"></rect>
+  <clipPath id="wc-min-clip"><rect x="288.9922" y="288.9922" width="172.0156" height="81.75" rx="6.8125"></rect></clipPath>
+  <path d="M292.3985,367.336 L292.3985,344.855 L394.825,292.3985 L457.6016,292.3985 L457.6016,367.336 Z" fill="#a9bdb8" clip-path="url(#wc-min-clip)"></path>
+  <rect x="288.9922" y="379.2578" width="81.75" height="81.75" rx="6.8125" fill="#3b5050"></rect>
+</svg>
