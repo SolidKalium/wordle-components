@@ -14,7 +14,7 @@ const ERROR_TEXT = {
 const EMPTY_BUFFER = [null, null, null, null, null];
 const MAX_CURSOR = 4; // cursor stays on a tile (never off the right edge)
 
-export function WordInput({ showPool = true, keyboardPosition = 'inline' }) {
+export function WordInput({ showPool = true, defaultKeyboardHidden = false }) {
   const makeMove    = useGameStore(s => s.makeMove);
   const isOver      = useGameStore(s => s.isOver);
   const constraints = useGameStore(s => s.constraints);
@@ -153,7 +153,7 @@ export function WordInput({ showPool = true, keyboardPosition = 'inline' }) {
       <span className={styles.hint}>click to focus · enter to guess · tab to fill greens</span>
       <VirtualKeyboard
         constraints={constraints}
-        position={keyboardPosition}
+        defaultHidden={defaultKeyboardHidden}
         onLetter={(letter) => { enterLetter(letter); refocus(); }}
         onBackspace={() => { backspace(); refocus(); }}
         onEnter={() => { submitCurrent(); refocus(); }}

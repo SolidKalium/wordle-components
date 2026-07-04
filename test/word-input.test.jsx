@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GameStoreContext, createGameStore } from '../src/ui/html/stores/gameStore.js';
 import { WordInput } from '../src/ui/html/components/WordInput.jsx';
+import { KeyboardDockProvider } from '../src/ui/html/components/KeyboardDockContext.jsx';
+import { Card } from '../src/ui/html/components/Card.jsx';
 
 afterEach(cleanup);
 
@@ -19,7 +21,9 @@ describe('WordInput virtual keyboard', () => {
 
     render(
       <GameStoreContext.Provider value={store}>
-        <WordInput />
+        <KeyboardDockProvider>
+          <WordInput />
+        </KeyboardDockProvider>
       </GameStoreContext.Provider>,
     );
 
@@ -30,5 +34,29 @@ describe('WordInput virtual keyboard', () => {
 
     expect(store.getState().guesses).toHaveLength(1);
     expect(store.getState().guesses[0].word).toBe('crane');
+  });
+
+  it('transfers the single dock and releases it when its card collapses', async () => {
+    const user = userEvent.setup();
+    const store = createGameStore({ wordList: ['cigar'], answers: ['cigar'], answer: 'cigar' });
+
+    render(
+      <GameStoreContext.Provider value={store}>
+        <KeyboardDockProvider>
+          <Card title="First" collapsible><WordInput /></Card>
+          <Card title="Second" collapsible><WordInput /></Card>
+        </KeyboardDockProvider>
+      </GameStoreContext.Provider>,
+    );
+
+    const [firstPin, secondPin] = screen.getAllByRole('button', { name: 'Pin', hidden: true });
+    fireEvent.click(firstPin);
+    expect(screen.getAllByRole('button', { name: 'Unpin', hidden: true })).toHaveLength(1);
+
+    fireEvent.click(secondPin);
+    expect(screen.getAllByRole('button', { name: 'Unpin', hidden: true })).toHaveLength(1);
+
+    await user.click(screen.getByText('Second'));
+    expect(screen.queryByRole('button', { name: 'Unpin', hidden: true })).toBeNull();
   });
 });

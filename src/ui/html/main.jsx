@@ -15,6 +15,7 @@ import { StrategySelector } from './components/StrategySelector.jsx';
 import { SuggestionPicker } from './components/SuggestionPicker.jsx';
 import { TreeNavigator } from './components/TreeNavigator.jsx';
 import { WordInput } from './components/WordInput.jsx';
+import { KeyboardDockProvider } from './components/KeyboardDockContext.jsx';
 import './page.css';
 
 const gameStore       = createGameStore({ wordList: WORDS, answers: ANSWERS });
@@ -74,7 +75,7 @@ function App() {
         {/* fixed width keeps centered content stable as suggestions load/change */}
         <div style={{ width: 'calc(5 * 48px + 4 * 4px + 2 * 16px)' }}>
           <ConstraintsView />
-          <WordInput keyboardPosition="responsive-fixed"/>
+          <WordInput />
           <SuggestionPicker />
         </div>
       </Card>
@@ -99,7 +100,9 @@ function App() {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <GameStoreContext.Provider value={gameStore}>
+      <KeyboardDockProvider>
         <App />
+      </KeyboardDockProvider>
     </GameStoreContext.Provider>
   </StrictMode>
 );

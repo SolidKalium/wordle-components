@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { CardVisibilityProvider } from './CardVisibilityContext.jsx';
 import styles from './Card.module.css';
 
 export function Card({ title, children, variant = 'default', collapsible = false, defaultCollapsed = false }) {
@@ -32,7 +33,9 @@ export function Card({ title, children, variant = 'default', collapsible = false
           )}
         </div>
       )}
-      <div className={styles.body} style={collapsed ? { display: 'none' } : undefined}>{children}</div>
+      <CardVisibilityProvider value={!collapsed}>
+        <div className={styles.body} style={collapsed ? { display: 'none' } : undefined}>{children}</div>
+      </CardVisibilityProvider>
     </div>
   );
 }

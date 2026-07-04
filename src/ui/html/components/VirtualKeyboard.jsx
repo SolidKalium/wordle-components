@@ -1,3 +1,6 @@
+import { useContext, useEffect, useId, useState } from 'react';
+import { KeyboardDockContext } from './KeyboardDockContext.jsx';
+import { useCardVisibility } from './CardVisibilityContext.jsx';
 import styles from './VirtualKeyboard.module.css';
 
 const ROWS = [
@@ -47,47 +50,97 @@ function LetterKey({ letter, constraints, onPress, disabled }) {
   );
 }
 
+/**
+ * On-screen word-entry keyboard. Mount KeyboardDockProvider above every
+ * VirtualKeyboard so only one instance can own the viewport dock at a time.
+ * Without it, the keyboard remains usable inline and warns in development.
+ */
 export function VirtualKeyboard({
   constraints,
   onLetter,
   onEnter,
   onBackspace,
   disabled = false,
-  position = 'inline',
+  defaultHidden = false,
 }) {
+  const keyboardId = useId();
+  const dock = useContext(KeyboardDockContext);
+  const cardVisible = useCardVisibility();
+  const [hidden, setHidden] = useState(defaultHidden);
+  const isPinned = dock?.pinnedKeyboardId === keyboardId;
+  const releasePin = dock?.release;
+
+  useEffect(() => {
+    if (!dock && import.meta.env.DEV) {
+      console.warn('VirtualKeyboard should be rendered inside KeyboardDockProvider; pinning is disabled.');
+    }
+  }, [dock]);
+
+  useEffect(() => {
+    if (!cardVisible || hidden) releasePin?.(keyboardId);
+  }, [cardVisible, hidden, keyboardId, releasePin]);
+
+  useEffect(() => () => releasePin?.(keyboardId), [keyboardId, releasePin]);
+
   const press = (key) => {
     if (key === 'Enter') onEnter();
     else if (key === 'Backspace') onBackspace();
     else onLetter(key);
   };
 
+  if (hidden) {
+    return (
+      <div className={`${styles.dock} ${styles.hidden}`}>
+        <button type="button" className={styles.control} onClick={() => setHidden(false)}>
+          Show keyboard
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className={`${styles.dock} ${position === 'responsive-fixed' ? styles.responsiveFixed : ''}`}>
-      <div className={styles.keyboard} role="group" aria-label="Word entry keyboard">
-        {ROWS.map((row, rowIndex) => (
-          <div className={styles.row} key={rowIndex}>
-            {row.map(key => key.length === 1 ? (
-              <LetterKey
-                key={key}
-                letter={key}
-                constraints={constraints}
-                onPress={press}
-                disabled={disabled}
-              />
-            ) : (
-              <button
-                type="button"
-                key={key}
-                className={`${styles.key} ${styles.actionKey}`}
-                onClick={() => press(key)}
-                disabled={disabled}
-                aria-label={key}
-              >
-                {key === 'Backspace' ? '⌫' : 'Enter'}
-              </button>
-            ))}
-          </div>
-        ))}
+    <div className={`${styles.dock} ${isPinned ? styles.pinned : ''}`}>
+      <div className={styles.shell}>
+        <div className={styles.controls}>
+          <button type="button" className={styles.control} onClick={() => setHidden(true)}>
+            Hide
+          </button>
+          {dock && (
+            <button
+              type="button"
+              className={`${styles.control} ${styles.pinControl}`}
+              onClick={() => isPinned ? dock.release(keyboardId) : dock.pin(keyboardId)}
+            >
+              {isPinned ? 'Unpin' : 'Pin'}
+            </button>
+          )}
+        </div>
+        <div className={styles.keyboard} role="group" aria-label="Word entry keyboard">
+          {ROWS.map((row, rowIndex) => (
+            <div className={styles.row} key={rowIndex}>
+              {row.map(key => key.length === 1 ? (
+                <LetterKey
+                  key={key}
+                  letter={key}
+                  constraints={constraints}
+                  onPress={press}
+                  disabled={disabled}
+                />
+              ) : (
+                <button
+                  type="button"
+                  key={key}
+                  className={`${styles.key} ${styles.actionKey}`}
+                  onClick={() => press(key)}
+                  disabled={disabled}
+                  aria-label={key}
+                >
+                  {key === 'Backspace' ? '⌫' : 'Enter'}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
