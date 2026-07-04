@@ -1,5 +1,13 @@
 # Wordle Components
 
+<p align="center">
+  <img
+    src="./public/project-mark-full.svg"
+    alt="Wordle Components"
+    width="240"
+  >
+</p>
+
 This project provides a game engine and analysis tooling to investigate word choices and other patterns in the game. It contains components to run static or interactive analysis in the browser and via CLI.
 
 Wordle is a trademark of The New York Times Company. This project is not affiliated with or endorsed by The New York Times. The word lists included in this project originate from Wardle's publicly visible code and are common online. The author is not aware of the NYT attempting to restrict distribution of these word lists.
