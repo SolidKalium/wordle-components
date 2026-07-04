@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GameStoreContext, createGameStore } from '../src/ui/html/stores/gameStore.js';
 import { WordInput } from '../src/ui/html/components/WordInput.jsx';
@@ -58,5 +58,30 @@ describe('WordInput virtual keyboard', () => {
 
     await user.click(screen.getByText('Second'));
     expect(screen.queryByRole('button', { name: 'Unpin', hidden: true })).toBeNull();
+  });
+
+  it('clears a tentative word when another control commits a move', async () => {
+    const user = userEvent.setup();
+    const store = createGameStore({
+      wordList: ['crane', 'cigar'],
+      answers: ['cigar'],
+      answer: 'cigar',
+    });
+
+    render(
+      <GameStoreContext.Provider value={store}>
+        <KeyboardDockProvider><WordInput /></KeyboardDockProvider>
+      </GameStoreContext.Provider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'C' }));
+    act(() => store.getState().makeMove('crane'));
+
+    for (const letter of 'cigar') {
+      await user.click(screen.getByRole('button', { name: letter.toUpperCase() }));
+    }
+    await user.click(screen.getByRole('button', { name: 'Enter' }));
+
+    expect(store.getState().guesses.map(guess => guess.word)).toEqual(['crane', 'cigar']);
   });
 });

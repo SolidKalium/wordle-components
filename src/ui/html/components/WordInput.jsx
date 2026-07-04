@@ -19,7 +19,9 @@ export function WordInput({ showPool = true, defaultKeyboardHidden = false }) {
   const isOver      = useGameStore(s => s.isOver);
   const constraints = useGameStore(s => s.constraints);
   const answer      = useGameStore(s => s.answer);
+  const guessCount  = useGameStore(s => s.guesses.length);
   const containerRef = useRef(null);
+  const previousGuessCount = useRef(guessCount);
 
   const [buffer,   setBuffer]   = useState([...EMPTY_BUFFER]);
   const [cursor,   setCursor]   = useState(0);
@@ -33,6 +35,18 @@ export function WordInput({ showPool = true, defaultKeyboardHidden = false }) {
     setError('');
     containerRef.current?.focus();
   }, [answer]);
+
+  // A move committed elsewhere (for example, by SuggestionPicker or another
+  // input for this game) invalidates this tentative word. Decreases from undo
+  // do not: an uncommitted draft can still be useful after stepping back.
+  useEffect(() => {
+    if (guessCount > previousGuessCount.current) {
+      setBuffer([...EMPTY_BUFFER]);
+      setCursor(0);
+      setError('');
+    }
+    previousGuessCount.current = guessCount;
+  }, [guessCount]);
 
   const { slots, pool } = computePendingSlots(buffer, constraints, cursor);
 
