@@ -14,7 +14,11 @@ const ERROR_TEXT = {
 const EMPTY_BUFFER = [null, null, null, null, null];
 const MAX_CURSOR = 4; // cursor stays on a tile (never off the right edge)
 
-export function WordInput({ showPool = true, defaultKeyboardHidden = false }) {
+export function WordInput({
+  showKeyboard = true,
+  showMissingLetters = false,
+  defaultKeyboardHidden = false,
+}) {
   const makeMove    = useGameStore(s => s.makeMove);
   const isOver      = useGameStore(s => s.isOver);
   const constraints = useGameStore(s => s.constraints);
@@ -151,7 +155,7 @@ export function WordInput({ showPool = true, defaultKeyboardHidden = false }) {
       onClick={() => containerRef.current?.focus()}
     >
       <InputTiles slots={slots} focused={focused} />
-      {showPool && pool.length > 0 && (
+      {showMissingLetters && pool.length > 0 && (
         <div className={styles.pool}>
           {pool.map(({ kind, letter }, i) => (
             <span
@@ -165,13 +169,15 @@ export function WordInput({ showPool = true, defaultKeyboardHidden = false }) {
       )}
       {error && <span className={styles.error}>{error}</span>}
       <span className={styles.hint}>click to focus · enter to guess · tab to fill greens</span>
-      <VirtualKeyboard
-        constraints={constraints}
-        defaultHidden={defaultKeyboardHidden}
-        onLetter={(letter) => { enterLetter(letter); refocus(); }}
-        onBackspace={() => { backspace(); refocus(); }}
-        onEnter={() => { submitCurrent(); refocus(); }}
-      />
+      {showKeyboard && (
+        <VirtualKeyboard
+          constraints={constraints}
+          defaultHidden={defaultKeyboardHidden}
+          onLetter={(letter) => { enterLetter(letter); refocus(); }}
+          onBackspace={() => { backspace(); refocus(); }}
+          onEnter={() => { submitCurrent(); refocus(); }}
+        />
+      )}
     </div>
   );
 }

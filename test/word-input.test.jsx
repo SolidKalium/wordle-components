@@ -11,6 +11,19 @@ import { Card } from '../src/ui/html/components/Card.jsx';
 afterEach(cleanup);
 
 describe('WordInput virtual keyboard', () => {
+  it('can be disabled independently from word entry', () => {
+    const store = createGameStore({ wordList: ['cigar'], answers: ['cigar'], answer: 'cigar' });
+
+    render(
+      <GameStoreContext.Provider value={store}>
+        <KeyboardDockProvider><WordInput showKeyboard={false} /></KeyboardDockProvider>
+      </GameStoreContext.Provider>,
+    );
+
+    expect(screen.queryByRole('group', { name: 'Word entry keyboard' })).toBeNull();
+    expect(screen.getByText(/click to focus/)).toBeTruthy();
+  });
+
   it('edits and submits the same draft shown by the input tiles', async () => {
     const user = userEvent.setup();
     const store = createGameStore({

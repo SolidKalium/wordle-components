@@ -138,8 +138,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
       - Something venn-like or a bit amorphous/fluid?
       - Ideally does know when a letter appears multiple times or has both a green and a yellow (or two!) remaining.
     - Separately: word entry (virtual keyboard)
-      - Needs to be split from word-entry? Or at least disable-able.
-      - Hints for known letters in word entry should also be disable-able, probably not split out.
       - Allow tap-to-move-cursor. Should it open the OS keyboard? Only if a virtual keyboard isn't attached?
       - Word input should be shareable with analysis things, like brute force list and suggestions. How is that property controlled? By user? By presence of a context?
   - Hard mode toggle
