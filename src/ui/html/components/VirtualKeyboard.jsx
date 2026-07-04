@@ -1,4 +1,4 @@
-import { useContext, useEffect, useId, useRef, useState } from 'react';
+import { useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { KeyboardDockContext } from './KeyboardDockContext.jsx';
 import { useCardVisibility } from './CardVisibilityContext.jsx';
 import styles from './VirtualKeyboard.module.css';
@@ -101,14 +101,14 @@ export function VirtualKeyboard({
 
   // Hidden/collapsed keyboards retain their placement preference but cannot
   // actively occupy the singleton dock. Showing/reopening requests it again.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (cardVisible && !hidden && prefersPinned) pin?.(keyboardId);
     else releasePin?.(keyboardId);
   }, [cardVisible, hidden, keyboardId, pin, prefersPinned, releasePin]);
 
   // A visible keyboard that loses the dock to another keyboard also loses its
   // pin preference. Inactive hidden/collapsed keyboards keep their preference.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (wasPinned.current && !isPinned && cardVisible && !hidden) {
       setPrefersPinned(false);
     }
@@ -130,6 +130,11 @@ export function VirtualKeyboard({
     else releasePin?.(keyboardId);
   };
 
+  const toggleHidden = () => {
+    if (hidden && prefersPinned) pin?.(keyboardId);
+    setHidden(value => !value);
+  };
+
   return (
     <div className={`${styles.dock} ${isPinned ? styles.pinned : ''}`}>
       <div className={styles.originControls}>
@@ -147,7 +152,7 @@ export function VirtualKeyboard({
         <button
           type="button"
           className={styles.control}
-          onClick={() => setHidden(value => !value)}
+          onClick={toggleHidden}
           aria-label={hidden ? 'Show keyboard' : 'Hide keyboard'}
           title={hidden ? 'Show keyboard' : 'Hide keyboard'}
         >
