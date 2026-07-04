@@ -3,6 +3,7 @@ import { useGameStore } from '../stores/gameStore.js';
 import { computePendingSlots } from '../../../lib/pendingWord.mjs';
 import { MoveResult } from '../../../lib/game.mjs';
 import { InputTiles } from './InputTiles.jsx';
+import { VirtualKeyboard } from './VirtualKeyboard.jsx';
 import styles from './WordInput.module.css';
 
 const ERROR_TEXT = {
@@ -13,7 +14,7 @@ const ERROR_TEXT = {
 const EMPTY_BUFFER = [null, null, null, null, null];
 const MAX_CURSOR = 4; // cursor stays on a tile (never off the right edge)
 
-export function WordInput({ showPool = true }) {
+export function WordInput({ showPool = true, keyboardPosition = 'inline' }) {
   const makeMove    = useGameStore(s => s.makeMove);
   const isOver      = useGameStore(s => s.isOver);
   const constraints = useGameStore(s => s.constraints);
@@ -47,13 +48,41 @@ export function WordInput({ showPool = true }) {
     }
   };
 
+  const enterLetter = (letter) => {
+    if (isOver || !/[a-z]/i.test(letter)) return;
+    const next = [...buffer];
+    next[cursor] = letter.toLowerCase();
+    setBuffer(next);
+    setCursor(c => Math.min(MAX_CURSOR, c + 1));
+    setError('');
+  };
+
+  const backspace = () => {
+    if (isOver) return;
+    const index = buffer[cursor] === null ? cursor - 1 : cursor;
+    if (index < 0) return;
+    const next = [...buffer];
+    next[index] = null;
+    setBuffer(next);
+    setCursor(index);
+    setError('');
+  };
+
+  const submitCurrent = () => {
+    if (!isOver && buffer.every(c => c !== null)) submit(buffer);
+  };
+
+  const refocus = () => containerRef.current?.focus();
+
   const handleKeyDown = (e) => {
     if (isOver) return;
+    // Let the keyboard's actual buttons handle Enter/Space themselves.
+    if (e.target !== e.currentTarget) return;
 
     switch (e.key) {
       case 'Enter':
         e.preventDefault();
-        if (buffer.every(c => c !== null)) submit(buffer);
+        submitCurrent();
         return;
 
       case 'Escape':
@@ -74,13 +103,7 @@ export function WordInput({ showPool = true }) {
 
       case 'Backspace':
         e.preventDefault();
-        if (cursor > 0) {
-          const next = [...buffer];
-          next[cursor - 1] = null;
-          setBuffer(next);
-          setCursor(c => c - 1);
-          setError('');
-        }
+        backspace();
         return;
 
       case 'ArrowLeft':
@@ -96,11 +119,7 @@ export function WordInput({ showPool = true }) {
       default:
         if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && cursor <= MAX_CURSOR) {
           e.preventDefault();
-          const next = [...buffer];
-          next[cursor] = e.key.toLowerCase();
-          setBuffer(next);
-          setCursor(c => Math.min(MAX_CURSOR, c + 1));
-          setError('');
+          enterLetter(e.key);
         }
     }
   };
@@ -132,6 +151,13 @@ export function WordInput({ showPool = true }) {
       )}
       {error && <span className={styles.error}>{error}</span>}
       <span className={styles.hint}>click to focus · enter to guess · tab to fill greens</span>
+      <VirtualKeyboard
+        constraints={constraints}
+        position={keyboardPosition}
+        onLetter={(letter) => { enterLetter(letter); refocus(); }}
+        onBackspace={() => { backspace(); refocus(); }}
+        onEnter={() => { submitCurrent(); refocus(); }}
+      />
     </div>
   );
 }

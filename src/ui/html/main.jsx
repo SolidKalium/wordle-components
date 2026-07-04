@@ -74,7 +74,7 @@ function App() {
         {/* fixed width keeps centered content stable as suggestions load/change */}
         <div style={{ width: 'calc(5 * 48px + 4 * 4px + 2 * 16px)' }}>
           <ConstraintsView />
-          <WordInput />
+          <WordInput keyboardPosition="responsive-fixed"/>
           <SuggestionPicker />
         </div>
       </Card>

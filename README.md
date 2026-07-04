@@ -138,9 +138,15 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
       - Something venn-like or a bit amorphous/fluid?
       - Ideally does know when a letter appears multiple times or has both a green and a yellow (or two!) remaining.
     - Separately: word entry (virtual keyboard)
-      - Maybe use dots in the corner of the key? E.g. 1 green per green, 1 yellow per yellow, and grey for "no more than that". Main question is the primary bg color and any outline.
-      - Should it lock to the bottom of the screen? By default or optionally? Useful on mobile, not otherwise. So probably optionally on narrow screens. It would be too tall to lock on short screens. If it doesn't know the page size well enough, then don't do this. Maybe that means it needs to be set up programatically by passing a reference to the screen?
+      - Shouldn't reserve space when it jumps to the bottom of the screen.
+      - Should user have the ability to hide and/or fix the keyboard?
+      - Needs to be split from word-entry? Or at least disable-able.
+      - Hints for known letters in word entry should also be disable-able, probably not split out.
+      - Allow tap-to-move-cursor. Should it open the OS keyboard? Only if a virtual keyboard isn't attached?
+      - Word input should be shareable with analysis things, like brute force list and suggestions
+      - Should selecting a suggested word clear the input? Probably?
   - Hard mode toggle
+  - Toggle or other setting for whether things like the suggester's words are from answers or all?
   - Other analysis components? E.g. compare across strategies
   - Pre-built composite components (LATER)
   - Brute force options list
@@ -269,7 +275,8 @@ Things considered but skipped for now
 
 - Word lengths other than 5
 - i18n
-- Allow selecting words from the larger valid word list
+- Allow selecting words from the larger valid word list ??
+- Undefined behavior: using one input for multiple games
 - Filters ("strategy subvariants") currently are designed to be hard, prepass filters with self-disable rules. That makes the logic clear and legible, with the input surface solely using integers. Filters can also be applied post-strategy.
   - Slightly more complex logical rules are possible but generally out of scope.
   - An alternative further out of scope would be to create and combine quality weights. But the process for doing that isn't obvious. How do we penalize letters that we've already used: multiply by 1 for each unused letter, .1 for each grey letter, .2 for each yellow or green letter in a position we haven't tried yet, and 0.05 otherwise? That might be too extreme. What's the right level of penalty for our goal? And how do we convert the preferences of any given strategy into a weight? What do the ihteractions between those weights do? How do we combine the filter and strategy weights? Multiply them? Take the minumum of the two, plus some portion of the larger one, but capped at twice the minumum and renormalized since that allowed the weights to go over 1? To avoid renormalizing, we could do `lo + min(lo, hi/x)*(1-lo)` or just `lo + (1-lo)*lo*hi`, but do we expect either of those to genuinely produce "good" or "meaningful" results for "good" choices of filter and strategy? The choice for combining likely depends on how much signal is intended to come from both halves, and possibly how many orders of magnitude the weights span.
