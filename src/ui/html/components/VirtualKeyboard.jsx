@@ -1,4 +1,4 @@
-import { useContext, useEffect, useId, useState } from 'react';
+import { useContext, useEffect, useId, useRef, useState } from 'react';
 import { KeyboardDockContext } from './KeyboardDockContext.jsx';
 import { useCardVisibility } from './CardVisibilityContext.jsx';
 import styles from './VirtualKeyboard.module.css';
@@ -50,6 +50,25 @@ function LetterKey({ letter, constraints, onPress, disabled }) {
   );
 }
 
+function KeyboardIcon({ slashed = false }) {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true">
+      <rect x="1.5" y="4" width="17" height="12" rx="2" />
+      <path d="M4 7h1M8 7h1M12 7h1M16 7h0M4 10h1M8 10h1M12 10h1M16 10h0M5 13h10" />
+      {slashed && <path d="m3 17 14-14" className={styles.iconSlash} />}
+    </svg>
+  );
+}
+
+function PinIcon({ pinned = false }) {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M7 2.5h6l-1 4 2.5 2.5v1.5h-4v6l-.5 1-.5-1v-6h-4V9L8 6.5Z" />
+      {pinned && <path d="m4 16 12-12" />}
+    </svg>
+  );
+}
+
 /**
  * On-screen word-entry keyboard. Mount KeyboardDockProvider above every
  * VirtualKeyboard so only one instance can own the viewport dock at a time.
@@ -62,12 +81,16 @@ export function VirtualKeyboard({
   onBackspace,
   disabled = false,
   defaultHidden = false,
+  defaultPinned = false,
 }) {
   const keyboardId = useId();
   const dock = useContext(KeyboardDockContext);
   const cardVisible = useCardVisibility();
   const [hidden, setHidden] = useState(defaultHidden);
+  const [prefersPinned, setPrefersPinned] = useState(defaultPinned);
   const isPinned = dock?.pinnedKeyboardId === keyboardId;
+  const wasPinned = useRef(false);
+  const pin = dock?.pin;
   const releasePin = dock?.release;
 
   useEffect(() => {
@@ -76,9 +99,21 @@ export function VirtualKeyboard({
     }
   }, [dock]);
 
+  // Hidden/collapsed keyboards retain their placement preference but cannot
+  // actively occupy the singleton dock. Showing/reopening requests it again.
   useEffect(() => {
-    if (!cardVisible || hidden) releasePin?.(keyboardId);
-  }, [cardVisible, hidden, keyboardId, releasePin]);
+    if (cardVisible && !hidden && prefersPinned) pin?.(keyboardId);
+    else releasePin?.(keyboardId);
+  }, [cardVisible, hidden, keyboardId, pin, prefersPinned, releasePin]);
+
+  // A visible keyboard that loses the dock to another keyboard also loses its
+  // pin preference. Inactive hidden/collapsed keyboards keep their preference.
+  useEffect(() => {
+    if (wasPinned.current && !isPinned && cardVisible && !hidden) {
+      setPrefersPinned(false);
+    }
+    wasPinned.current = isPinned;
+  }, [cardVisible, hidden, isPinned]);
 
   useEffect(() => () => releasePin?.(keyboardId), [keyboardId, releasePin]);
 
@@ -88,33 +123,50 @@ export function VirtualKeyboard({
     else onLetter(key);
   };
 
-  if (hidden) {
-    return (
-      <div className={`${styles.dock} ${styles.hidden}`}>
-        <button type="button" className={styles.control} onClick={() => setHidden(false)}>
-          Show keyboard
-        </button>
-      </div>
-    );
-  }
+  const togglePinned = () => {
+    const next = !prefersPinned;
+    setPrefersPinned(next);
+    if (next) pin?.(keyboardId);
+    else releasePin?.(keyboardId);
+  };
 
   return (
     <div className={`${styles.dock} ${isPinned ? styles.pinned : ''}`}>
-      <div className={styles.shell}>
-        <div className={styles.controls}>
-          <button type="button" className={styles.control} onClick={() => setHidden(true)}>
-            Hide
+      <div className={styles.originControls}>
+        {!hidden && dock && (
+          <button
+            type="button"
+            className={`${styles.control} ${styles.pinControl}`}
+            onClick={togglePinned}
+            aria-label={prefersPinned ? 'Unpin keyboard' : 'Pin keyboard'}
+            title={prefersPinned ? 'Unpin keyboard' : 'Pin keyboard'}
+          >
+            <PinIcon pinned={prefersPinned} />
           </button>
-          {dock && (
+        )}
+        <button
+          type="button"
+          className={styles.control}
+          onClick={() => setHidden(value => !value)}
+          aria-label={hidden ? 'Show keyboard' : 'Hide keyboard'}
+          title={hidden ? 'Show keyboard' : 'Hide keyboard'}
+        >
+          <KeyboardIcon slashed={!hidden} />
+        </button>
+      </div>
+      {!hidden && (
+        <div className={styles.shell}>
+          {isPinned && (
             <button
               type="button"
-              className={`${styles.control} ${styles.pinControl}`}
-              onClick={() => isPinned ? dock.release(keyboardId) : dock.pin(keyboardId)}
+              className={styles.dockUnpin}
+              onClick={togglePinned}
+              aria-label="Unpin docked keyboard"
+              title="Unpin keyboard"
             >
-              {isPinned ? 'Unpin' : 'Pin'}
+              <PinIcon pinned />
             </button>
           )}
-        </div>
         <div className={styles.keyboard} role="group" aria-label="Word entry keyboard">
           {ROWS.map((row, rowIndex) => (
             <div className={styles.row} key={rowIndex}>
@@ -141,7 +193,8 @@ export function VirtualKeyboard({
             </div>
           ))}
         </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

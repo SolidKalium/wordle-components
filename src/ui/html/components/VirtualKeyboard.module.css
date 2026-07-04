@@ -20,22 +20,43 @@
     0 2px 0 rgba(8, 11, 11, 0.65);
 }
 
-.controls {
+.originControls {
   display: flex;
   justify-content: flex-end;
   gap: 5px;
-  min-height: 22px;
+  min-height: 26px;
 }
 
 .control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 24px;
+  height: 22px;
   border: 0;
   border-radius: 3px;
-  padding: 3px 7px;
+  padding: 3px;
   background: #3a3a3c;
   color: #d0d2d6;
   font: inherit;
   font-size: 10px;
   cursor: pointer;
+}
+
+.control svg,
+.dockUnpin svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.control .iconSlash {
+  stroke-width: 2.25;
 }
 
 .control:hover { background: #4a4a4d; }
@@ -45,9 +66,8 @@
   display: none;
 }
 
-.hidden {
-  display: flex;
-  justify-content: flex-end;
+.dockUnpin {
+  display: none;
 }
 
 .keyboard {
@@ -176,5 +196,27 @@
     box-shadow:
       inset 0 1px rgba(255, 255, 255, 0.08),
       0 -3px 12px rgba(0, 0, 0, 0.35);
+  }
+
+  .pinned .dockUnpin {
+    position: absolute;
+    top: -12px;
+    right: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 24px;
+    padding: 3px;
+    border: 1px solid #485251;
+    border-radius: 4px 4px 0 0;
+    background: #15191a;
+    color: #d0d2d6;
+    cursor: pointer;
+  }
+
+  .pinned .dockUnpin:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 1px;
   }
 }

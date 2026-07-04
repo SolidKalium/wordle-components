@@ -36,7 +36,7 @@ describe('WordInput virtual keyboard', () => {
     expect(store.getState().guesses[0].word).toBe('crane');
   });
 
-  it('transfers the single dock and releases it when its card collapses', async () => {
+  it('transfers the dock and restores a retained preference after collapse or hide', async () => {
     const user = userEvent.setup();
     const store = createGameStore({ wordList: ['cigar'], answers: ['cigar'], answer: 'cigar' });
 
@@ -49,15 +49,27 @@ describe('WordInput virtual keyboard', () => {
       </GameStoreContext.Provider>,
     );
 
-    const [firstPin, secondPin] = screen.getAllByRole('button', { name: 'Pin', hidden: true });
+    const [firstPin, secondPin] = screen.getAllByRole('button', { name: 'Pin keyboard', hidden: true });
     fireEvent.click(firstPin);
-    expect(screen.getAllByRole('button', { name: 'Unpin', hidden: true })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Unpin docked keyboard', hidden: true })).toHaveLength(1);
 
     fireEvent.click(secondPin);
-    expect(screen.getAllByRole('button', { name: 'Unpin', hidden: true })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Unpin docked keyboard', hidden: true })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Unpin keyboard', hidden: true })).toHaveLength(1);
 
     await user.click(screen.getByText('Second'));
-    expect(screen.queryByRole('button', { name: 'Unpin', hidden: true })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Unpin docked keyboard', hidden: true })).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'Unpin keyboard', hidden: true })).toHaveLength(1);
+
+    await user.click(screen.getByText('Second'));
+    expect(screen.getAllByRole('button', { name: 'Unpin docked keyboard', hidden: true })).toHaveLength(1);
+
+    const [, secondHide] = screen.getAllByRole('button', { name: 'Hide keyboard', hidden: true });
+    fireEvent.click(secondHide);
+    expect(screen.queryByRole('button', { name: 'Unpin docked keyboard', hidden: true })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show keyboard', hidden: true }));
+    expect(screen.getAllByRole('button', { name: 'Unpin docked keyboard', hidden: true })).toHaveLength(1);
   });
 
   it('clears a tentative word when another control commits a move', async () => {
