@@ -147,7 +147,11 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
       - Ideally does know when a letter appears multiple times or has both a green and a yellow (or two!) remaining.
     - Separately: word entry (virtual keyboard)
       - Allow tap-to-move-cursor. Should it open the OS keyboard? Only if a virtual keyboard isn't attached?
-      - Word input should be shareable with analysis things, like brute force list and suggestions. How is that property controlled? By user? By presence of a context?
+      - Word input should be shareable with analysis things
+        - filter brute force list
+        - filter suggestions
+        - Constraint view: highlight a guessed letter in the gray list if it is typed somewhere it can't be (here, I mean a subset of gray: 0 copies or all copies are green). Could emphasize the yellow square if a letter is placed that can't be there? Or just the letter in the square? Maybe the square and the specific letter? That might be the best option.
+        - How is that property controlled? By user? By presence of a context? Probably just the context.
   - Hard mode toggle
   - Toggle or other setting for whether things like the suggester's words are from answers or all?
   - Other analysis components? E.g. compare across strategies
@@ -179,7 +183,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
   - Probably create a script that knows the best first move on a few dimensions at once: all-guesses vs valid answers, hard mode on/off (won't matter for information-theoretic first turns, only exhaustive search), strategy, maybe certain filters. Assumes unchanged answer-word list. Probably include a hash of the list to validate the list and computed values match. Maybe warn somewhere in a build script if the computations are stale.
   - Might also cache related statistics for that first move? But if only needing stats for one guess, it shouldn't be too bad to recompute.
   - For some strategies, like the exhaustive ones or allowing all valid guesses, caching the second turn might also be useful.
-  - May also want some kind of pool of first words of varying quality? A cache of some kind will help with the suggestions.
+  - May also want some kind of pool of first words of varying quality? A cache of some kind will help with the suggestions. apple
 - Claude Skill
 - Test suite: Claude Skill ?
 - Strategy: full-depth calculation (min avg or minimax depth)

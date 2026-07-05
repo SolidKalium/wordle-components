@@ -24,20 +24,21 @@ export function WordInput({
   const constraints = useGameStore(s => s.constraints);
   const answer      = useGameStore(s => s.answer);
   const guessCount  = useGameStore(s => s.guesses.length);
-  const containerRef = useRef(null);
+  const inputRefs = useRef(Array.from({ length: 5 }, () => null));
   const previousGuessCount = useRef(guessCount);
 
   const [buffer,   setBuffer]   = useState([...EMPTY_BUFFER]);
   const [cursor,   setCursor]   = useState(0);
   const [error,    setError]    = useState('');
   const [focused,  setFocused]  = useState(false);
+  const [keyboardHidden, setKeyboardHidden] = useState(defaultKeyboardHidden);
 
   // Reset and refocus when a new game starts
   useEffect(() => {
     setBuffer([...EMPTY_BUFFER]);
     setCursor(0);
     setError('');
-    containerRef.current?.focus();
+    inputRefs.current[0]?.focus();
   }, [answer]);
 
   // A move committed elsewhere (for example, by SuggestionPicker or another
@@ -66,23 +67,29 @@ export function WordInput({
     }
   };
 
-  const enterLetter = (letter) => {
+  const focusPosition = (position) => {
+    const next = Math.max(0, Math.min(MAX_CURSOR, position));
+    setCursor(next);
+    inputRefs.current[next]?.focus();
+  };
+
+  const enterLetter = (letter, position = cursor) => {
     if (isOver || !/[a-z]/i.test(letter)) return;
     const next = [...buffer];
-    next[cursor] = letter.toLowerCase();
+    next[position] = letter.toLowerCase();
     setBuffer(next);
-    setCursor(c => Math.min(MAX_CURSOR, c + 1));
+    focusPosition(Math.min(MAX_CURSOR, position + 1));
     setError('');
   };
 
-  const backspace = () => {
+  const backspace = (position = cursor) => {
     if (isOver) return;
-    const index = buffer[cursor] === null ? cursor - 1 : cursor;
+    const index = buffer[position] === null ? position - 1 : position;
     if (index < 0) return;
     const next = [...buffer];
     next[index] = null;
     setBuffer(next);
-    setCursor(index);
+    focusPosition(index);
     setError('');
   };
 
@@ -90,12 +97,8 @@ export function WordInput({
     if (!isOver && buffer.every(c => c !== null)) submit(buffer);
   };
 
-  const refocus = () => containerRef.current?.focus();
-
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (position, e) => {
     if (isOver) return;
-    // Let the keyboard's actual buttons handle Enter/Space themselves.
-    if (e.target !== e.currentTarget) return;
 
     switch (e.key) {
       case 'Enter':
@@ -104,40 +107,42 @@ export function WordInput({
         return;
 
       case 'Escape':
-        containerRef.current?.blur();
+        e.currentTarget.blur();
         return;
-
-      case 'Tab': {
-        if (e.shiftKey) break; // let Shift-Tab propagate for backwards navigation
-        const next = buffer.map((c, i) => c ?? constraints.known[i] ?? null);
-        const wouldChange = next.some((c, i) => c !== buffer[i]);
-        if (!wouldChange) break; // nothing to autofill — let Tab move focus normally
-        e.preventDefault();
-        const firstEmpty = next.findIndex(c => c === null);
-        setBuffer(next);
-        setCursor(firstEmpty === -1 ? MAX_CURSOR : firstEmpty);
-        return;
-      }
 
       case 'Backspace':
         e.preventDefault();
-        backspace();
+        backspace(position);
         return;
+
+      case 'Delete': {
+        e.preventDefault();
+        const next = [...buffer];
+        next[position] = null;
+        setBuffer(next);
+        setError('');
+        return;
+      }
 
       case 'ArrowLeft':
         e.preventDefault();
-        setCursor(c => Math.max(0, c - 1));
+        focusPosition(position - 1);
         return;
 
       case 'ArrowRight':
         e.preventDefault();
-        setCursor(c => Math.min(MAX_CURSOR, c + 1));
+        focusPosition(position + 1);
+        return;
+
+      case ' ':
+        e.preventDefault();
+        focusPosition(position + 1);
         return;
 
       default:
-        if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && cursor <= MAX_CURSOR) {
+        if (/^[a-zA-Z]$/.test(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey) {
           e.preventDefault();
-          enterLetter(e.key);
+          enterLetter(e.key, position);
         }
     }
   };
@@ -145,16 +150,31 @@ export function WordInput({
   if (isOver) return null;
 
   return (
-    <div
-      ref={containerRef}
-      className={styles.wrapper}
-      tabIndex={0}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-      onKeyDown={handleKeyDown}
-      onClick={() => containerRef.current?.focus()}
-    >
-      <InputTiles slots={slots} focused={focused} />
+    <div className={styles.wrapper}>
+      <InputTiles
+        slots={slots}
+        focused={focused}
+        inputRefs={inputRefs}
+        nativeKeyboardEnabled={!showKeyboard || keyboardHidden}
+        onFocus={(position) => {
+          setCursor(position);
+          setFocused(true);
+        }}
+        onBlur={() => setFocused(false)}
+        onChange={(position, event) => {
+          const letter = event.target.value.replace(/[^a-zA-Z]/g, '').slice(-1);
+          if (letter) {
+            enterLetter(letter, position);
+          } else {
+            const next = [...buffer];
+            next[position] = null;
+            setBuffer(next);
+            setCursor(position);
+            setError('');
+          }
+        }}
+        onKeyDown={handleKeyDown}
+      />
       {showMissingLetters && pool.length > 0 && (
         <div className={styles.pool}>
           {pool.map(({ kind, letter }, i) => (
@@ -168,14 +188,15 @@ export function WordInput({
         </div>
       )}
       {error && <span className={styles.error}>{error}</span>}
-      <span className={styles.hint}>click to focus · enter to guess · tab to fill greens</span>
+      <span className={styles.hint}>click a tile to move · enter to guess</span>
       {showKeyboard && (
         <VirtualKeyboard
           constraints={constraints}
-          defaultHidden={defaultKeyboardHidden}
-          onLetter={(letter) => { enterLetter(letter); refocus(); }}
-          onBackspace={() => { backspace(); refocus(); }}
-          onEnter={() => { submitCurrent(); refocus(); }}
+          hidden={keyboardHidden}
+          onHiddenChange={setKeyboardHidden}
+          onLetter={enterLetter}
+          onBackspace={backspace}
+          onEnter={submitCurrent}
         />
       )}
     </div>

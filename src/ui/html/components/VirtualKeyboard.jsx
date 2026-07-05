@@ -29,6 +29,7 @@ function LetterKey({ letter, constraints, onPress, disabled }) {
   return (
     <button
       type="button"
+      tabIndex={-1}
       className={`${styles.key} ${styles[state]}`}
       onClick={() => onPress(letter)}
       disabled={disabled}
@@ -80,13 +81,13 @@ export function VirtualKeyboard({
   onEnter,
   onBackspace,
   disabled = false,
-  defaultHidden = false,
+  hidden = false,
+  onHiddenChange,
   defaultPinned = false,
 }) {
   const keyboardId = useId();
   const dock = useContext(KeyboardDockContext);
   const cardVisible = useCardVisibility();
-  const [hidden, setHidden] = useState(defaultHidden);
   const [prefersPinned, setPrefersPinned] = useState(defaultPinned);
   const isPinned = dock?.pinnedKeyboardId === keyboardId;
   const wasPinned = useRef(false);
@@ -132,7 +133,7 @@ export function VirtualKeyboard({
 
   const toggleHidden = () => {
     if (hidden && prefersPinned) pin?.(keyboardId);
-    setHidden(value => !value);
+    onHiddenChange?.(!hidden);
   };
 
   return (
@@ -186,6 +187,7 @@ export function VirtualKeyboard({
               ) : (
                 <button
                   type="button"
+                  tabIndex={-1}
                   key={key}
                   className={`${styles.key} ${styles.actionKey}`}
                   onClick={() => press(key)}

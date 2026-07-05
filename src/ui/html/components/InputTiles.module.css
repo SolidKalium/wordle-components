@@ -8,14 +8,23 @@
   box-sizing: border-box;
   width:  var(--tile-size, 48px);
   height: var(--tile-size, 48px);
+  border: 0;
   border-radius: 3px;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: var(--tile-font, 20px);
+  font-family: inherit;
   font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
   letter-spacing: 0.02em;
+  padding: 0;
+  outline: none;
+  caret-color: transparent;
+  cursor: text;
+  appearance: none;
   user-select: none;
   transition: background 0.1s;
 }

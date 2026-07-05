@@ -21,7 +21,14 @@ describe('WordInput virtual keyboard', () => {
     );
 
     expect(screen.queryByRole('group', { name: 'Word entry keyboard' })).toBeNull();
-    expect(screen.getByText(/click to focus/)).toBeTruthy();
+    expect(screen.getByText(/click a tile to move/)).toBeTruthy();
+    const inputs = screen.getAllByRole('textbox');
+    expect(inputs).toHaveLength(5);
+    expect(inputs.every(input => !input.readOnly && input.inputMode === 'text')).toBe(true);
+
+    fireEvent.change(inputs[0], { target: { value: 'C' } });
+    expect(inputs[0].value).toBe('C');
+    expect(document.activeElement).toBe(inputs[1]);
   });
 
   it('edits and submits the same draft shown by the input tiles', async () => {
@@ -40,6 +47,8 @@ describe('WordInput virtual keyboard', () => {
       </GameStoreContext.Provider>,
     );
 
+    expect(screen.getAllByRole('textbox').every(input => input.readOnly && input.inputMode === 'none')).toBe(true);
+
     for (const letter of 'crane') {
       await user.click(screen.getByRole('button', { name: letter.toUpperCase() }));
     }
@@ -47,6 +56,57 @@ describe('WordInput virtual keyboard', () => {
 
     expect(store.getState().guesses).toHaveLength(1);
     expect(store.getState().guesses[0].word).toBe('crane');
+  });
+
+  it('moves the cursor to a selected tile', async () => {
+    const user = userEvent.setup();
+    const store = createGameStore({ wordList: ['crane', 'brane'], answers: ['brane'], answer: 'brane' });
+
+    render(
+      <GameStoreContext.Provider value={store}>
+        <KeyboardDockProvider><WordInput /></KeyboardDockProvider>
+      </GameStoreContext.Provider>,
+    );
+
+    for (const letter of 'crane') {
+      await user.click(screen.getByRole('button', { name: letter.toUpperCase() }));
+    }
+    await user.click(screen.getByRole('textbox', { name: 'Guess letter 1' }));
+    await user.click(screen.getByRole('button', { name: 'B' }));
+    await user.click(screen.getByRole('button', { name: 'Enter' }));
+
+    expect(store.getState().guesses[0].word).toBe('brane');
+  });
+
+  it('keeps DOM focus and the visual cursor together across repeated Backspace', async () => {
+    const user = userEvent.setup();
+    const store = createGameStore({ wordList: ['crane'], answers: ['crane'], answer: 'crane' });
+
+    render(
+      <GameStoreContext.Provider value={store}>
+        <KeyboardDockProvider><WordInput /></KeyboardDockProvider>
+      </GameStoreContext.Provider>,
+    );
+
+    for (const letter of 'crane') {
+      await user.click(screen.getByRole('button', { name: letter.toUpperCase() }));
+    }
+    const inputs = screen.getAllByRole('textbox');
+
+    fireEvent.keyDown(inputs[4], { key: 'Backspace' });
+    expect(document.activeElement).toBe(inputs[4]);
+    expect(inputs[4].value).toBe('');
+
+    fireEvent.keyDown(inputs[4], { key: 'Backspace' });
+    expect(document.activeElement).toBe(inputs[3]);
+    expect(inputs[3].value).toBe('');
+
+    fireEvent.keyDown(inputs[3], { key: 'Backspace' });
+    expect(document.activeElement).toBe(inputs[2]);
+    expect(inputs[2].value).toBe('');
+
+    fireEvent.keyDown(inputs[2], { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(inputs[3]);
   });
 
   it('transfers the dock and restores a retained preference after collapse or hide', async () => {
