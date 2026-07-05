@@ -144,13 +144,11 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - Letter frequency over remaining words. Bar or sparkline? Better choice may just be normalizing the counts and using color intensity within a set range for the letters that have non-zero instances. Then another color or visual style for technically possible but incompatible with remaining words. And technically impossible letters (known gray tile or yellow tile) are just missing.
     - Something venn-like or a bit amorphous/fluid?
     - Ideally does know when a letter appears multiple times or has both a green and a yellow (or two!) remaining.
-  - Word entry
-    - Paste inputs for WordEntry and ConstraintEditor Known?
-    - Word input should be shareable with analysis things
-      - filter brute force list
-      - filter suggestions
-      - Constraint view: highlight a guessed letter in the gray list if it is typed somewhere it can't be (here, I mean a subset of gray: 0 copies or all copies are green). Could emphasize the yellow square if a letter is placed that can't be there? Or just the letter in the square? Maybe the square and the specific letter? That might be the best option.
-      - How is that property controlled? By user? By presence of a context? Probably just the context.
+  - Word input should be shareable with analysis things
+    - filter brute force list
+    - filter suggestions
+    - Constraint view: highlight a guessed letter in the gray list if it is typed somewhere it can't be (here, I mean a subset of gray: 0 copies or all copies are green). Could emphasize the yellow square if a letter is placed that can't be there? Or just the letter in the square? Maybe the square and the specific letter? That might be the best option.
+    - How is that property controlled? By user? By presence of a context? Probably just the context.
   - Hard mode toggle
   - Toggle or other setting for whether things like the suggester's words are from answers or all?
   - Other analysis components? E.g. compare across strategies
