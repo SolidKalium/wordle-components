@@ -132,26 +132,25 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - Alternate tree views? Collapsible tree or treemap? But will struggle on turn 1 with 120-140 groups.
     - Once game board is added, make it re-anchor when a game exists and a move is made
       - Also: optionally track the partial input for the game and use that instead of the best move for the current game state
-  - Game board
-    - Separately: visualize constraints
-      - A word has up to 5 letters. Could just show one row per letter found with green/yellow per square. Then a list of gray letters.
-        - If built, make it possible to switch between col major and row major views.
-        - Not really liking this.
-      - Or could show per slot: The letter known or else the letters it excludes. Still a separate list of gray letters.
-      - Per-position possibility sets: may need to avoid moving the letters. Maybe two or three columns per position, with a dividing line to keep positions separate?
-        - At three columns, could use a rotated keyboard layout.
-        - Or use a single through-line for each letter, with it effectively dropping out if it doesn't go there. Could combine with the letter frequency idea, varying width and/or color intensity based on remaining word compatibility. Color itself could reflect yellow vs green vs untested. To make the lines denser, can use two columns for the letter labels, with the bars reaching in between the letters of the second col to reach the first (think witch's stairs). Show a double letter label when a letter has two yellows. (Recall: 3 yellows is impossible for five letter words)
-          - Hover or tap to highlight a row. Tap ought to also support dragging across them to highlight whichever is currently under the tap? Sounds a bit complicated. See if it looks good first.
-      - Letter frequency over remaining words. Bar or sparkline? Better choice may just be normalizing the counts and using color intensity within a set range for the letters that have non-zero instances. Then another color or visual style for technically possible but incompatible with remaining words. And technically impossible letters (known gray tile or yellow tile) are just missing.
-      - Something venn-like or a bit amorphous/fluid?
-      - Ideally does know when a letter appears multiple times or has both a green and a yellow (or two!) remaining.
-    - Separately: word entry (virtual keyboard)
-      - Allow tap-to-move-cursor. Should it open the OS keyboard? Only if a virtual keyboard isn't attached?
-      - Word input should be shareable with analysis things
-        - filter brute force list
-        - filter suggestions
-        - Constraint view: highlight a guessed letter in the gray list if it is typed somewhere it can't be (here, I mean a subset of gray: 0 copies or all copies are green). Could emphasize the yellow square if a letter is placed that can't be there? Or just the letter in the square? Maybe the square and the specific letter? That might be the best option.
-        - How is that property controlled? By user? By presence of a context? Probably just the context.
+  - Other ways to visualize constraints
+    - A word has up to 5 letters. Could just show one row per letter found with green/yellow per square. Then a list of gray letters.
+      - If built, make it possible to switch between col major and row major views.
+      - Not really liking this.
+    - Or could show per slot: The letter known or else the letters it excludes. Still a separate list of gray letters.
+    - Per-position possibility sets: may need to avoid moving the letters. Maybe two or three columns per position, with a dividing line to keep positions separate?
+      - At three columns, could use a rotated keyboard layout.
+      - Or use a single through-line for each letter, with it effectively dropping out if it doesn't go there. Could combine with the letter frequency idea, varying width and/or color intensity based on remaining word compatibility. Color itself could reflect yellow vs green vs untested. To make the lines denser, can use two columns for the letter labels, with the bars reaching in between the letters of the second col to reach the first (think witch's stairs). Show a double letter label when a letter has two yellows. (Recall: 3 yellows is impossible for five letter words)
+        - Hover or tap to highlight a row. Tap ought to also support dragging across them to highlight whichever is currently under the tap? Sounds a bit complicated. See if it looks good first.
+    - Letter frequency over remaining words. Bar or sparkline? Better choice may just be normalizing the counts and using color intensity within a set range for the letters that have non-zero instances. Then another color or visual style for technically possible but incompatible with remaining words. And technically impossible letters (known gray tile or yellow tile) are just missing.
+    - Something venn-like or a bit amorphous/fluid?
+    - Ideally does know when a letter appears multiple times or has both a green and a yellow (or two!) remaining.
+  - Word entry
+    - Paste inputs for WordEntry and ConstraintEditor Known?
+    - Word input should be shareable with analysis things
+      - filter brute force list
+      - filter suggestions
+      - Constraint view: highlight a guessed letter in the gray list if it is typed somewhere it can't be (here, I mean a subset of gray: 0 copies or all copies are green). Could emphasize the yellow square if a letter is placed that can't be there? Or just the letter in the square? Maybe the square and the specific letter? That might be the best option.
+      - How is that property controlled? By user? By presence of a context? Probably just the context.
   - Hard mode toggle
   - Toggle or other setting for whether things like the suggester's words are from answers or all?
   - Other analysis components? E.g. compare across strategies

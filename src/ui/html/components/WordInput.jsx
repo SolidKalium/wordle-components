@@ -174,6 +174,20 @@ export function WordInput({
           }
         }}
         onKeyDown={handleKeyDown}
+        onPaste={(position, event) => {
+          const letters = event.clipboardData
+            .getData('text')
+            .replace(/[^a-zA-Z]/g, '')
+            .toLowerCase()
+            .slice(0, 5 - position);
+          if (!letters) return;
+          event.preventDefault();
+          const next = [...buffer];
+          for (let i = 0; i < letters.length; i++) next[position + i] = letters[i];
+          setBuffer(next);
+          focusPosition(Math.min(MAX_CURSOR, position + letters.length));
+          setError('');
+        }}
       />
       {showMissingLetters && pool.length > 0 && (
         <div className={styles.pool}>

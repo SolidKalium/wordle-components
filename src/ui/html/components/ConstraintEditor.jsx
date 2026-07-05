@@ -8,6 +8,7 @@ import { useSuggestions } from './useSuggestions.js';
 const GreenRow = forwardRef(function GreenRow({ onUp, onDown }, ref) {
   const green    = useConstraintStore(s => s.green);
   const setGreen = useConstraintStore(s => s.setGreen);
+  const setGreenRange = useConstraintStore(s => s.setGreenRange);
   const refs     = useRef(Array.from({ length: 5 }, () => null));
 
   useImperativeHandle(ref, () => ({
@@ -21,6 +22,7 @@ const GreenRow = forwardRef(function GreenRow({ onUp, onDown }, ref) {
           key={i}
           ref={el => { refs.current[i] = el; }}
           className={`${styles.tile} ${styles.greenTile} ${letter ? styles.greenFilled : ''}`}
+          aria-label={`Known position ${i + 1}`}
           value={letter?.toUpperCase() ?? ''}
           maxLength={2}
           onFocus={e => { const len = e.target.value.length; e.target.setSelectionRange(len, len); }}
@@ -28,6 +30,17 @@ const GreenRow = forwardRef(function GreenRow({ onUp, onDown }, ref) {
             // Handles paste / mobile IME only — regular typing goes through onKeyDown.
             const ch = e.target.value.replace(/[^a-zA-Z]/g, '').slice(-1).toLowerCase() || null;
             setGreen(i, ch);
+          }}
+          onPaste={e => {
+            const letters = e.clipboardData
+              .getData('text')
+              .replace(/[^a-zA-Z]/g, '')
+              .toLowerCase()
+              .slice(0, 5 - i);
+            if (!letters) return;
+            e.preventDefault();
+            setGreenRange(i, [...letters]);
+            refs.current[Math.min(4, i + letters.length)]?.focus();
           }}
           onKeyDown={e => {
             if (/^[a-zA-Z]$/.test(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey) {
@@ -98,6 +111,7 @@ const YellowRow = forwardRef(function YellowRow({ onUp, onDown }, ref) {
           key={i}
           ref={el => { refs.current[i] = el; }}
           className={`${styles.tile} ${styles.yellowTile} ${letters.length > 0 ? styles.yellowFilled : ''}`}
+          aria-label={`Not at position ${i + 1}`}
           maxLength={4}
           value={letters.join('').toUpperCase()}
           onChange={e => {

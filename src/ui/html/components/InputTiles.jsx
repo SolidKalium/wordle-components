@@ -21,6 +21,7 @@ export function InputTiles({
   onBlur,
   onFocus,
   onKeyDown,
+  onPaste,
 }) {
   const gap      = tileSize <= 16 ? 2 : 4;
   const fontSize = Math.round(tileSize * 0.42);
@@ -55,6 +56,7 @@ export function InputTiles({
           onBlur={() => onBlur?.(i)}
           onFocus={() => onFocus?.(i)}
           onKeyDown={event => onKeyDown?.(i, event)}
+          onPaste={event => onPaste?.(i, event)}
         />
       ))}
     </span>

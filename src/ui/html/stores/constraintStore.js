@@ -25,6 +25,13 @@ export const createConstraintStore = () => createStore((set) => ({
     return { green, ...derive({ ...s, green }) };
   }),
 
+  setGreenRange: (start, chars) => set(s => {
+    const green = s.green.map((g, i) => (
+      i >= start && i < start + chars.length ? chars[i - start] : g
+    ));
+    return { green, ...derive({ ...s, green }) };
+  }),
+
   setYellow: (pos, chs) => set(s => {
     const yellow = s.yellow.map((y, i) => i === pos ? chs : y);
     return { yellow, ...derive({ ...s, yellow }) };

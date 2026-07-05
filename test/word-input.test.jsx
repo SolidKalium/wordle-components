@@ -7,6 +7,8 @@ import { GameStoreContext, createGameStore } from '../src/ui/html/stores/gameSto
 import { WordInput } from '../src/ui/html/components/WordInput.jsx';
 import { KeyboardDockProvider } from '../src/ui/html/components/KeyboardDockContext.jsx';
 import { Card } from '../src/ui/html/components/Card.jsx';
+import { ConstraintEditor } from '../src/ui/html/components/ConstraintEditor.jsx';
+import { ConstraintStoreContext, createConstraintStore } from '../src/ui/html/stores/constraintStore.js';
 
 afterEach(cleanup);
 
@@ -107,6 +109,39 @@ describe('WordInput virtual keyboard', () => {
 
     fireEvent.keyDown(inputs[2], { key: 'ArrowRight' });
     expect(document.activeElement).toBe(inputs[3]);
+  });
+
+  it('pastes consecutive letters into word-entry cells', () => {
+    const store = createGameStore({ wordList: ['crane'], answers: ['crane'], answer: 'crane' });
+
+    render(
+      <GameStoreContext.Provider value={store}>
+        <KeyboardDockProvider><WordInput /></KeyboardDockProvider>
+      </GameStoreContext.Provider>,
+    );
+
+    const inputs = screen.getAllByRole('textbox');
+    fireEvent.paste(inputs[0], { clipboardData: { getData: () => 'Crane!' } });
+
+    expect(inputs.map(input => input.value).join('')).toBe('CRANE');
+    expect(document.activeElement).toBe(inputs[4]);
+  });
+
+  it('pastes consecutive letters into ConstraintEditor Known cells', () => {
+    const store = createConstraintStore();
+
+    render(
+      <ConstraintStoreContext.Provider value={store}>
+        <ConstraintEditor defaultShowSuggestions={false} />
+      </ConstraintStoreContext.Provider>,
+    );
+
+    fireEvent.paste(screen.getByRole('textbox', { name: 'Known position 2' }), {
+      clipboardData: { getData: () => 'R-A-N-E' },
+    });
+
+    expect(store.getState().green).toEqual([null, 'r', 'a', 'n', 'e']);
+    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Known position 5' }));
   });
 
   it('transfers the dock and restores a retained preference after collapse or hide', async () => {
