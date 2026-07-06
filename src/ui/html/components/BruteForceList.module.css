@@ -127,9 +127,125 @@
   padding-top: 32px;
 }
 
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 23px;
+}
+
 .count {
   font-size: 11px;
   color: #555;
   user-select: none;
   flex-shrink: 0;
+}
+
+.jumpControl {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.jumpTrigger,
+.jumpGo {
+  border: 0;
+  padding: 3px 0;
+  background: transparent;
+  color: #555;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 100ms ease;
+}
+
+.jumpTrigger:hover,
+.jumpTrigger:focus-visible,
+.jumpExpanded .jumpTrigger,
+.jumpGo:hover,
+.jumpGo:focus-visible {
+  color: #b0b3b5;
+}
+
+.jumpTrigger:focus-visible,
+.jumpGo:focus-visible {
+  outline: none;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.jumpTrigger:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.jumpEditor {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 0;
+  margin-left: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateX(5px);
+  visibility: hidden;
+  transition:
+    width 120ms ease,
+    margin-left 120ms ease,
+    opacity 80ms ease,
+    transform 120ms ease,
+    visibility 0s linear 120ms;
+}
+
+.jumpExpanded .jumpEditor {
+  width: 94px;
+  margin-left: 6px;
+  opacity: 1;
+  transform: translateX(0);
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.jumpInput {
+  box-sizing: border-box;
+  width: 64px;
+  height: 22px;
+  border: 0;
+  border-radius: 0;
+  padding: 2px 4px 1px;
+  background: transparent;
+  color: #b0b3b5;
+  font-family: ui-monospace, "SF Mono", "Fira Code", "Cascadia Code", "Courier New", monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  outline: none;
+}
+
+.jumpInput:focus {
+  border-bottom: 1.5px solid #818384;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.jumpGo {
+  width: 26px;
+  flex-shrink: 0;
+  color: #b0b3b5;
+}
+
+.jumpGo:hover,
+.jumpGo:focus-visible {
+  color: oklch(83% 0.1 142);
+}
+
+.jumpGo:disabled {
+  color: #555;
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jumpEditor { transition: none; }
 }

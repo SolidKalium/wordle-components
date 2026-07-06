@@ -59,3 +59,32 @@ it('supports row, page, modifier, and boundary keyboard scrolling', async () => 
   fireEvent.keyDown(scroller, { key: 'ArrowUp', metaKey: true });
   expect(scroller.scrollTop).toBe(0);
 });
+
+it('expands, retains, and submits the Jump to field explicitly', async () => {
+  const store = createConstraintStore();
+  render(
+    <ConstraintStoreContext.Provider value={store}>
+      <BruteForceList wordsPerLine={5} />
+    </ConstraintStoreContext.Provider>,
+  );
+
+  const scroller = await screen.findByRole('region', { name: 'Generated letter combinations' });
+  const trigger = screen.getByRole('button', { name: 'Jump to' });
+  fireEvent.click(trigger);
+
+  const input = screen.getByRole('textbox', { name: 'Word or prefix to jump to' });
+  expect(document.activeElement).toBe(input);
+  expect(trigger.tabIndex).toBe(-1);
+  fireEvent.change(input, { target: { value: 'zzzzz' } });
+  expect(scroller.scrollTop).toBe(0);
+
+  fireEvent.keyDown(input, { key: 'Enter' });
+  const metrics = createScrollMetrics(Math.ceil(26 ** 5 / 5));
+  expect(scroller.scrollTop).toBeCloseTo(metrics.physicalMax, 5);
+  expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  expect(trigger.tabIndex).toBe(0);
+
+  fireEvent.click(trigger);
+  expect(input.value).toBe('zzzzz');
+  expect(document.activeElement).toBe(input);
+});

@@ -156,8 +156,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
   - Brute force options list
     - When connected to a game, while the player is typing a guess: treats entered letters, other than ones that disagree with the constraints, as green. Or maybe treat all typed letters as green, even if they disagree with constraints? LATER
       - Should consider how the scroll position is preserved while the player types or deletes, and after committing a guess.
-    - The position preservation when the constraint input is updated is known to be imperfect. It's often off by one because the scroller reports a different top row than a user would expect. A couple attempts didn't work, so the can is being kicked.
-    - Add a search box when over a certain number of options? Maybe just scrolls to where that sequence would be? Or does it need to filter? Search and filter should be distinct modes and we may not need both.
   - Distribution Chart
     - Determine how the average is calculated, document. (does it include words past 6 guesses? Coerce them to 6 or 7?) Document on the component itself, in the UI.
   - Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.

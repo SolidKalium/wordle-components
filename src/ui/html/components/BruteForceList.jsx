@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { BruteForceGenerator } from '../../../lib/bruteForce.mjs';
 import { useConstraints } from '../stores/useConstraints.js';
 import styles from './BruteForceList.module.css';
@@ -36,13 +36,23 @@ export function createScrollMetrics(rowCount, viewportHeight = VIEWPORT_HEIGHT_P
   return { logicalHeight, physicalHeight, logicalMax, physicalMax, scale };
 }
 
+export function jumpRowFor(gen, target, wordsPerLine) {
+  const rank = gen.rankOf(target);
+  const exact = gen.nth(rank) === target;
+  const contextualIndex = exact ? rank : Math.max(0, rank - 1);
+  return Math.floor(contextualIndex / wordsPerLine);
+}
+
 export function BruteForceList({ wordsPerLine = 3 }) {
   const constraints = useConstraints();
+  const jumpInputId = useId();
 
   const [total, setTotal]       = useState(0);
   const [revision, setRevision] = useState(0);
   const [physicalScrollTop, setPhysicalScrollTop] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
+  const [jumpExpanded, setJumpExpanded] = useState(false);
+  const [jumpValue, setJumpValue] = useState('');
   const genRef          = useRef(null);
   const scrollerRef     = useRef(null);
   const seekOverlayRef  = useRef(null);
@@ -50,6 +60,10 @@ export function BruteForceList({ wordsPerLine = 3 }) {
   const lastLogicalScrollTopRef = useRef(0);
   const seekingRef      = useRef(false);
   const seekTimerRef    = useRef(null);
+  const jumpControlRef  = useRef(null);
+  const jumpInputRef    = useRef(null);
+  const jumpTriggerRef  = useRef(null);
+  const returnJumpFocusRef = useRef(false);
   const anchorWordRef    = useRef(null); // first word of the topmost visible row
   const anchorRowRef     = useRef(0);    // row to scroll to on the next mount
   const lastRemountAtRef = useRef(0);    // Date.now() of the most recent remount, for the settle window
@@ -77,6 +91,16 @@ export function BruteForceList({ wordsPerLine = 3 }) {
   const metrics = useMemo(() => createScrollMetrics(rowCount), [rowCount]);
 
   useEffect(() => () => clearTimeout(seekTimerRef.current), []);
+
+  useLayoutEffect(() => {
+    if (jumpExpanded) {
+      jumpInputRef.current?.focus();
+      jumpInputRef.current?.select();
+    } else if (returnJumpFocusRef.current) {
+      returnJumpFocusRef.current = false;
+      jumpTriggerRef.current?.focus();
+    }
+  }, [jumpExpanded]);
 
   // Reposition after a constraint change. The settle window preserves the old
   // anchor long enough for a quick edit-and-undo sequence to restore it.
@@ -204,6 +228,19 @@ export function BruteForceList({ wordsPerLine = 3 }) {
     else if (event.key === 'End') { event.preventDefault(); scrollToLogicalPixel(metrics.logicalMax); }
   }, [metrics.logicalMax, scrollByLogicalPixels, scrollToLogicalPixel]);
 
+  const closeJump = useCallback(() => {
+    returnJumpFocusRef.current = true;
+    setJumpExpanded(false);
+  }, []);
+
+  const performJump = useCallback(() => {
+    if (!jumpValue || !genRef.current || rowCount === 0) return;
+    const target = jumpValue.padEnd(5, 'a');
+    const row = Math.min(jumpRowFor(genRef.current, target, wordsPerLine), rowCount - 1);
+    scrollToLogicalPixel(row * ROW_HEIGHT_PX);
+    closeJump();
+  }, [closeJump, jumpValue, rowCount, scrollToLogicalPixel, wordsPerLine]);
+
   const renderedRows = [];
   if (!isSeeking) {
     for (let row = firstRenderedRow; row <= lastRenderedRow; row++) {
@@ -258,7 +295,62 @@ export function BruteForceList({ wordsPerLine = 3 }) {
       <span className={styles.srOnly} role="status" aria-live="polite">
         {isSeeking ? 'Loading rows' : ''}
       </span>
-      <span className={styles.count}>{formatCount(total)} {total === 1 ? 'option' : 'options'}</span>
+      <div className={styles.footer}>
+        <span className={styles.count}>{formatCount(total)} {total === 1 ? 'option' : 'options'}</span>
+        <div
+          ref={jumpControlRef}
+          className={`${styles.jumpControl} ${jumpExpanded ? styles.jumpExpanded : ''}`}
+          onBlur={event => {
+            if (jumpExpanded && !event.currentTarget.contains(event.relatedTarget)) {
+              setJumpExpanded(false);
+            }
+          }}
+        >
+          <button
+            ref={jumpTriggerRef}
+            type="button"
+            className={styles.jumpTrigger}
+            aria-expanded={jumpExpanded}
+            aria-controls={jumpInputId}
+            tabIndex={jumpExpanded ? -1 : 0}
+            onClick={() => setJumpExpanded(value => !value)}
+            disabled={rowCount === 0}
+          >
+            Jump to
+          </button>
+          <div className={styles.jumpEditor} aria-hidden={!jumpExpanded}>
+            <input
+              ref={jumpInputRef}
+              id={jumpInputId}
+              className={styles.jumpInput}
+              value={jumpValue}
+              maxLength={5}
+              autoCapitalize="none"
+              autoComplete="off"
+              spellCheck={false}
+              enterKeyHint="go"
+              aria-label="Word or prefix to jump to"
+              tabIndex={jumpExpanded ? 0 : -1}
+              onChange={event => setJumpValue(
+                event.target.value.replace(/[^a-zA-Z]/g, '').toLowerCase().slice(0, 5),
+              )}
+              onKeyDown={event => {
+                if (event.key === 'Enter') { event.preventDefault(); performJump(); }
+                else if (event.key === 'Escape') { event.preventDefault(); closeJump(); }
+              }}
+            />
+            <button
+              type="button"
+              className={styles.jumpGo}
+              tabIndex={jumpExpanded ? 0 : -1}
+              disabled={!jumpValue}
+              onClick={performJump}
+            >
+              Go
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

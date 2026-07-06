@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createScrollMetrics } from '../src/ui/html/components/BruteForceList.jsx';
+import { createScrollMetrics, jumpRowFor } from '../src/ui/html/components/BruteForceList.jsx';
 
 describe('BruteForceList compressed scroll coordinates', () => {
   it('keeps a blank five-letter search below browser height limits', () => {
@@ -20,5 +20,17 @@ describe('BruteForceList compressed scroll coordinates', () => {
     const metrics = createScrollMetrics(100);
     expect(metrics.scale).toBe(1);
     expect(metrics.physicalHeight).toBe(metrics.logicalHeight);
+  });
+});
+
+describe('BruteForceList jump positioning', () => {
+  it('uses the exact word when it exists', () => {
+    const gen = { rankOf: () => 10, nth: index => index === 10 ? 'mango' : 'other' };
+    expect(jumpRowFor(gen, 'mango', 5)).toBe(2);
+  });
+
+  it('shows the predecessor when an insertion point starts a row', () => {
+    const gen = { rankOf: () => 10, nth: () => 'later' };
+    expect(jumpRowFor(gen, 'mango', 5)).toBe(1);
   });
 });
