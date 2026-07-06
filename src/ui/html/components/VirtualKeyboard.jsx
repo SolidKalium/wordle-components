@@ -70,6 +70,15 @@ function PinIcon({ pinned = false }) {
   );
 }
 
+function BackspaceIcon() {
+  return (
+    <svg className={styles.backspaceIcon} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M9 6h11v12H9l-6-6 6-6Z" />
+      <path d="m11 9 6 6m0-6-6 6" />
+    </svg>
+  );
+}
+
 /**
  * On-screen word-entry keyboard. Mount KeyboardDockProvider above every
  * VirtualKeyboard so only one instance can own the viewport dock at a time.
@@ -194,7 +203,7 @@ export function VirtualKeyboard({
                   disabled={disabled}
                   aria-label={key}
                 >
-                  {key === 'Backspace' ? '⌫' : 'Enter'}
+                  {key === 'Backspace' ? <BackspaceIcon /> : 'Enter'}
                 </button>
               ))}
             </div>
