@@ -20,7 +20,11 @@ it('shows zzzzz when the blank list scrollbar is dragged to the bottom', async (
   scroller.scrollTop = metrics.physicalMax;
   fireEvent.scroll(scroller);
 
+  expect(scroller.getAttribute('aria-busy')).toBe('true');
+  expect(screen.getByRole('status').textContent).toBe('Loading rows');
+  expect(screen.getByText('zzzyg')).toBeTruthy();
   await waitFor(() => expect(screen.getByText('zzzzz')).toBeTruthy());
+  expect(scroller.getAttribute('aria-busy')).toBe('false');
 });
 
 it('supports row, page, modifier, and boundary keyboard scrolling', async () => {

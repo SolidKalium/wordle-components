@@ -20,6 +20,8 @@ const ROW_HEIGHT_PX = 24;
 const VIEWPORT_HEIGHT_PX = 220;
 const MAX_SCROLL_HEIGHT_PX = 8_000_000;
 const OVERSCAN_ROWS = 8;
+const SEEK_JUMP_THRESHOLD_PX = VIEWPORT_HEIGHT_PX * 2;
+const SEEK_SETTLE_MS = 100;
 
 const ANCHOR_SETTLE_MS = 150;
 
@@ -40,8 +42,14 @@ export function BruteForceList({ wordsPerLine = 3 }) {
   const [total, setTotal]       = useState(0);
   const [revision, setRevision] = useState(0);
   const [physicalScrollTop, setPhysicalScrollTop] = useState(0);
+  const [isSeeking, setIsSeeking] = useState(false);
   const genRef          = useRef(null);
   const scrollerRef     = useRef(null);
+  const seekOverlayRef  = useRef(null);
+  const seekWordRef     = useRef(null);
+  const lastLogicalScrollTopRef = useRef(0);
+  const seekingRef      = useRef(false);
+  const seekTimerRef    = useRef(null);
   const anchorWordRef    = useRef(null); // first word of the topmost visible row
   const anchorRowRef     = useRef(0);    // row to scroll to on the next mount
   const lastRemountAtRef = useRef(0);    // Date.now() of the most recent remount, for the settle window
@@ -68,6 +76,8 @@ export function BruteForceList({ wordsPerLine = 3 }) {
   const rowCount = Math.ceil(total / wordsPerLine);
   const metrics = useMemo(() => createScrollMetrics(rowCount), [rowCount]);
 
+  useEffect(() => () => clearTimeout(seekTimerRef.current), []);
+
   // Reposition after a constraint change. The settle window preserves the old
   // anchor long enough for a quick edit-and-undo sequence to restore it.
   useLayoutEffect(() => {
@@ -76,6 +86,10 @@ export function BruteForceList({ wordsPerLine = 3 }) {
     const logicalTop = Math.min(anchorRowRef.current * ROW_HEIGHT_PX, metrics.logicalMax);
     const physicalTop = metrics.scale > 0 ? logicalTop / metrics.scale : 0;
     lastRemountAtRef.current = Date.now();
+    lastLogicalScrollTopRef.current = logicalTop;
+    seekingRef.current = false;
+    clearTimeout(seekTimerRef.current);
+    setIsSeeking(false);
     scroller.scrollTop = physicalTop;
     setPhysicalScrollTop(physicalTop);
   }, [metrics, revision]);
@@ -121,8 +135,27 @@ export function BruteForceList({ wordsPerLine = 3 }) {
     const nextPhysicalTop = event.currentTarget.scrollTop;
     setPhysicalScrollTop(nextPhysicalTop);
     const logicalTop = Math.min(nextPhysicalTop * metrics.scale, metrics.logicalMax);
+    const jump = Math.abs(logicalTop - lastLogicalScrollTopRef.current);
+    lastLogicalScrollTopRef.current = logicalTop;
+
+    if (jump > SEEK_JUMP_THRESHOLD_PX || seekingRef.current) {
+      seekingRef.current = true;
+      const rowIndex = Math.floor(logicalTop / ROW_HEIGHT_PX);
+      const word = genRef.current?.nth(rowIndex * wordsPerLine);
+      if (seekWordRef.current) seekWordRef.current.textContent = word ?? '';
+      // Show synchronously; waiting for React here can leave the native scroll
+      // viewport ahead of both the real rows and their loading indicator.
+      seekOverlayRef.current?.classList.add(styles.visible);
+      setIsSeeking(true);
+      clearTimeout(seekTimerRef.current);
+      seekTimerRef.current = setTimeout(() => {
+        seekingRef.current = false;
+        setIsSeeking(false);
+      }, SEEK_SETTLE_MS);
+    }
+
     updateAnchor(Math.floor(logicalTop / ROW_HEIGHT_PX));
-  }, [metrics, updateAnchor]);
+  }, [metrics, updateAnchor, wordsPerLine]);
 
   // A compressed scrollbar would otherwise amplify wheel deltas by `scale`.
   // Convert wheel motion back to logical pixels so ordinary scrolling remains
@@ -172,9 +205,23 @@ export function BruteForceList({ wordsPerLine = 3 }) {
   }, [metrics.logicalMax, scrollByLogicalPixels, scrollToLogicalPixel]);
 
   const renderedRows = [];
-  for (let row = firstRenderedRow; row <= lastRenderedRow; row++) {
-    renderedRows.push(<div key={`${revision}-${row}`}>{itemContent(row)}</div>);
+  if (!isSeeking) {
+    for (let row = firstRenderedRow; row <= lastRenderedRow; row++) {
+      renderedRows.push(<div key={`${revision}-${row}`}>{itemContent(row)}</div>);
+    }
   }
+
+  const skeletonRows = Array.from({ length: visibleRows }, (_, row) => (
+    <div className={styles.skeletonRow} key={row} aria-hidden="true">
+      {Array.from({ length: wordsPerLine }, (__, word) => (
+        <span
+          key={word}
+          ref={row === 0 && word === 0 ? seekWordRef : undefined}
+          className={row === 0 && word === 0 ? styles.seekWord : undefined}
+        />
+      ))}
+    </div>
+  ));
 
   const panelMinWidth =
     wordsPerLine * WORD_PX + (wordsPerLine - 1) * GAP_PX + SCROLLBAR_GUTTER_PX;
@@ -189,17 +236,28 @@ export function BruteForceList({ wordsPerLine = 3 }) {
           tabIndex={0}
           role="region"
           aria-label="Generated letter combinations"
+          aria-busy={isSeeking}
           onScroll={handleScroll}
           onWheel={handleWheel}
           onKeyDown={handleKeyDown}
         >
           <div className={styles.scrollSpace} style={{ height: metrics.physicalHeight }}>
+            <div
+              ref={seekOverlayRef}
+              className={`${styles.seekOverlay} ${isSeeking ? styles.visible : ''}`}
+              aria-hidden="true"
+            >
+              {skeletonRows}
+            </div>
             <div className={styles.renderWindow} style={{ transform: `translateY(${renderTop}px)` }}>
               {renderedRows}
             </div>
           </div>
         </div>
       )}
+      <span className={styles.srOnly} role="status" aria-live="polite">
+        {isSeeking ? 'Loading rows' : ''}
+      </span>
       <span className={styles.count}>{formatCount(total)} {total === 1 ? 'option' : 'options'}</span>
     </div>
   );
