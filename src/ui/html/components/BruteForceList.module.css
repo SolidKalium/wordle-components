@@ -6,19 +6,41 @@
   flex-shrink: 0;
 }
 
-/* Custom Virtuoso scroller: styled scrollbar, no horizontal overflow. */
+/* Compressed-coordinate scroller: styled scrollbar, no horizontal overflow. */
 .scroller {
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: #3a3a3c transparent;
+}
+
+.scroller:focus-visible {
+  outline: 1px solid #555;
+  outline-offset: 2px;
 }
 
 .scroller::-webkit-scrollbar       { width: 4px; }
 .scroller::-webkit-scrollbar-track { background: transparent; }
 .scroller::-webkit-scrollbar-thumb { background: #3a3a3c; border-radius: 2px; }
 
+.scrollSpace {
+  position: relative;
+  width: 100%;
+}
+
+.renderWindow {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  will-change: transform;
+}
+
 .row {
   display: flex;
   gap: 16px;
+  height: 24px;
 }
 
 .word {
@@ -27,7 +49,7 @@
   font-weight: 400;
   letter-spacing: 0.08em;
   color: #b0b3b5;
-  line-height: 1.85;
+  line-height: 24px;
   user-select: text;
   white-space: nowrap;
 }

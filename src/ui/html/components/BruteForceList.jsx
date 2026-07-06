@@ -1,5 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Virtuoso } from 'react-virtuoso';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { BruteForceGenerator } from '../../../lib/bruteForce.mjs';
 import { useConstraints } from '../stores/useConstraints.js';
 import styles from './BruteForceList.module.css';
@@ -11,49 +10,44 @@ function formatCount(n) {
   return `${n}`;
 }
 
-// Defined at module scope so Virtuoso never remounts the scroller on re-render.
-const VirtuosoScroller = React.forwardRef(({ style, ...props }, ref) => (
-  <div
-    ref={ref}
-    style={{ ...style, overflowX: 'hidden' }}
-    className={styles.scroller}
-    {...props}
-  />
-));
-VirtuosoScroller.displayName = 'VirtuosoScroller';
-
 const NoOptions = () => <div className={styles.empty}>No options</div>;
 
 // Rendered width of one word: 5 monospace chars at 13px + 0.08em letter-spacing ≈ 44px.
 const WORD_PX = 44;
 const GAP_PX  = 16;
-// 36 = left-padding(20) + right-padding(16)
-const PANEL_PADDING_PX = 36;
 const SCROLLBAR_GUTTER_PX = 12;
+const ROW_HEIGHT_PX = 24;
+const VIEWPORT_HEIGHT_PX = 220;
+const MAX_SCROLL_HEIGHT_PX = 8_000_000;
+const OVERSCAN_ROWS = 8;
 
-// Virtuoso reports its landing range via one or more rangeChanged calls while a
-// remount settles (an initial estimate, then a corrected one) — rangeChanged calls
-// in this window after a remount are our own repositioning settling, not a user
-// scroll, so they're ignored for anchor-tracking purposes.
 const ANCHOR_SETTLE_MS = 150;
+
+// Browsers cap the height of a scrollable element (WebKit is roughly 2^24 px).
+// Map an arbitrarily tall logical list onto a safely bounded physical spacer.
+export function createScrollMetrics(rowCount, viewportHeight = VIEWPORT_HEIGHT_PX) {
+  const logicalHeight = rowCount * ROW_HEIGHT_PX;
+  const physicalHeight = Math.min(logicalHeight, MAX_SCROLL_HEIGHT_PX);
+  const logicalMax = Math.max(0, logicalHeight - viewportHeight);
+  const physicalMax = Math.max(0, physicalHeight - viewportHeight);
+  const scale = physicalMax > 0 ? logicalMax / physicalMax : 1;
+  return { logicalHeight, physicalHeight, logicalMax, physicalMax, scale };
+}
 
 export function BruteForceList({ wordsPerLine = 3 }) {
   const constraints = useConstraints();
 
   const [total, setTotal]       = useState(0);
   const [revision, setRevision] = useState(0);
+  const [physicalScrollTop, setPhysicalScrollTop] = useState(0);
   const genRef          = useRef(null);
+  const scrollerRef     = useRef(null);
   const anchorWordRef    = useRef(null); // first word of the topmost visible row
   const anchorRowRef     = useRef(0);    // row to scroll to on the next mount
   const lastRemountAtRef = useRef(0);    // Date.now() of the most recent remount, for the settle window
 
-  // revision forces Virtuoso to remount (via key) on every constraints change,
-  // not just ones where the total happens to change — otherwise an edit that
-  // swaps which words match without changing the count wouldn't re-fetch
-  // already-rendered rows.
-  //
   // Before swapping in the new generator, re-rank the word that was previously
-  // topmost so the remount can start at wherever that word (or the next valid
+  // topmost so the list can start at wherever that word (or the next valid
   // one after it, via rankOf's insertion-point behavior) ends up — otherwise
   // every keystroke would fling a deep scroll position back to the top of a
   // list that's mostly still the same.
@@ -67,17 +61,40 @@ export function BruteForceList({ wordsPerLine = 3 }) {
       : Math.min(Math.floor(gen.rankOf(anchorWordRef.current) / wordsPerLine), Math.max(rowCount - 1, 0));
 
     genRef.current = gen;
-    lastRemountAtRef.current = Date.now();
     setTotal(newTotal);
     setRevision(r => r + 1);
   }, [constraints, wordsPerLine]);
 
   const rowCount = Math.ceil(total / wordsPerLine);
+  const metrics = useMemo(() => createScrollMetrics(rowCount), [rowCount]);
 
-  // Rows are computed on demand via nth() rather than loaded incrementally —
-  // it's cheap regardless of index, so the scrollbar can be sized to the real
-  // total and jumping to any position (drag, page up/down) is just as fast as
-  // scrolling sequentially.
+  // Reposition after a constraint change. The settle window preserves the old
+  // anchor long enough for a quick edit-and-undo sequence to restore it.
+  useLayoutEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const logicalTop = Math.min(anchorRowRef.current * ROW_HEIGHT_PX, metrics.logicalMax);
+    const physicalTop = metrics.scale > 0 ? logicalTop / metrics.scale : 0;
+    lastRemountAtRef.current = Date.now();
+    scroller.scrollTop = physicalTop;
+    setPhysicalScrollTop(physicalTop);
+  }, [metrics, revision]);
+
+  const logicalScrollTop = Math.min(physicalScrollTop * metrics.scale, metrics.logicalMax);
+  const firstVisibleRow = Math.min(
+    Math.floor(logicalScrollTop / ROW_HEIGHT_PX),
+    Math.max(rowCount - 1, 0),
+  );
+  const firstRenderedRow = Math.max(0, firstVisibleRow - OVERSCAN_ROWS);
+  const visibleRows = Math.ceil(VIEWPORT_HEIGHT_PX / ROW_HEIGHT_PX);
+  const lastRenderedRow = Math.min(
+    rowCount - 1,
+    firstVisibleRow + visibleRows + OVERSCAN_ROWS,
+  );
+  const renderTop = physicalScrollTop
+    + firstRenderedRow * ROW_HEIGHT_PX
+    - logicalScrollTop;
+
   const itemContent = useCallback(rowIndex => {
     const gen   = genRef.current;
     const start = rowIndex * wordsPerLine;
@@ -92,13 +109,7 @@ export function BruteForceList({ wordsPerLine = 3 }) {
     );
   }, [wordsPerLine, total]);
 
-  // Tracks the topmost visible row on every real scroll so the next constraints
-  // change has something current to re-anchor to. Calls within ANCHOR_SETTLE_MS
-  // of our own remount are our own repositioning settling, not a user scroll —
-  // otherwise that system-driven repositioning would overwrite the anchor, and
-  // e.g. typing a character then immediately deleting it would re-derive the
-  // scroll position from the narrowed list instead of restoring the original one.
-  const handleRangeChanged = useCallback(({ startIndex }) => {
+  const updateAnchor = useCallback(startIndex => {
     if (Date.now() - lastRemountAtRef.current < ANCHOR_SETTLE_MS) return;
     const gen = genRef.current;
     if (!gen) return;
@@ -106,24 +117,89 @@ export function BruteForceList({ wordsPerLine = 3 }) {
     if (w !== null) anchorWordRef.current = w;
   }, [wordsPerLine]);
 
+  const handleScroll = useCallback(event => {
+    const nextPhysicalTop = event.currentTarget.scrollTop;
+    setPhysicalScrollTop(nextPhysicalTop);
+    const logicalTop = Math.min(nextPhysicalTop * metrics.scale, metrics.logicalMax);
+    updateAnchor(Math.floor(logicalTop / ROW_HEIGHT_PX));
+  }, [metrics, updateAnchor]);
+
+  // A compressed scrollbar would otherwise amplify wheel deltas by `scale`.
+  // Convert wheel motion back to logical pixels so ordinary scrolling remains
+  // row-for-row; dragging the thumb still spans the complete data set.
+  const handleWheel = useCallback(event => {
+    if (metrics.scale <= 1) return;
+    event.preventDefault();
+    const multiplier = event.deltaMode === 1
+      ? ROW_HEIGHT_PX
+      : event.deltaMode === 2 ? VIEWPORT_HEIGHT_PX : 1;
+    scrollerRef.current.scrollTop += event.deltaY * multiplier / metrics.scale;
+  }, [metrics.scale]);
+
+  const scrollByLogicalPixels = useCallback(delta => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    scroller.scrollTop += delta / metrics.scale;
+  }, [metrics.scale]);
+
+  const scrollToLogicalPixel = useCallback(position => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const logicalTop = Math.max(0, Math.min(position, metrics.logicalMax));
+    scroller.scrollTop = logicalTop / metrics.scale;
+  }, [metrics.logicalMax, metrics.scale]);
+
+  const handleKeyDown = useCallback(event => {
+    const largeStep = VIEWPORT_HEIGHT_PX - ROW_HEIGHT_PX;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (event.metaKey) scrollToLogicalPixel(metrics.logicalMax);
+      else scrollByLogicalPixels(event.altKey || event.shiftKey ? largeStep : ROW_HEIGHT_PX);
+    }
+    else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (event.metaKey) scrollToLogicalPixel(0);
+      else scrollByLogicalPixels(event.altKey || event.shiftKey ? -largeStep : -ROW_HEIGHT_PX);
+    }
+    else if (event.key === 'PageDown') { event.preventDefault(); scrollByLogicalPixels(VIEWPORT_HEIGHT_PX); }
+    else if (event.key === 'PageUp') { event.preventDefault(); scrollByLogicalPixels(-VIEWPORT_HEIGHT_PX); }
+    else if (event.key === ' ' && !event.altKey && !event.ctrlKey && !event.metaKey) {
+      event.preventDefault();
+      scrollByLogicalPixels(event.shiftKey ? -VIEWPORT_HEIGHT_PX : VIEWPORT_HEIGHT_PX);
+    }
+    else if (event.key === 'Home') { event.preventDefault(); scrollToLogicalPixel(0); }
+    else if (event.key === 'End') { event.preventDefault(); scrollToLogicalPixel(metrics.logicalMax); }
+  }, [metrics.logicalMax, scrollByLogicalPixels, scrollToLogicalPixel]);
+
+  const renderedRows = [];
+  for (let row = firstRenderedRow; row <= lastRenderedRow; row++) {
+    renderedRows.push(<div key={`${revision}-${row}`}>{itemContent(row)}</div>);
+  }
+
   const panelMinWidth =
     wordsPerLine * WORD_PX + (wordsPerLine - 1) * GAP_PX + SCROLLBAR_GUTTER_PX;
 
   return (
     <div className={styles.panel} style={{ minWidth: panelMinWidth }}>
-      <Virtuoso
-        key={revision}
-        style={{ height: 220 }}
-        totalCount={rowCount}
-        itemContent={itemContent}
-        initialTopMostItemIndex={anchorRowRef.current}
-        rangeChanged={handleRangeChanged}
-        increaseViewportBy={{ top: 0, bottom: 300 }}
-        components={{
-          Scroller: VirtuosoScroller,
-          EmptyPlaceholder: rowCount === 0 ? NoOptions : undefined,
-        }}
-      />
+      {rowCount === 0 ? <NoOptions /> : (
+        <div
+          ref={scrollerRef}
+          className={styles.scroller}
+          style={{ height: VIEWPORT_HEIGHT_PX }}
+          tabIndex={0}
+          role="region"
+          aria-label="Generated letter combinations"
+          onScroll={handleScroll}
+          onWheel={handleWheel}
+          onKeyDown={handleKeyDown}
+        >
+          <div className={styles.scrollSpace} style={{ height: metrics.physicalHeight }}>
+            <div className={styles.renderWindow} style={{ transform: `translateY(${renderTop}px)` }}>
+              {renderedRows}
+            </div>
+          </div>
+        </div>
+      )}
       <span className={styles.count}>{formatCount(total)} {total === 1 ? 'option' : 'options'}</span>
     </div>
   );
