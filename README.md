@@ -16,7 +16,9 @@ Wordle is a trademark of The New York Times Company. This project is not affilia
 
 A [dev.md](dev.md) file exists and contains some minimal info.
 
-### Base Code
+### Library Code
+Located in [/src/lib](/src/lib/).
+
 - `Analysis` can run a game with a known word and a known `Strategy`
   - TODO add more details on what it can do?
 - `Game` can run a game where it knows the word and a UI can let the player make moves
@@ -26,6 +28,7 @@ A [dev.md](dev.md) file exists and contains some minimal info.
   - The number of words chosen from each strategy, how they are picked, and how strictly that should be followed when the options are limited are all configurable.
   - TODO This may need to support differentiating deterministic and non-deterministic strategies and a way to pre-compute them so that they're fast. Although: deterministic strategies will have to handle different states if they suddenly have unexpected word choices and thus an unexpected state.
   - TODO If this is all in one worker, it can cache partitions for each word being considered, given a current game state, making strategies slightly faster.
+- `BruteForceGenerator` takes a `ConstraintState` and allows random access to all possible letter permutations that satisfy them. It can translate back and forth between a permuation and its index. It serves as a hint machine, enabling someone to see the remaining "words" without seeing only options in the word list. It doesn't do brute force work; it enables a human to do brute force work more efficiently, by letting them skim a list instead of rotating through the possibilities manually.
 
 See [strategies](#strategies) and [filters](#filters) for info about those options.
 
@@ -43,9 +46,11 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
     - Use `-e` to see words remaining on the committed line
     - The computer picks its first guess randomly from a small pool of good openers
     - Use <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd>, <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>, or <kbd>Y</kbd><kbd>G</kbd><kbd>Space</kbd><kbd>Delete</kbd> to grade the guess, then press <kbd>Enter</kbd>. Use <kbd>Ctrl</kbd>+<kbd>Z</kbd> to undo a committed grading.
-- **Analysis HTML page**
-  - Explore strategies, see consequences
-  - See [ui-spec](docs/ui-spec.md)
+- **UI Library** (In progress)
+  - This part of the project is in active development. See the TODO section for more info.
+    - The current index page is for manual testing and interaction with the library.
+  - The library will be reused by the other HTML UIs and can be consumed by other developers. Located in [/src/ui/html](/src/ui/html/).
+  - See [ui-spec](docs/ui-spec.md) (NOTE: mostly up to date, but not finalized)
   - Rough design:
     - Card: mostly dumb, any info is pulled from the one thing inside it.
       - Can highlight itself when any other card with the same game/strategy Store is active (LATER)
@@ -61,7 +66,8 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
   - Component to see the constraints. Useful for fact checking any typed inputs that an AI transforms.
   - Quick-play component: choose a word from a prepared menu on each turn, using a combination of random words and best or near-best words from multiple strategies.
     - Maybe allow filtering to options that include one player-chosen letter.
-  - Separate pages for pre-built static and/or dynamic analysis report, and for build-your-own.
+- **Analysis Report** (LATER)
+  - Concept: this will be a pre-built static and/or dynamic analysis report that showcases the components and demonstrates some conclusions drawn from experiments.
   - Any text-based analyses? E.g. that put the analysis into words instead of graphics.
   - Hypotheses and notes
     - The information-theoretic approaches likely provide similar quality of choices
@@ -71,10 +77,20 @@ See [strategies](#strategies) and [filters](#filters) for info about those optio
     - Full-depth trees for either objective might be meaningfully different. But we aren't calculating those yet.
     - Could show quality of a move in different strategies (score and order)
       - Could show this for a random sample of words. Inversions of order might be particularly useful to show, but that's harder to calculate. Well, maybe not that hard: calculate scores for options, then look for examples that differed by a lot between any two measures, or look at max and min values that differ a lot, maybe also ensuring each algorithm gets some repesentative highs and lows. Not sure if a graph would help at all. There's sort of too many words to do the snake graph thing (bump/slope chart) where options get re-ordered. Maybe one order is used as the baseline, it gets colors assigned, and then the re-ordered words are shown with that color system?
-- **React in Claude**
-  - TBD, but likely things based on the CLI and Analysis UIs, plus support for anything the skill needs.
+- **Build Your Own Page** (LATER, aspirational)
+  - *Explore strategies, see consequences!*
+  - Concept: like the analysis report, but supporting users building their own cards, wiring things together as they please, without needing to download the libary and write code. This is purely aspirational, as a capstone and showcase for the project.
+- **AI Skill Artifacts** (LATER)
+  - Uses the UI components to provide pre-built experiences within an agent conversation.
+  - The agent can optionally use the raw components to build its own displays per the user's request.
+    - This may require refined documentation on classes, functions, etc. Or maybe they're already good enough. May also require some kind of error reporting that tells the AI when it composed things "wrong".
+  - Details: TBD
+  - Composites
+    - Constraint explorer
+    - Bar charts
+    - Decision tree
 
-### Claude Skill
+### Claude Skill (aspirational ideas)
 - Some kind of coach
   - Suggest some possible, decent moves
   - Trap detection: "You have 6 remaining words and they differ only in the first letter: _IGHT. You can't distinguish them one at a time. Do you have a guess that tests multiple first letters at once?"
@@ -121,17 +137,22 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 - Keyboard: accepted words must *only use* letters in the specified letter *set*
 
 ## TODO
-- Update README: separate card display and visual testing (index.html / main.jsx) from any analysis report or formal experiments. Clean up anything that can be cleaned up.
 - Analysis HTML UI
   - Decision tree
-    - Show max moves?
     - Show tiny bar chart?
-    - Add arg/toggle for words vs bits?
-    - Add max height to columns
+    - Add max height to columns, so they scroll
+      - Put number of groups in the footer of each column?
+      - Make cards optionally resizable first?
     - Allow choosing a different word for comparison?
+      - Does that update summary results up the tree? Probably needs a note accessible somewhere explaining how the numbers are sourced. Needs a note explaining the UI anyways, particularly the pattern and the word that is ranked the best choice in that group.
     - Alternate tree views? Collapsible tree or treemap? But will struggle on turn 1 with 120-140 groups.
-    - Once game board is added, make it re-anchor when a game exists and a move is made
-      - Also: optionally track the partial input for the game and use that instead of the best move for the current game state
+    - With a game connected, make it re-anchor when a game exists and a move is made
+      - Also: track the partial input for the game and use that instead of the best move for the current game state
+      - How does handle traversing groups that weren't entered? Probably just show the tree per the strategy that's active, not revert to a basic list of words in the group. Though maybe there would be a button that swaps to the word list.
+      - Probably needs a way to "return to current turn". Possibly just pinning the choices made to the top of each column so it's easy to do a few clicks and get back to the default.
+      - If we altered any guesses, then it just needs to be easy to reset those too. Given the constraints currently known in the game, we might or might not know which group the current word is in. I guess if we don't know which group the word would be in, then we might highlight multiple in a less intense way? Or an icon in the corner or something. Maybe differentiate "number remaining in group for a generic game" and "number remaining if we applied the current game's constraints". That way a player could think about the current game and options as if a different set of words were played. They can see how many words would be "live" for the current game given a set of initial guesses, presuming that they're even relevant.
+    - Some way to locate a word in the tree?
+      - This is sort of like a post-game analysis once the word is known.
   - Other ways to visualize constraints
     - A word has up to 5 letters. Could just show one row per letter found with green/yellow per square. Then a list of gray letters.
       - If built, make it possible to switch between col major and row major views.
@@ -145,25 +166,34 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - Something venn-like or a bit amorphous/fluid?
     - Ideally does know when a letter appears multiple times or has both a green and a yellow (or two!) remaining.
   - Word input should be shareable with analysis things
-    - filter brute force list
     - filter suggestions
     - Constraint view: highlight a guessed letter in the gray list if it is typed somewhere it can't be (here, I mean a subset of gray: 0 copies or all copies are green). Could emphasize the yellow square if a letter is placed that can't be there? Or just the letter in the square? Maybe the square and the specific letter? That might be the best option.
+    - filter brute force list
+      - When connected to a game, while the player is typing a guess: treats entered letters, other than ones that disagree with the constraints, as green. Or maybe treat all typed letters as green, even if they disagree with constraints? LATER
+        - Should consider how the scroll position is preserved while the player types or deletes, and after committing a guess.
     - How is that property controlled? By user? By presence of a context? Probably just the context.
+  - Constraint editor: make it work with a game in some way?
+    - E.g. layer on top of the game (how would conflicts be handled? How would constraint removal/loosening work if the user desired it? Why might the user desire that?), able to reset to game, or keep the game constraints as the minimum. Maybe just identify "extra constraints" the user imposed, reset on committed move, and then reapply those extra contraints? Would the carried-forward and default constraints have distinct styling? Styling for "removed" constraints? (Added/removed/default variations for style)
+    - This would effectively take a constraint as an input and have a separate one as an output...
+  - Enter game in progress
+    - Enter words in a game and then use a constaint editor to grade it? Might be clunky
+    - Or more likely something more like the CLI version
+      - Maybe offer multiple modes to grade?
+        - Arrow keys, possibly with color shortcuts
+        - Buttons that let you choose between "tap to cycle" and "tap to paint color". Should have an undo button for the paint? And the tap to cycle should indicate the order on the button? gray->yellow->green->gray?
   - Hard mode toggle
   - Toggle or other setting for whether things like the suggester's words are from answers or all?
   - Other analysis components? E.g. compare across strategies
   - Pre-built composite components (LATER)
-  - Brute force options list
-    - When connected to a game, while the player is typing a guess: treats entered letters, other than ones that disagree with the constraints, as green. Or maybe treat all typed letters as green, even if they disagree with constraints? LATER
-      - Should consider how the scroll position is preserved while the player types or deletes, and after committing a guess.
   - Distribution Chart
     - Determine how the average is calculated, document. (does it include words past 6 guesses? Coerce them to 6 or 7?) Document on the component itself, in the UI.
   - Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.
     - Add descriptions for strategies?
   - Card
     - Highlight when Store active elsewhere? LATER
-    - Consider additional themes? E.g. move the distinct header/content colors of the current chart demo card into its own color scheme
-    - On bar hover, show representative words? Or all words?
+      - Would this use an extra context provider just for tracking card contents in some way? Or maybe just have things using a context provider update to tell the context provider it is doing a thing? Then the card listens for the contexts it is part of? But if a provider is working for a card but the card has no contents that actually use it, then it doesn't make sense to highlight it. Maybe the components get passed a pubsub function that came from the card?
+    - Consider additional UI themes? E.g. move the distinct header/content colors of the current chart demo card into its own color scheme
+  - Distribution chart: On bar hover, show representative words? Or all words? All is too many. I suppose it could be selectable and populate the words in a different box? Not sure how useful that would be.
   - Strategy selector
     - Additional variants? E.g. a popover from a settings icon.
     - Idea: could have a popover settings for whole card, then one for each component. The card can specify whether something is a default or locked. Then the individual components don't offer that setting. Combine with a +component design so a user can add/remove components and compare how they want.
@@ -171,18 +201,24 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - This is effectively looking at each strategy's resilience to first-turn perterbation. Perhaps there's a comparable property for looking at global expected entropy or similar on before turn 3 or 4?
 - Filters: tweak vowel anti-exploration? Maybe others? e.g. don't retry known bad letters
   - The letter and vowel exploration filters do nothing in hard mode because we are already limited to only words that match what we know, so after we filter out the remaining set, we fall back to the full one (or no letters matched yet and the filter is a no-op anyways). The word list being used (hard mode on/off, all or only possible answers) needs to be clearer in the UI.
-- Test suite: HTML ?
-- Revisit the three worker classes and how they relate?
-- CLI: analysis? Delay until after HTML UI
+- Scheduled maintenance
+  - Test suite: HTML. Coverage audit: identify critical untested interactions and add smoke tests for the assembled app.
+  - CSS audit: combine, streamline, or normalize anything?
+  - Component structure audit: should they be split into categories at all? input/output/subcomponent/etc
+  - Cleanup README and other .md files: they'll probably need it at this point
+  - Revisit the three worker classes and how they relate?
 - Cache precomputed rankings for first-turn guesses?
   - Probably create a script that knows the best first move on a few dimensions at once: all-guesses vs valid answers, hard mode on/off (won't matter for information-theoretic first turns, only exhaustive search), strategy, maybe certain filters. Assumes unchanged answer-word list. Probably include a hash of the list to validate the list and computed values match. Maybe warn somewhere in a build script if the computations are stale.
   - Might also cache related statistics for that first move? But if only needing stats for one guess, it shouldn't be too bad to recompute.
   - For some strategies, like the exhaustive ones or allowing all valid guesses, caching the second turn might also be useful.
   - May also want some kind of pool of first words of varying quality? A cache of some kind will help with the suggestions. apple
 - Claude Skill
+  - Bonus: make it work in other AI chats, like Gemini and ChatGPT
 - Test suite: Claude Skill ?
 - Strategy: full-depth calculation (min avg or minimax depth)
+  - Do other minimization targets make sense? Eg average of lg(moves)?
 - Strategy: mixed strategy nash equilibrium ?
+  - This is likely to be a separate research topic, not a simple analysis element
 
 ## Hypotheses and Analysis Topics
 This was initially generated by LLM summary of a discussion.
@@ -257,7 +293,8 @@ For hard mode specifically: how often does the optimal guess (by any single-step
   - What if we didn't restrict the word at all and any sequence of letters were allowed?
     - Mainly postponed because we don't want to check 26^5 (10^7) options. If we can reduce the set of letters we might want to check on the first turn to 16 options, then that's only 10^6, which is still a lot of brute force... But with some thought, this might have a better approach. But letter frequency and place frequency could make this complicated. And we don't necessarily want the most frequent letters, but letters and positions that split as many groups as possible. Which might point towards just trying all the vowels on the first move, since most words will have 2 or 3 of them. Which might imply that we'd want to place each vowel where it is most common in words with only one distinct vowel, but effects on other paths might overwhelm that... So I'm now leaning towards an incremental search algorithm that explores variants of a strategy. E.g. swap two letters, replace a letter, while tracking options discarded. Might need to prove convex properties to trust that, but it might just do ok. And some varied starting choices converging to the same result could provide a sanity check in lieu of a proof.
 - Back out guesses from constraints? Filter the list of words to ones that comply with all constraints without implying knowledge beyond the constraints should be known, then do a best effort to pick words that enforce the remaining constraints, until all constraints are matched and no extra ones are introduced.
-- Make text sizes more accessible: avoid px size for fonts and anything calculated based on them. This would be a lot of work, most likely, for an unknown number of users. Currently 0 of 0 users who aren't the author want this feature.
+- Make text sizes more accessible: avoid px size for fonts and anything calculated based on them. This would be a lot of work, most likely, for an unknown number of users. Currently 0 of 0 users who aren't the author want this feature. In the meantime, zooming in should work for most people.
+- Build-your-own-page scaffolding
 
 ## Other Topics
 - I'm curious about what might bias a human against quickly finding a word.
