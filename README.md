@@ -138,6 +138,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - Analysis HTML UI
+  - Bug w/ suggestions on constraint card: a_b__, with an e in unknown position. It says no words, but there are words that are on the valid guess list it could provide instead of just saying the answer list has no matches.
   - Decision tree
     - Show tiny bar chart?
     - Add max height to columns, so they scroll
@@ -176,11 +177,12 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
     - E.g. layer on top of the game (how would conflicts be handled? How would constraint removal/loosening work if the user desired it? Why might the user desire that?), able to reset to game, or keep the game constraints as the minimum. Maybe just identify "extra constraints" the user imposed, reset on committed move, and then reapply those extra contraints? Would the carried-forward and default constraints have distinct styling? Styling for "removed" constraints? (Added/removed/default variations for style)
     - This would effectively take a constraint as an input and have a separate one as an output...
   - Enter game in progress
-    - Enter words in a game and then use a constaint editor to grade it? Might be clunky
+    - Enter words in a game and then use a constraint editor to grade it? Might be clunky
     - Or more likely something more like the CLI version
       - Maybe offer multiple modes to grade?
         - Arrow keys, possibly with color shortcuts
         - Buttons that let you choose between "tap to cycle" and "tap to paint color". Should have an undo button for the paint? And the tap to cycle should indicate the order on the button? gray->yellow->green->gray?
+      - But it should allow multiple guesses to be entered without needing to grade sequentially. It might also propagate grading on the assumption that the grading is correct. We'd just need to be careful about that.
   - Hard mode toggle
   - Toggle or other setting for whether things like the suggester's words are from answers or all?
   - Other analysis components? E.g. compare across strategies
@@ -190,6 +192,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
   - Strategies: adjust scores for display to normalize values. E.g. avg group size, expected shannon entropy, expected group size, max group size. Instead of just using unnormalized values when the denominator is always the same.
     - Add descriptions for strategies?
   - Card
+    - On expanding a card, auto-focus the first input in the card, if any?
     - Highlight when Store active elsewhere? LATER
       - Would this use an extra context provider just for tracking card contents in some way? Or maybe just have things using a context provider update to tell the context provider it is doing a thing? Then the card listens for the contexts it is part of? But if a provider is working for a card but the card has no contents that actually use it, then it doesn't make sense to highlight it. Maybe the components get passed a pubsub function that came from the card?
     - Consider additional UI themes? E.g. move the distinct header/content colors of the current chart demo card into its own color scheme
@@ -202,6 +205,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 - Filters: tweak vowel anti-exploration? Maybe others? e.g. don't retry known bad letters
   - The letter and vowel exploration filters do nothing in hard mode because we are already limited to only words that match what we know, so after we filter out the remaining set, we fall back to the full one (or no letters matched yet and the filter is a no-op anyways). The word list being used (hard mode on/off, all or only possible answers) needs to be clearer in the UI.
 - Scheduled maintenance
+  - Ensure all context providers and their intended combinations and interactions are documented. Especially if any aren't obvious, as I suspect some will be. Hopefully, they don't devolve into weird special cases and are just a broad set of combinations that work.
   - Test suite: HTML. Coverage audit: identify critical untested interactions and add smoke tests for the assembled app.
   - CSS audit: combine, streamline, or normalize anything?
   - Component structure audit: should they be split into categories at all? input/output/subcomponent/etc
