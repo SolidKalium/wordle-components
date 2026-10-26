@@ -3,6 +3,7 @@ import { WORD_LENGTH } from '../../../lib/core.mjs';
 import { ANSWERS } from '../../../lib/words.gen.mjs';
 import { useConstraintStore } from '../stores/constraintStore.js';
 import styles from './ConstraintEditor.module.css';
+import { InfoIcon } from './InfoIcon.jsx';
 import { HintText } from './Tooltip.jsx';
 import { useSuggestions } from './useSuggestions.js';
 
@@ -190,11 +191,6 @@ function Suggestions() {
 
   return (
     <div className={styles.suggestions}>
-      <span className={styles.suggLabel}>
-        <HintText tip="A sample of possible guesses that meet the constraints. If there aren't enough words in the answer list, additional words from the list of valid guesses are shown in gray.">
-          Suggestions
-        </HintText>
-      </span>
       <div className={styles.suggWords}>
         {loading && suggestions.length === 0
           ? <span className={styles.loading}>…</span>
@@ -206,6 +202,11 @@ function Suggestions() {
           <span key={w} className={styles.suggWordNonAnswer}>{w}</span>
         ))}
       </div>
+      <span className={styles.suggInfo}>
+        <HintText underline={false} className={styles.suggInfoTarget} tip="A sample of possible guesses that meet the constraints. If there aren't enough words in the answer list, additional words from the list of valid guesses are shown in gray.">
+          <InfoIcon size={14} />
+        </HintText>
+      </span>
     </div>
   );
 }
@@ -337,8 +338,8 @@ export function ConstraintEditor({ defaultShowSuggestions = true, showSuggestion
         <div className={styles.footer}>
           <span className={styles.remaining}>{remaining.toLocaleString()} {remaining === 1 ? 'word' : 'words'} remaining</span>
           {showSuggestionsToggle && (
-            <button className={styles.clearBtn} onClick={() => setShowSuggestions(s => !s)}>
-              {showSuggestions ? 'Hide suggestions' : 'Suggestions'}
+            <button className={styles.clearBtn} aria-pressed={showSuggestions} onClick={() => setShowSuggestions(s => !s)}>
+              Suggestions
             </button>
           )}
           <button className={styles.clearBtn} onClick={clear}>Clear</button>

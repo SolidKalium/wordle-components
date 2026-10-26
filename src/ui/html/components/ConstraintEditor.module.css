@@ -126,8 +126,11 @@
   color: #3a3a3c;
 }
 
-/* Footer + suggestions live below the grid in a single spanning element */
+/* Footer + suggestions live below the grid in a single spanning element.
+   Inline-size containment keeps this content from widening the fit-content
+   editor; it stretches to the width set by the rows above instead. */
 .below {
+  contain: inline-size;
   grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
@@ -162,6 +165,16 @@
   color: #b0b3b5;
 }
 
+.clearBtn[aria-pressed="true"] {
+  background: #3a3a3c;
+  border-color: #565758;
+  color: #e0e0e0;
+}
+
+.clearBtn[aria-pressed="true"]:hover {
+  border-color: #818384;
+}
+
 /* Hints / no-match messages */
 .hint {
   font-size: 12px;
@@ -180,19 +193,46 @@
   display: flex;
   align-items: baseline;
   gap: 10px;
-  flex-wrap: wrap;
 }
 
-.suggLabel {
-  font-size: 12px;
-  color: #555;
+/* Pinned to the end of the row; the word list takes the remaining width. */
+.suggInfo {
   flex-shrink: 0;
+  align-self: center;
+  display: flex;
+  color: #555;
 }
 
+.suggInfo:hover {
+  color: #818384;
+}
+
+.suggInfo svg {
+  display: block;
+}
+
+/* Grows the hover/tap area to 26px around the 14px icon without affecting layout. */
+.suggInfoTarget {
+  padding: 6px;
+  margin: -6px;
+}
+
+.suggInfoTarget:focus-visible {
+  outline-offset: -3px;
+}
+
+/* Clipped to one line: words that would wrap are hidden whole, so lower-ranked
+   suggestions drop off instead of the row growing. */
 .suggWords {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  column-gap: 8px;
+  font-size: 13px;
+  line-height: 18px;
+  height: 18px;
+  overflow: hidden;
 }
 
 .suggWord {

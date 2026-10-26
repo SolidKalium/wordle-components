@@ -1,8 +1,18 @@
 .hintText {
   display: inline-block;
+  cursor: default;
+  outline: none;
+  border-radius: 3px;
+}
+
+.hintText:focus-visible {
+  outline: 1px solid #818384;
+  outline-offset: 2px;
+}
+
+.underline {
   text-decoration: underline dotted;
   text-underline-offset: 3px;
-  cursor: default;
 }
 
 .tip {
