@@ -76,6 +76,36 @@ describe('ConstraintState', () => {
     });
   });
 
+  describe('full multiset (_normalize)', () => {
+    const empty = { green: [null, null, null, null, null], yellow: [[], [], [], [], []], unplaced: [], gray: [] };
+
+    it('caps every letter when minimum counts fill the word', () => {
+      const cs = ConstraintState.fromEditor({ ...empty, unplaced: [...'abcde'] });
+      for (const l of 'abcde') expect(cs.maxCounts.get(l)).toBe(1);
+      expect(cs.eliminated.size).toBe(21);
+      expect(cs.eliminated.has('z')).toBe(true);
+    });
+
+    it('counts known and unplaced copies together', () => {
+      const cs = ConstraintState.fromEditor({ ...empty, green: ['a', null, null, null, 'e'], unplaced: [...'aet'] });
+      expect(cs.maxCounts.get('a')).toBe(2);
+      expect(cs.maxCounts.get('e')).toBe(2);
+      expect(cs.maxCounts.get('t')).toBe(1);
+      expect(cs.eliminated.has('s')).toBe(true);
+    });
+
+    it('does not cap anything when the minimum counts fall short', () => {
+      const cs = ConstraintState.fromEditor({ ...empty, unplaced: [...'abcd'] });
+      expect(cs.maxCounts.size).toBe(0);
+    });
+
+    it('converges with the equivalent explicit gray input', () => {
+      const inferred = ConstraintState.fromEditor({ ...empty, unplaced: [...'crane'] });
+      const explicit = ConstraintState.fromEditor({ ...empty, unplaced: [...'crane'], gray: [...'abcdefghijklmnopqrstuvwxyz'] });
+      expect(inferred.toKey()).toBe(explicit.toKey());
+    });
+  });
+
   describe('clone', () => {
     it('produces an independent deep copy', () => {
       const cs = new ConstraintState();

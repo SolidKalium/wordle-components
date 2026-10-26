@@ -1,11 +1,12 @@
 import { createContext, useContext } from 'react';
 import { createStore, useStore } from 'zustand';
 import { ConstraintState } from '../../../lib/constraints.mjs';
+import { WORD_LENGTH } from '../../../lib/core.mjs';
 import { ANSWERS } from '../../../lib/words.gen.mjs';
 
 const EMPTY = {
-  green:    [null, null, null, null, null],
-  yellow:   [[], [], [], [], []],
+  green:    Array(WORD_LENGTH).fill(null),
+  yellow:   Array.from({ length: WORD_LENGTH }, () => []),
   unplaced: [],
   gray:     [],
 };

@@ -138,7 +138,6 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
 
 ## TODO
 - Analysis HTML UI
-  - Bug w/ suggestions on constraint card: a_b__, with an e in unknown position. It says no words, but there are words that are on the valid guess list it could provide instead of just saying the answer list has no matches.
   - Decision tree
     - Show tiny bar chart?
     - Add max height to columns, so they scroll

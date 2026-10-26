@@ -1,4 +1,5 @@
 import { forwardRef, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
+import { WORD_LENGTH } from '../../../lib/core.mjs';
 import { ANSWERS } from '../../../lib/words.gen.mjs';
 import { useConstraintStore } from '../stores/constraintStore.js';
 import styles from './ConstraintEditor.module.css';
@@ -9,10 +10,10 @@ const GreenRow = forwardRef(function GreenRow({ onUp, onDown }, ref) {
   const green    = useConstraintStore(s => s.green);
   const setGreen = useConstraintStore(s => s.setGreen);
   const setGreenRange = useConstraintStore(s => s.setGreenRange);
-  const refs     = useRef(Array.from({ length: 5 }, () => null));
+  const refs     = useRef(Array.from({ length: WORD_LENGTH }, () => null));
 
   useImperativeHandle(ref, () => ({
-    focus: col => refs.current[Math.max(0, Math.min(4, col))]?.focus(),
+    focus: col => refs.current[Math.max(0, Math.min(WORD_LENGTH - 1, col))]?.focus(),
   }), []);
 
   return (
@@ -36,17 +37,17 @@ const GreenRow = forwardRef(function GreenRow({ onUp, onDown }, ref) {
               .getData('text')
               .replace(/[^a-zA-Z]/g, '')
               .toLowerCase()
-              .slice(0, 5 - i);
+              .slice(0, WORD_LENGTH - i);
             if (!letters) return;
             e.preventDefault();
             setGreenRange(i, [...letters]);
-            refs.current[Math.min(4, i + letters.length)]?.focus();
+            refs.current[Math.min(WORD_LENGTH - 1, i + letters.length)]?.focus();
           }}
           onKeyDown={e => {
             if (/^[a-zA-Z]$/.test(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey) {
               e.preventDefault();
               setGreen(i, e.key.toLowerCase());
-              if (i < 4) refs.current[i + 1]?.focus();
+              if (i < WORD_LENGTH - 1) refs.current[i + 1]?.focus();
               return;
             }
             if (e.key === 'Backspace') {
@@ -65,8 +66,8 @@ const GreenRow = forwardRef(function GreenRow({ onUp, onDown }, ref) {
               return;
             }
             if (e.key === 'ArrowLeft'  && i > 0) refs.current[i - 1]?.focus();
-            if (e.key === 'ArrowRight' && i < 4) refs.current[i + 1]?.focus();
-            if (e.key === ' ')         { e.preventDefault(); if (i < 4) refs.current[i + 1]?.focus(); }
+            if (e.key === 'ArrowRight' && i < WORD_LENGTH - 1) refs.current[i + 1]?.focus();
+            if (e.key === ' ')         { e.preventDefault(); if (i < WORD_LENGTH - 1) refs.current[i + 1]?.focus(); }
             if (e.key === 'ArrowUp')   { e.preventDefault(); onUp?.(i); }
             if (e.key === 'ArrowDown') { e.preventDefault(); onDown?.(i); }
           }}
@@ -79,7 +80,7 @@ const GreenRow = forwardRef(function GreenRow({ onUp, onDown }, ref) {
 const YellowRow = forwardRef(function YellowRow({ onUp, onDown }, ref) {
   const yellow    = useConstraintStore(s => s.yellow);
   const setYellow = useConstraintStore(s => s.setYellow);
-  const refs      = useRef(Array.from({ length: 5 }, () => null));
+  const refs      = useRef(Array.from({ length: WORD_LENGTH }, () => null));
   const cursorRef = useRef(null); // pending { idx, pos } to restore after React re-renders
 
   // Restore cursor synchronously after DOM commit so React's controlled-input
@@ -93,7 +94,7 @@ const YellowRow = forwardRef(function YellowRow({ onUp, onDown }, ref) {
 
   useImperativeHandle(ref, () => ({
     focus: (col, cursorEnd = true) => {
-      const el = refs.current[Math.max(0, Math.min(4, col))];
+      const el = refs.current[Math.max(0, Math.min(WORD_LENGTH - 1, col))];
       if (!el) return;
       el.focus();
       // When arriving from the right, land at the end.
@@ -144,7 +145,7 @@ const YellowRow = forwardRef(function YellowRow({ onUp, onDown }, ref) {
             }
             if (e.key === 'ArrowRight' && !hasSelection && selectionEnd >= value.length) {
               e.preventDefault();
-              if (i < 4) {
+              if (i < WORD_LENGTH - 1) {
                 const el = refs.current[i + 1];
                 el?.focus();
                 if (el) {
@@ -160,7 +161,7 @@ const YellowRow = forwardRef(function YellowRow({ onUp, onDown }, ref) {
             }
             if (e.key === ' ') {
               e.preventDefault();
-              if (i < 4) {
+              if (i < WORD_LENGTH - 1) {
                 const el = refs.current[i + 1];
                 el?.focus();
                 if (el) { const len = el.value.length; el.setSelectionRange(len, len); }
@@ -223,7 +224,7 @@ export function ConstraintEditor({ defaultShowSuggestions = true, showSuggestion
   // ConstraintState) — could move to getters there if they are ever needed in
   // additional places.
   const knownCount       = green.filter(Boolean).length;
-  const overcountWarning = knownCount + unplaced.length > 5;
+  const overcountWarning = knownCount + unplaced.length > WORD_LENGTH;
   const orphanNotAt      = [...new Set(yellow.flat())].filter(l => !green.includes(l) && !unplaced.includes(l));
   const samePosConflicts = green
     .map((g, i) => (g && yellow[i].includes(g)) ? i : null)
@@ -237,6 +238,29 @@ export function ConstraintEditor({ defaultShowSuggestions = true, showSuggestion
     // and not excluded for this letter specifically.
     available: green.filter((g, i) => !g && !yellow[i].includes(letter)).length,
   })).filter(({ count, available }) => count > available);
+
+  // Every unplaced copy came from a yellow tile, which also rules out the position it
+  // was guessed at, so at most half the positions can hold unplaced copies of a letter.
+  const maxUnplaced = Math.floor(WORD_LENGTH / 2);
+  const unplacedExcess = [...unplacedCounts]
+    .filter(([, count]) => count > maxUnplaced)
+    .map(([letter, count]) => ({ letter, count }));
+
+  // Each unplaced copy was seen as yellow in a different position, and a gray letter was
+  // also seen as gray in yet another position. Positions now known to be a different
+  // letter count, since their not-at entries are redundant.
+  const notAtUnderspecified = [...unplacedCounts]
+    .map(([letter, count]) => {
+      const isGray = gray.includes(letter);
+      return {
+        letter,
+        count,
+        isGray,
+        required: count + (isGray ? 1 : 0),
+        marked: green.filter((g, i) => (g && g !== letter) || (!g && yellow[i].includes(letter))).length,
+      };
+    })
+    .filter(({ required, marked }) => marked < required);
 
   const [showSuggestions, setShowSuggestions] = useState(defaultShowSuggestions);
 
@@ -259,7 +283,7 @@ export function ConstraintEditor({ defaultShowSuggestions = true, showSuggestion
       {/* Position number header */}
       <div /> {/* label column spacer */}
       <div className={styles.posNumbers}>
-        {[1, 2, 3, 4, 5].map(n => <span key={n} className={styles.posNum}>{n}</span>)}
+        {Array.from({ length: WORD_LENGTH }, (_, i) => i + 1).map(n => <span key={n} className={styles.posNum}>{n}</span>)}
       </div>
 
       <span className={styles.label}>Known</span>
@@ -280,9 +304,9 @@ export function ConstraintEditor({ defaultShowSuggestions = true, showSuggestion
         ref={unplacedRef}
         className={styles.textInput}
         placeholder="e.g. AAE (two A's + one E)"
-        maxLength={5}
+        maxLength={WORD_LENGTH}
         value={unplaced.join('').toUpperCase()}
-        onChange={e => setUnplaced([...e.target.value.replace(/[^a-zA-Z]/g, '').toLowerCase()].slice(0, 5))}
+        onChange={e => setUnplaced([...e.target.value.replace(/[^a-zA-Z]/g, '').toLowerCase()].slice(0, WORD_LENGTH))}
         onKeyDown={e => {
           if (e.key === 'ArrowUp')   { e.preventDefault(); focusRow(1, 0); }
           if (e.key === 'ArrowDown') { e.preventDefault(); focusRow(3, 0); }
@@ -320,11 +344,12 @@ export function ConstraintEditor({ defaultShowSuggestions = true, showSuggestion
           <button className={styles.clearBtn} onClick={clear}>Clear</button>
         </div>
         {showSuggestions && <Suggestions />}
-        {(overcountWarning || orphanNotAt.length > 0 || samePosConflicts.length > 0 || unplacedOverflow.length > 0) && (
+        {(overcountWarning || orphanNotAt.length > 0 || samePosConflicts.length > 0 || unplacedOverflow.length > 0 ||
+          unplacedExcess.length > 0 || notAtUnderspecified.length > 0) && (
           <div className={styles.warnings}>
             {overcountWarning && (
               <p className={styles.warning}>
-                {knownCount + unplaced.length} confirmed letters — a word only has 5
+                {knownCount + unplaced.length} confirmed letters — a word only has {WORD_LENGTH}
               </p>
             )}
             {samePosConflicts.map(i => (
@@ -335,6 +360,16 @@ export function ConstraintEditor({ defaultShowSuggestions = true, showSuggestion
             {unplacedOverflow.map(({ letter, count, available }) => (
               <p key={letter} className={styles.warning}>
                 {letter.toUpperCase()} has {count} unplaced {count === 1 ? 'copy' : 'copies'} but only {available} position{available === 1 ? '' : 's'} where it can be placed
+              </p>
+            ))}
+            {unplacedExcess.map(({ letter, count }) => (
+              <p key={letter} className={styles.warning}>
+                {letter.toUpperCase()} has {count} <em>unplaced</em> copies — a {WORD_LENGTH}-letter word can have at most {maxUnplaced}
+              </p>
+            ))}
+            {notAtUnderspecified.map(({ letter, count, isGray, required, marked }) => (
+              <p key={letter} className={styles.warning}>
+                {letter.toUpperCase()} has {isGray ? 'exactly' : 'at least'} {count} <em>unplaced</em> {count === 1 ? 'copy' : 'copies'}. We should know {required} {required === 1 ? 'place' : 'places'} it's <em>not at</em>, but {marked === 0 ? 'none are' : marked === 1 ? 'only 1 is' : `only ${marked} are`} ruled out.
               </p>
             ))}
             {orphanNotAt.map(l => {

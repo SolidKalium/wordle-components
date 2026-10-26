@@ -1,5 +1,7 @@
 import { GREEN, YELLOW, GREY, WORD_LENGTH } from './core.mjs';
 
+const ALPHABET = 'abcdefghijklmnopqrstuvwxyz'.split('');
+
 /**
  * Tracks everything learned from guesses so far.
  *
@@ -130,6 +132,9 @@ export class ConstraintState {
    * Auto-promote: if a letter is excluded from all but one unknown position,
    * and minCounts requires it, lock it into the remaining slot.
    *
+   * Full multiset: if the minimum counts sum to the word length, every letter's
+   * max equals its min (0 for letters not required).
+   *
    * Auto-exhaust: if a present letter has no remaining open position left to
    * occupy, no further copies of it can appear anywhere. Its effective max is
    * exactly its known count, and the per-position exclusions that led to this
@@ -162,6 +167,18 @@ export class ConstraintState {
         for (const i of candidates) {
           this.known[i] = letter;
         }
+      }
+    }
+
+    // Full multiset: when the minimum counts already fill every position, each
+    // required letter's minimum is also its maximum and every other letter is
+    // absent.
+    let minTotal = 0;
+    for (const min of this.minCounts.values()) minTotal += min;
+    if (minTotal === WORD_LENGTH) {
+      for (const letter of ALPHABET) {
+        const min = this.minCounts.get(letter) ?? 0;
+        this.maxCounts.set(letter, Math.min(this.maxCounts.get(letter) ?? min, min));
       }
     }
 
