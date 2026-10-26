@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useStrategyStore, STRATEGY_DISPLAY_NAMES } from '../stores/strategyStore.js';
+import { HintText } from './Tooltip.jsx';
 import styles from './DistributionChart.module.css';
 
 const WORDLE_MAX = 6;
@@ -72,7 +73,7 @@ export function DistributionChart({ defaultCollapsed = false, collapsible = true
         ))}
       </div>
       <div className={styles.footer}>
-        <span className={styles.stat}>Mean: {meanSolved.toFixed(2)}{singlePath ? <span className={styles.statNote}> (single run w/ memoized tree)</span> : ''}</span>
+        <span className={styles.stat}><HintText tip={`Average guesses per word, including words that took more than ${WORDLE_MAX}.`}>Average:</HintText> {meanSolved.toFixed(2)}{singlePath ? <span className={styles.statNote}> (single run w/ memoized tree)</span> : ''}</span>
         {collapsible && hasOverflow && (
           <button className={styles.toggle} onClick={() => setCollapsed(c => !c)}>
             {collapsed ? 'expand' : 'collapse'}
