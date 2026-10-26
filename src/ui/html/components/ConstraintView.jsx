@@ -69,15 +69,13 @@ export function ConstraintView({ green, yellow, unplaced, gray }) {
 
   return (
     <div className={styles.view}>
-      {(anyKnown || anyNotAt) && (
-        <div className={styles.slots}>
-          {green.map((letter, i) =>
-            letter
-              ? <KnownTile key={i} letter={letter} greenPips={greenCount(letter)} yellowPips={yellowCount(letter)} grayBar={graySet.has(letter)} />
-              : <NotAtTile key={i} letters={yellow[i]} />
-          )}
-        </div>
-      )}
+      <div className={styles.slots}>
+        {green.map((letter, i) =>
+          letter
+            ? <KnownTile key={i} letter={letter} greenPips={greenCount(letter)} yellowPips={yellowCount(letter)} grayBar={graySet.has(letter)} />
+            : <NotAtTile key={i} letters={yellow[i]} />
+        )}
+      </div>
 
       {unplacedLetters.length > 0 && (
         <div className={styles.slots}>
