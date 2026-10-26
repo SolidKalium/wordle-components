@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Suggester } from '../src/lib/suggester.mjs';
 import { Game } from '../src/lib/game.mjs';
-import { FirstWordStrategy, MaxGroupsStrategy } from '../src/lib/strategy.mjs';
+import { AlphabeticalStrategy, MaxGroupsStrategy } from '../src/lib/strategy.mjs';
 import { TEST_WORDS } from '../src/lib/wordlist.mjs';
 
 // Deterministic rng for reproducible results.
@@ -20,7 +20,7 @@ beforeEach(() => {
 
 describe('suggest — basic output shape', () => {
   it('returns an array of Suggestion objects', () => {
-    const strategy = new FirstWordStrategy();
+    const strategy = new AlphabeticalStrategy();
     const suggester = new Suggester({
       sources: [{ strategy, pool: 'remaining', slots: 3 }],
     });
@@ -35,16 +35,16 @@ describe('suggest — basic output shape', () => {
   });
 
   it('meta.source is strategyName/pool', () => {
-    const strategy = new FirstWordStrategy();
+    const strategy = new AlphabeticalStrategy();
     const suggester = new Suggester({
       sources: [{ strategy, pool: 'remaining', slots: 1 }],
     });
     const [s] = suggester.suggest(game, TEST_WORDS);
-    expect(s.meta.source).toBe('FirstWordStrategy/remaining');
+    expect(s.meta.source).toBe('AlphabeticalStrategy/remaining');
   });
 
   it('meta.rank is 1-based', () => {
-    const strategy = new FirstWordStrategy();
+    const strategy = new AlphabeticalStrategy();
     const suggester = new Suggester({
       sources: [{ strategy, pool: 'remaining', slots: 3 }],
     });
@@ -54,7 +54,7 @@ describe('suggest — basic output shape', () => {
   });
 
   it('meta.percentile is in [0, 1)', () => {
-    const strategy = new FirstWordStrategy();
+    const strategy = new AlphabeticalStrategy();
     const suggester = new Suggester({
       sources: [{ strategy, pool: 'remaining', slots: 3 }],
     });
@@ -65,7 +65,7 @@ describe('suggest — basic output shape', () => {
   });
 
   it('no duplicate words in output', () => {
-    const strategy = new FirstWordStrategy();
+    const strategy = new AlphabeticalStrategy();
     const suggester = new Suggester({
       sources: [
         { strategy, pool: 'remaining', slots: 5 },
@@ -80,7 +80,7 @@ describe('suggest — basic output shape', () => {
 
 describe('suggest — slot counts', () => {
   it('returns exactly slots words when pool is large enough', () => {
-    const strategy = new FirstWordStrategy();
+    const strategy = new AlphabeticalStrategy();
     const suggester = new Suggester({
       sources: [{ strategy, pool: 'remaining', slots: 4 }],
     });
@@ -89,7 +89,7 @@ describe('suggest — slot counts', () => {
 
   it('returns all available words when pool smaller than slots', () => {
     const tiny = TEST_WORDS.slice(0, 2);
-    const strategy = new FirstWordStrategy();
+    const strategy = new AlphabeticalStrategy();
     const suggester = new Suggester({
       sources: [{ strategy, pool: 'remaining', slots: 10 }],
     });
@@ -98,7 +98,7 @@ describe('suggest — slot counts', () => {
   });
 
   it('strict=true honours slot quotas exactly', () => {
-    const strategy = new FirstWordStrategy();
+    const strategy = new AlphabeticalStrategy();
     const suggester = new Suggester({
       strict: true,
       sources: [{ strategy, pool: 'remaining', slots: 3 }],
@@ -110,7 +110,7 @@ describe('suggest — slot counts', () => {
 describe('suggest — pool', () => {
   it("pool:'remaining' only returns words in remainingWords", () => {
     const remaining = TEST_WORDS.slice(0, 10);
-    const strategy = new FirstWordStrategy();
+    const strategy = new AlphabeticalStrategy();
     const suggester = new Suggester({
       sources: [{ strategy, pool: 'remaining', slots: 5 }],
     });
@@ -122,7 +122,7 @@ describe('suggest — pool', () => {
 
   it("pool:'full' can return words outside remainingWords", () => {
     const remaining = TEST_WORDS.slice(0, 3);
-    const strategy = new FirstWordStrategy();
+    const strategy = new AlphabeticalStrategy();
     const suggester = new Suggester({
       sources: [{ strategy, pool: 'full', slots: 10 }],
     });
@@ -134,7 +134,7 @@ describe('suggest — pool', () => {
 });
 
 describe('_select — method:top', () => {
-  const strategy = new FirstWordStrategy();
+  const strategy = new AlphabeticalStrategy();
 
   it('returns the top `slots` words', () => {
     const suggester = new Suggester({ sources: [], rng: seededRng() });
@@ -205,7 +205,7 @@ describe('_select — method:random', () => {
 describe('_computeRankings — deduplication', () => {
   it('calls rankGuesses once for the same (strategy, pool) pair', () => {
     let callCount = 0;
-    const strategy = new FirstWordStrategy();
+    const strategy = new AlphabeticalStrategy();
     const origRank = strategy.rankGuesses.bind(strategy);
     strategy.rankGuesses = (...args) => { callCount++; return origRank(...args); };
 
@@ -221,7 +221,7 @@ describe('_computeRankings — deduplication', () => {
 
   it('calls rankGuesses separately for different pools on the same strategy', () => {
     let callCount = 0;
-    const strategy = new FirstWordStrategy();
+    const strategy = new AlphabeticalStrategy();
     const origRank = strategy.rankGuesses.bind(strategy);
     strategy.rankGuesses = (...args) => { callCount++; return origRank(...args); };
 
@@ -245,8 +245,8 @@ describe('_computeRankings — deduplication', () => {
 
     const suggester = new Suggester({
       sources: [
-        { strategy: wrap(new FirstWordStrategy()), pool: 'remaining', slots: 2 },
-        { strategy: wrap(new FirstWordStrategy()), pool: 'remaining', slots: 2 },
+        { strategy: wrap(new AlphabeticalStrategy()), pool: 'remaining', slots: 2 },
+        { strategy: wrap(new AlphabeticalStrategy()), pool: 'remaining', slots: 2 },
       ],
     });
     suggester._computeRankings(game, TEST_WORDS);
@@ -256,7 +256,7 @@ describe('_computeRankings — deduplication', () => {
 
 describe('suggest — multi-source', () => {
   it('combines results from two different strategies', () => {
-    const s1 = new FirstWordStrategy();
+    const s1 = new AlphabeticalStrategy();
     const s2 = new MaxGroupsStrategy();
     const suggester = new Suggester({
       sources: [
@@ -270,7 +270,7 @@ describe('suggest — multi-source', () => {
   });
 
   it('meta.source reflects which source produced each word', () => {
-    const s1 = new FirstWordStrategy();
+    const s1 = new AlphabeticalStrategy();
     const s2 = new MaxGroupsStrategy();
     const suggester = new Suggester({
       strict: true,

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { runSimulation, summarize, formatSummary } from '../src/lib/analysis.mjs';
-import { FirstWordStrategy } from '../src/lib/strategy.mjs';
+import { AlphabeticalStrategy } from '../src/lib/strategy.mjs';
 import { TEST_WORDS } from '../src/lib/wordlist.mjs';
 
 // Helpers for building hand-crafted result sets.
@@ -118,23 +118,23 @@ describe('runSimulation', () => {
   const answers = TEST_WORDS.slice(0, 5);
 
   it('runs one game per answer', () => {
-    const results = runSimulation(() => new FirstWordStrategy(), TEST_WORDS, { answers });
+    const results = runSimulation(() => new AlphabeticalStrategy(), TEST_WORDS, { answers });
     expect(results).toHaveLength(answers.length);
   });
 
   it('each result records the correct answer', () => {
-    const results = runSimulation(() => new FirstWordStrategy(), TEST_WORDS, { answers });
+    const results = runSimulation(() => new AlphabeticalStrategy(), TEST_WORDS, { answers });
     expect(results.map(r => r.answer)).toEqual(answers);
   });
 
   it('solves games where the answer is in the word list', () => {
-    const results = runSimulation(() => new FirstWordStrategy(), TEST_WORDS, { answers });
+    const results = runSimulation(() => new AlphabeticalStrategy(), TEST_WORDS, { answers });
     expect(results.every(r => r.solved)).toBe(true);
   });
 
   it('calls onProgress once per game', () => {
     const calls = [];
-    runSimulation(() => new FirstWordStrategy(), TEST_WORDS, {
+    runSimulation(() => new AlphabeticalStrategy(), TEST_WORDS, {
       answers,
       onProgress: (i, total, answer) => calls.push({ i, total, answer }),
     });

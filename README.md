@@ -184,6 +184,7 @@ Filters can be used post-strategy to find a subset of ranked results, or they ca
       - But it should allow multiple guesses to be entered without needing to grade sequentially. It might also propagate grading on the assumption that the grading is correct. We'd just need to be careful about that.
   - Hard mode toggle
   - Toggle or other setting for whether things like the suggester's words are from answers or all?
+    - I believe my idea was to optionally combine the two lists vs keep the guess list as a discrete fallback when the answer list has nothing compatible.
   - Other analysis components? E.g. compare across strategies
   - Pre-built composite components (LATER)
   - Distribution Chart

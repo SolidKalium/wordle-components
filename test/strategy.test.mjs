@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   Strategy,
   RandomStrategy,
-  FirstWordStrategy,
+  AlphabeticalStrategy,
   FilteredStrategy,
   MaxGroupsStrategy,
   MinExpectedRemainingStrategy,
@@ -60,19 +60,33 @@ describe('RandomStrategy', () => {
   });
 });
 
-describe('FirstWordStrategy', () => {
-  it('rankGuesses returns first k words in order', () => {
-    const ranked = new FirstWordStrategy().rankGuesses(game(), CANDIDATES, CANDIDATES, 3);
-    expect(ranked.map(r => r.word)).toEqual(CANDIDATES.slice(0, 3));
+describe('AlphabeticalStrategy', () => {
+  const SORTED = [...CANDIDATES].sort();
+
+  it('rankGuesses returns the first k words alphabetically', () => {
+    const ranked = new AlphabeticalStrategy().rankGuesses(game(), CANDIDATES, CANDIDATES, 3);
+    expect(ranked.map(r => r.word)).toEqual(SORTED.slice(0, 3));
+  });
+
+  it('result does not depend on input order', () => {
+    const reversed = [...SORTED].reverse();
+    const ranked = new AlphabeticalStrategy().rankGuesses(game(), reversed, reversed);
+    expect(ranked.map(r => r.word)).toEqual(SORTED);
+  });
+
+  it('does not mutate unsorted input', () => {
+    const input = ['crane', 'apple', 'bread'];
+    new AlphabeticalStrategy().rankGuesses(game(), input, input);
+    expect(input).toEqual(['crane', 'apple', 'bread']);
   });
 
   it('score is null', () => {
-    const ranked = new FirstWordStrategy().rankGuesses(game(), CANDIDATES, CANDIDATES, 2);
+    const ranked = new AlphabeticalStrategy().rankGuesses(game(), CANDIDATES, CANDIDATES, 2);
     expect(ranked.every(r => r.score === null)).toBe(true);
   });
 
-  it('chooseGuess returns the first candidate', () => {
-    expect(new FirstWordStrategy().chooseGuess(game(), CANDIDATES, CANDIDATES)).toBe(CANDIDATES[0]);
+  it('chooseGuess returns the earliest candidate alphabetically', () => {
+    expect(new AlphabeticalStrategy().chooseGuess(game(), CANDIDATES, CANDIDATES)).toBe(SORTED[0]);
   });
 });
 
@@ -158,7 +172,7 @@ describe('MinimaxStrategy', () => {
 describe('FilteredStrategy', () => {
   it('narrows candidates before passing to base strategy', () => {
     const f = new MustContainFilter('a'); // only words containing 'a'
-    const strategy = new FilteredStrategy(new FirstWordStrategy(), [f]);
+    const strategy = new FilteredStrategy(new AlphabeticalStrategy(), [f]);
     const ranked = strategy.rankGuesses(game(), CANDIDATES, CANDIDATES, CANDIDATES.length);
     for (const { word } of ranked) {
       expect(word).toMatch(/a/);
@@ -167,14 +181,14 @@ describe('FilteredStrategy', () => {
 
   it('falls back to unfiltered set if filter leaves nothing', () => {
     const f = new MustContainFilter('z'); // 'z' won't be in these test words
-    const strategy = new FilteredStrategy(new FirstWordStrategy(), [f]);
+    const strategy = new FilteredStrategy(new AlphabeticalStrategy(), [f]);
     // filter returns empty → falls back to full candidates
     const word = strategy.chooseGuess(game(), CANDIDATES, CANDIDATES);
     expect(CANDIDATES).toContain(word);
   });
 
   it('passes k through to the base strategy', () => {
-    const strategy = new FilteredStrategy(new FirstWordStrategy(), []);
+    const strategy = new FilteredStrategy(new AlphabeticalStrategy(), []);
     const ranked = strategy.rankGuesses(game(), CANDIDATES, CANDIDATES, 3);
     expect(ranked).toHaveLength(3);
   });
@@ -189,7 +203,7 @@ describe('FilteredStrategy', () => {
       isActive: () => false,
       filter: (c) => { filterCalled = true; return []; },
     };
-    const strategy = new FilteredStrategy(new FirstWordStrategy(), [neverActive]);
+    const strategy = new FilteredStrategy(new AlphabeticalStrategy(), [neverActive]);
     strategy.rankGuesses(lateGame(), CANDIDATES, CANDIDATES, 1);
     expect(filterCalled).toBe(false);
   });

@@ -24,7 +24,7 @@ const strategyStoreMaxGroups = createStrategyStore({ strategyId: 'maxGroups' });
 const strategyStoreMaxEntropy = createStrategyStore({ strategyId: 'maxEntropy' });
 const strategyStoreMinExpectedRemaining = createStrategyStore({ strategyId: 'minExpectedRemaining' });
 const strategyStoreMinimax = createStrategyStore({ strategyId: 'minimax' });
-const strategyStoreFirstWord = createStrategyStore({ strategyId: 'firstWord' });
+const strategyStoreAlphabetical = createStrategyStore({ strategyId: 'alphabetical' });
 const strategyStoreRandom  = createStrategyStore({ strategyId: 'random' });
 const strategyStoreExplore = createStrategyStore({ strategyId: 'maxGroups' });
 
@@ -45,7 +45,7 @@ function App() {
           <StrategyStoreContext.Provider value={strategyStoreMinimax}>
             <DistributionChart  defaultCollapsed={false} collapsible={false}/>
           </StrategyStoreContext.Provider>
-          <StrategyStoreContext.Provider value={strategyStoreFirstWord}>
+          <StrategyStoreContext.Provider value={strategyStoreAlphabetical}>
             <DistributionChart  defaultCollapsed={false} collapsible={false}/>
           </StrategyStoreContext.Provider>
           <StrategyStoreContext.Provider value={strategyStoreRandom}>

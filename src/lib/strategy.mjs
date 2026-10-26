@@ -69,16 +69,23 @@ export class RandomStrategy extends Strategy {
 }
 
 /**
- * Always guesses the first word in the remaining list (alphabetically
- * if the list is sorted). Deterministic, so useful for reproducible tests.
+ * Always guesses the earliest remaining word alphabetically. Deterministic
+ * regardless of input order, so useful for reproducible tests.
  */
-export class FirstWordStrategy extends Strategy {
-  get id() { return 'firstWord'; }
-  get displayName() { return 'First Word'; }
-  get isDeterministic() { return true; } // Note: only deterministic if the caller provides consistent word order
+export class AlphabeticalStrategy extends Strategy {
+  get id() { return 'alphabetical'; }
+  get displayName() { return 'Alphabetical'; }
+  get isDeterministic() { return true; }
 
   rankGuesses(_game, candidates, _remainingWords, k = candidates.length) {
-    return candidates.slice(0, k).map(word => ({ word, score: null }));
+    // Word lists are generated sorted and filtering preserves order, so the
+    // sort is usually skipped.
+    let sorted = true;
+    for (let i = 1; i < candidates.length; i++) {
+      if (candidates[i - 1] > candidates[i]) { sorted = false; break; }
+    }
+    const ordered = sorted ? candidates : candidates.slice().sort();
+    return ordered.slice(0, k).map(word => ({ word, score: null }));
   }
 }
 
@@ -198,6 +205,6 @@ export const STRATEGIES = [
   new MaxEntropyStrategy(),
   new MinExpectedRemainingStrategy(),
   new MinimaxStrategy(),
-  new FirstWordStrategy(),
+  new AlphabeticalStrategy(),
   new RandomStrategy(),
 ];

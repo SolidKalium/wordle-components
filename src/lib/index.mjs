@@ -8,7 +8,7 @@ export {
 
 export { ConstraintState } from './constraints.mjs';
 export { Game, MoveResult } from './game.mjs';
-export { Strategy, RandomStrategy, FirstWordStrategy } from './strategy.mjs';
+export { Strategy, RandomStrategy, AlphabeticalStrategy } from './strategy.mjs';
 export { runSimulation, summarize, formatSummary } from './analysis.mjs';
 export { loadWordList, TEST_WORDS } from './wordlist.mjs';
 export { ANSWERS, WORDS } from './words.gen.mjs';

@@ -13,7 +13,7 @@ import {
 } from '../src/lib/core.mjs';
 import { ConstraintState } from '../src/lib/constraints.mjs';
 import { Game, MoveResult } from '../src/lib/game.mjs';
-import { RandomStrategy, FirstWordStrategy } from '../src/lib/strategy.mjs';
+import { RandomStrategy, AlphabeticalStrategy } from '../src/lib/strategy.mjs';
 import { runSimulation, summarize, formatSummary } from '../src/lib/analysis.mjs';
 import { TEST_WORDS } from '../src/lib/wordlist.mjs';
 
@@ -146,17 +146,17 @@ assert(result.valid, 'external mode accepts pattern');
 
 // ── Strategy + Analysis ──
 
-section('Simulation (FirstWordStrategy on test words)');
+section('Simulation (AlphabeticalStrategy on test words)');
 
 const simAnswers = Array.from({ length: 20 }, (_, i) => TEST_WORDS[Math.floor(i * TEST_WORDS.length / 20)]);
 
 const simResults = runSimulation(
-  () => new FirstWordStrategy(),
+  () => new AlphabeticalStrategy(),
   TEST_WORDS,
   { answers: simAnswers },
 );
 const summary = summarize(simResults);
-console.log(formatSummary(summary, 'FirstWordStrategy (20 words)'));
+console.log(formatSummary(summary, 'AlphabeticalStrategy (20 words)'));
 assert(summary.total === 20, 'ran 20 games');
 assert(summary.solvedCount > 0, 'solved at least some');
 
