@@ -298,6 +298,9 @@ For hard mode specifically: how often does the optimal guess (by any single-step
 - Back out guesses from constraints? Filter the list of words to ones that comply with all constraints without implying knowledge beyond the constraints should be known, then do a best effort to pick words that enforce the remaining constraints, until all constraints are matched and no extra ones are introduced.
 - Make text sizes more accessible: avoid px size for fonts and anything calculated based on them. This would be a lot of work, most likely, for an unknown number of users. Currently 0 of 0 users who aren't the author want this feature. In the meantime, zooming in should work for most people.
 - Build-your-own-page scaffolding
+- Build a backup word list from Wiktionary or another public dictionary and wire it into suggestions, guesses, etc. We can expect that any word NYT chooses will exist in most dictionaries. But we may need to filter out proper nouns that don't have a generalized sense or add other constraints, such as deprioritizing word variants that are "simple" plurals or similar, but that's sort of a human judgment call.
+  - As of 2026-10-26 and using [RockPaperShotgun's list](https://www.rockpapershotgun.com/wordle-past-answers), 71 official answers were found that weren't on Wardle's list of answers used here, but were in his list of valid guesses. NYT can also reuse words, lowering the need for them to pick words not originally on either list. But they have added some new valid guess words. Overall, this is a low priority feature.
+
 
 ## Other Topics
 - I'm curious about what might bias a human against quickly finding a word.
